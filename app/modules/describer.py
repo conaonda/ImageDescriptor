@@ -61,9 +61,7 @@ async def describe_image(
                 async for chunk in resp.aiter_bytes():
                     size += len(chunk)
                     if size > max_size:
-                        raise ValueError(
-                            f"Image too large: >{max_size} bytes (max 5MB)"
-                        )
+                        raise ValueError(f"Image too large: >{max_size} bytes (max 5MB)")
                     chunks.append(chunk)
                 image_bytes = b"".join(chunks)
     else:
