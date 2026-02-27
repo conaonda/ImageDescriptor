@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-02-26T14:09:52.924Z",
+  "lastUpdated": "2026-02-28T00:00:00.000Z",
   "activeFeatures": [
     "ImageDescriptor",
     "db",
@@ -10,6 +10,22 @@
   ],
   "primaryFeature": "ImageDescriptor",
   "features": {
+    "deployment": {
+      "phase": "archived",
+      "matchRate": 98,
+      "iterationCount": 0,
+      "startedAt": "2026-02-27T00:00:00Z",
+      "archivedAt": "2026-02-28T00:00:00Z",
+      "archivedTo": "docs/archive/2026-02/deployment/"
+    },
+    "image-descriptor": {
+      "phase": "archived",
+      "matchRate": 95,
+      "iterationCount": 1,
+      "startedAt": "2026-02-26T00:00:00Z",
+      "archivedAt": "2026-02-28T00:00:00Z",
+      "archivedTo": "docs/archive/2026-02/image-descriptor/"
+    },
     "ImageDescriptor": {
       "phase": "do",
       "phaseNumber": 3,
