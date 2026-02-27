@@ -86,7 +86,9 @@ async def _safe_landcover(lon, lat, cache, warnings):
         return None
 
 
-async def _safe_describe(thumbnail, place_name, captured_at, lc_summary, cache, cog_image_id, warnings):
+async def _safe_describe(
+    thumbnail, place_name, captured_at, lc_summary, cache, cog_image_id, warnings
+):
     cb = _breakers["describer"]
     if cb.is_open:
         warnings.append(Warning(module="describer", error="Circuit breaker open"))

@@ -38,7 +38,10 @@ async def test_compose_all_success(mock_geo, mock_lc, mock_desc, mock_ctx, cache
     ))
     mock_desc.describe_image = AsyncMock(return_value="위성영상 설명입니다.")
     mock_ctx.research_context = AsyncMock(return_value=Context(
-        events=[Event(title="이벤트", date="2025-06", source_url="https://example.com", relevance="medium")],
+        events=[Event(
+            title="이벤트", date="2025-06",
+            source_url="https://example.com", relevance="medium",
+        )],
         summary="이벤트 요약",
     ))
 
