@@ -12,10 +12,11 @@ from app.cache.store import CacheStore
 from app.config import settings
 from app.utils.errors import DescriptorError, descriptor_error_handler
 
+import logging
+
+_log_level = getattr(logging, settings.log_level.upper(), logging.INFO)
 structlog.configure(
-    wrapper_class=structlog.make_filtering_bound_logger(
-        structlog.get_level_from_name(settings.log_level)
-    ),
+    wrapper_class=structlog.make_filtering_bound_logger(_log_level),
 )
 
 limiter = Limiter(key_func=get_remote_address)
