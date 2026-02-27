@@ -9,6 +9,7 @@ class Settings(BaseSettings):
 
     nominatim_url: str = "https://nominatim.openstreetmap.org"
     overpass_url: str = "https://overpass-api.de/api/interpreter"
+    cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
     cache_db_path: str = "./cache.db"
     log_level: str = "INFO"
 

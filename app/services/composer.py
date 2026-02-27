@@ -5,8 +5,17 @@ import structlog
 from app.api.schemas import DescribeRequest, DescribeResponse, Warning
 from app.cache.store import CacheStore
 from app.modules import context, describer, geocoder, landcover
+from app.utils.circuit_breaker import CircuitBreaker
 
 logger = structlog.get_logger()
+
+# Circuit breakers per external service (5 failures → 30s cooldown)
+_breakers = {
+    "geocoder": CircuitBreaker("geocoder"),
+    "landcover": CircuitBreaker("landcover"),
+    "describer": CircuitBreaker("describer"),
+    "context": CircuitBreaker("context"),
+}
 
 
 async def compose_description(
@@ -25,7 +34,10 @@ async def compose_description(
     lc_summary = land_cover_result.summary if land_cover_result else "정보 없음"
 
     desc_task = asyncio.create_task(
-        _safe_describe(request.thumbnail, place_name, request.captured_at, lc_summary, cache, request.cog_image_id, warnings)
+        _safe_describe(
+            request.thumbnail, place_name, request.captured_at, lc_summary,
+            cache, request.cog_image_id, warnings,
+        )
     )
     ctx_task = asyncio.create_task(
         _safe_context(place_name, request.captured_at, cache, warnings)
@@ -43,38 +55,66 @@ async def compose_description(
 
 
 async def _safe_geocode(lon, lat, cache, warnings):
+    cb = _breakers["geocoder"]
+    if cb.is_open:
+        warnings.append(Warning(module="geocoder", error="Circuit breaker open"))
+        return None
     try:
-        return await geocoder.geocode(lon, lat, cache)
+        result = await geocoder.geocode(lon, lat, cache)
+        cb.record_success()
+        return result
     except Exception as e:
+        cb.record_failure()
         logger.error("geocoder failed", error=str(e))
         warnings.append(Warning(module="geocoder", error=str(e)))
         return None
 
 
 async def _safe_landcover(lon, lat, cache, warnings):
+    cb = _breakers["landcover"]
+    if cb.is_open:
+        warnings.append(Warning(module="landcover", error="Circuit breaker open"))
+        return None
     try:
-        return await landcover.get_land_cover(lon, lat, cache)
+        result = await landcover.get_land_cover(lon, lat, cache)
+        cb.record_success()
+        return result
     except Exception as e:
+        cb.record_failure()
         logger.error("landcover failed", error=str(e))
         warnings.append(Warning(module="landcover", error=str(e)))
         return None
 
 
 async def _safe_describe(thumbnail, place_name, captured_at, lc_summary, cache, cog_image_id, warnings):
+    cb = _breakers["describer"]
+    if cb.is_open:
+        warnings.append(Warning(module="describer", error="Circuit breaker open"))
+        return None
     try:
-        return await describer.describe_image(
+        result = await describer.describe_image(
             thumbnail, place_name, captured_at, lc_summary, cache, cog_image_id
         )
+        cb.record_success()
+        return result
     except Exception as e:
+        cb.record_failure()
         logger.error("describer failed", error=str(e))
         warnings.append(Warning(module="describer", error=str(e)))
         return None
 
 
 async def _safe_context(place_name, captured_at, cache, warnings):
+    cb = _breakers["context"]
+    if cb.is_open:
+        warnings.append(Warning(module="context", error="Circuit breaker open"))
+        return None
     try:
-        return await context.research_context(place_name, captured_at, cache)
+        result = await context.research_context(place_name, captured_at, cache)
+        cb.record_success()
+        return result
     except Exception as e:
+        cb.record_failure()
         logger.error("context failed", error=str(e))
         warnings.append(Warning(module="context", error=str(e)))
         return None
