@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 import structlog
@@ -11,8 +12,6 @@ from app.api.routes import router
 from app.cache.store import CacheStore
 from app.config import settings
 from app.utils.errors import DescriptorError, descriptor_error_handler
-
-import logging
 
 _log_level = getattr(logging, settings.log_level.upper(), logging.INFO)
 structlog.configure(
