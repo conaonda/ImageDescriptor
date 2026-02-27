@@ -20,11 +20,14 @@ async def test_health(client):
 
 
 async def test_describe_no_api_key(client):
-    resp = await client.post("/api/describe", json={
-        "thumbnail": "dGVzdA==",
-        "coordinates": [126.978, 37.566],
-        "captured_at": "2025-06-15T00:00:00Z",
-    })
+    resp = await client.post(
+        "/api/describe",
+        json={
+            "thumbnail": "dGVzdA==",
+            "coordinates": [126.978, 37.566],
+            "captured_at": "2025-06-15T00:00:00Z",
+        },
+    )
     assert resp.status_code == 403
 
 

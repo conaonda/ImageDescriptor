@@ -46,9 +46,7 @@ def _round_coords(lon: float, lat: float) -> tuple[float, float]:
     return round(lon, 2), round(lat, 2)
 
 
-async def get_land_cover(
-    lon: float, lat: float, cache: CacheStore
-) -> LandCover:
+async def get_land_cover(lon: float, lat: float, cache: CacheStore) -> LandCover:
     rlon, rlat = _round_coords(lon, lat)
     cache_key = f"landcover:{rlon}:{rlat}"
 
@@ -91,11 +89,13 @@ out tags;
     classes = []
     for tag, count in sorted(tag_counts.items(), key=lambda x: -x[1]):
         pct = round(count / total * 100)
-        classes.append(LandCoverClass(
-            type=tag,
-            label=TAG_LABELS.get(tag, tag),
-            percentage=pct,
-        ))
+        classes.append(
+            LandCoverClass(
+                type=tag,
+                label=TAG_LABELS.get(tag, tag),
+                percentage=pct,
+            )
+        )
 
     summary_parts = [f"{c.label} {c.percentage}%" for c in classes[:5]]
     summary = ", ".join(summary_parts) if summary_parts else "정보 없음"

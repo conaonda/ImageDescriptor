@@ -33,13 +33,15 @@ async def save_description(
             "description": description,
         }
         if location:
-            row.update({
-                "country": location.get("country"),
-                "country_code": location.get("country_code"),
-                "region": location.get("region"),
-                "city": location.get("city"),
-                "place_name": location.get("place_name"),
-            })
+            row.update(
+                {
+                    "country": location.get("country"),
+                    "country_code": location.get("country_code"),
+                    "region": location.get("region"),
+                    "city": location.get("city"),
+                    "place_name": location.get("place_name"),
+                }
+            )
         if land_cover:
             row["land_cover_json"] = land_cover.get("classes")
             row["land_cover_summary"] = land_cover.get("summary")

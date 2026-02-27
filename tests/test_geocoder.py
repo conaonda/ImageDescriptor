@@ -39,10 +39,12 @@ async def test_geocode_seoul(cache, httpx_mock):
 
 
 async def test_geocode_cache_hit(cache, httpx_mock):
-    httpx_mock.add_response(json={
-        "display_name": "Test",
-        "address": {"country": "Test", "country_code": "xx", "state": "S"},
-    })
+    httpx_mock.add_response(
+        json={
+            "display_name": "Test",
+            "address": {"country": "Test", "country_code": "xx", "state": "S"},
+        }
+    )
 
     await geocode(126.978, 37.566, cache)
     # Second call should hit cache, no additional HTTP request

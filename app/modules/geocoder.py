@@ -19,9 +19,7 @@ def _round_coords(lon: float, lat: float, decimals: int = 3) -> tuple[float, flo
     return round(lon, decimals), round(lat, decimals)
 
 
-async def geocode(
-    lon: float, lat: float, cache: CacheStore
-) -> Location:
+async def geocode(lon: float, lat: float, cache: CacheStore) -> Location:
     rlon, rlat = _round_coords(lon, lat)
     cache_key = f"geocode:{rlon}:{rlat}"
 

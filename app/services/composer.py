@@ -18,9 +18,7 @@ _breakers = {
 }
 
 
-async def compose_description(
-    request: DescribeRequest, cache: CacheStore
-) -> DescribeResponse:
+async def compose_description(request: DescribeRequest, cache: CacheStore) -> DescribeResponse:
     warnings: list[Warning] = []
     lon, lat = request.coordinates
 
@@ -35,13 +33,16 @@ async def compose_description(
 
     desc_task = asyncio.create_task(
         _safe_describe(
-            request.thumbnail, place_name, request.captured_at, lc_summary,
-            cache, request.cog_image_id, warnings,
+            request.thumbnail,
+            place_name,
+            request.captured_at,
+            lc_summary,
+            cache,
+            request.cog_image_id,
+            warnings,
         )
     )
-    ctx_task = asyncio.create_task(
-        _safe_context(place_name, request.captured_at, cache, warnings)
-    )
+    ctx_task = asyncio.create_task(_safe_context(place_name, request.captured_at, cache, warnings))
     description, context_result = await asyncio.gather(desc_task, ctx_task)
 
     return DescribeResponse(

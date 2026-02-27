@@ -40,12 +40,14 @@ async def research_context(
             text = topic.get("Text", "")
             url = topic.get("FirstURL", "")
             if text and url:
-                events.append(Event(
-                    title=text[:200],
-                    date=month,
-                    source_url=url,
-                    relevance="low",
-                ))
+                events.append(
+                    Event(
+                        title=text[:200],
+                        date=month,
+                        source_url=url,
+                        relevance="low",
+                    )
+                )
     except Exception as e:
         logger.warning("context research failed", error=str(e))
 

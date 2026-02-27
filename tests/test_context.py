@@ -38,9 +38,13 @@ async def test_context_empty_results(cache, httpx_mock):
 
 
 async def test_context_cache_hit(cache, httpx_mock):
-    httpx_mock.add_response(json={"RelatedTopics": [
-        {"Text": "News", "FirstURL": "https://example.com"},
-    ]})
+    httpx_mock.add_response(
+        json={
+            "RelatedTopics": [
+                {"Text": "News", "FirstURL": "https://example.com"},
+            ]
+        }
+    )
 
     await research_context("서울", "2025-06-15", cache)
     result = await research_context("서울", "2025-06-15", cache)

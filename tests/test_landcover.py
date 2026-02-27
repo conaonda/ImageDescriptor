@@ -13,14 +13,16 @@ async def cache(tmp_path):
 
 
 async def test_land_cover_residential(cache, httpx_mock):
-    httpx_mock.add_response(json={
-        "elements": [
-            {"tags": {"landuse": "residential"}},
-            {"tags": {"landuse": "residential"}},
-            {"tags": {"landuse": "commercial"}},
-            {"tags": {"natural": "forest"}},
-        ]
-    })
+    httpx_mock.add_response(
+        json={
+            "elements": [
+                {"tags": {"landuse": "residential"}},
+                {"tags": {"landuse": "residential"}},
+                {"tags": {"landuse": "commercial"}},
+                {"tags": {"natural": "forest"}},
+            ]
+        }
+    )
 
     result = await get_land_cover(126.978, 37.566, cache)
     assert len(result.classes) == 3

@@ -33,9 +33,7 @@ async def test_describe_image(mock_genai, cache):
     mock_genai.Client.return_value = mock_client
 
     thumbnail = base64.b64encode(b"fake-image-data").decode()
-    result = await describe_image(
-        thumbnail, "서울특별시", "2025-06-15", "주거지역 50%", cache
-    )
+    result = await describe_image(thumbnail, "서울특별시", "2025-06-15", "주거지역 50%", cache)
 
     assert result == "서울 도심의 위성영상입니다."
     mock_client.models.generate_content.assert_called_once()

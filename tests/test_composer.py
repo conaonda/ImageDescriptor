@@ -28,22 +28,37 @@ def _make_request():
 @patch("app.services.composer.landcover")
 @patch("app.services.composer.geocoder")
 async def test_compose_all_success(mock_geo, mock_lc, mock_desc, mock_ctx, cache):
-    mock_geo.geocode = AsyncMock(return_value=Location(
-        country="대한민국", country_code="kr", region="서울", city="중구",
-        place_name="서울특별시", lat=37.566, lon=126.978,
-    ))
-    mock_lc.get_land_cover = AsyncMock(return_value=LandCover(
-        classes=[LandCoverClass(type="residential", label="주거지역", percentage=60)],
-        summary="주거지역 60%",
-    ))
+    mock_geo.geocode = AsyncMock(
+        return_value=Location(
+            country="대한민국",
+            country_code="kr",
+            region="서울",
+            city="중구",
+            place_name="서울특별시",
+            lat=37.566,
+            lon=126.978,
+        )
+    )
+    mock_lc.get_land_cover = AsyncMock(
+        return_value=LandCover(
+            classes=[LandCoverClass(type="residential", label="주거지역", percentage=60)],
+            summary="주거지역 60%",
+        )
+    )
     mock_desc.describe_image = AsyncMock(return_value="위성영상 설명입니다.")
-    mock_ctx.research_context = AsyncMock(return_value=Context(
-        events=[Event(
-            title="이벤트", date="2025-06",
-            source_url="https://example.com", relevance="medium",
-        )],
-        summary="이벤트 요약",
-    ))
+    mock_ctx.research_context = AsyncMock(
+        return_value=Context(
+            events=[
+                Event(
+                    title="이벤트",
+                    date="2025-06",
+                    source_url="https://example.com",
+                    relevance="medium",
+                )
+            ],
+            summary="이벤트 요약",
+        )
+    )
 
     result = await compose_description(_make_request(), cache)
 
@@ -61,9 +76,12 @@ async def test_compose_all_success(mock_geo, mock_lc, mock_desc, mock_ctx, cache
 async def test_compose_partial_failure(mock_geo, mock_lc, mock_desc, mock_ctx, cache):
     """Nominatim 장애 시 점진적 실패 테스트."""
     mock_geo.geocode = AsyncMock(side_effect=Exception("Nominatim timeout"))
-    mock_lc.get_land_cover = AsyncMock(return_value=LandCover(
-        classes=[], summary="정보 없음",
-    ))
+    mock_lc.get_land_cover = AsyncMock(
+        return_value=LandCover(
+            classes=[],
+            summary="정보 없음",
+        )
+    )
     mock_desc.describe_image = AsyncMock(return_value="설명 텍스트")
     mock_ctx.research_context = AsyncMock(return_value=Context(events=[], summary="없음"))
 
