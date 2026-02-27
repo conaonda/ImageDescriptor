@@ -28,7 +28,7 @@ async def test_describe_no_api_key(client):
             "captured_at": "2025-06-15T00:00:00Z",
         },
     )
-    assert resp.status_code == 403
+    assert resp.status_code == 401
 
 
 async def test_describe_invalid_coordinates(client):
