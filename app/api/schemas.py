@@ -3,7 +3,9 @@ from pydantic import BaseModel, Field
 
 class DescribeRequest(BaseModel):
     thumbnail: str = Field(description="base64 PNG or URL of lowest pyramid image")
-    coordinates: list[float] = Field(description="[longitude, latitude]", min_length=2, max_length=2)
+    coordinates: list[float] = Field(
+        description="[longitude, latitude]", min_length=2, max_length=2
+    )
     bbox: list[float] | None = Field(
         None, description="[west, south, east, north]", min_length=4, max_length=4
     )
