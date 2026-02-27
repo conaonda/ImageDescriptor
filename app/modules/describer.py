@@ -44,13 +44,28 @@ async def describe_image(
         b64_data = thumbnail.split(",", 1)[1]
         image_bytes = base64.b64decode(b64_data)
     elif thumbnail.startswith("http"):
-        # URL인 경우 다운로드
+        # URL인 경우 다운로드 (최대 5MB)
         import httpx
 
+        max_size = 5 * 1024 * 1024
         async with httpx.AsyncClient() as client:
-            resp = await client.get(thumbnail, timeout=10.0)
-            resp.raise_for_status()
-            image_bytes = resp.content
+            async with client.stream("GET", thumbnail, timeout=10.0) as resp:
+                resp.raise_for_status()
+                content_length = resp.headers.get("content-length")
+                if content_length and int(content_length) > max_size:
+                    raise ValueError(
+                        f"Image too large: {int(content_length)} bytes (max {max_size})"
+                    )
+                chunks = []
+                size = 0
+                async for chunk in resp.aiter_bytes():
+                    size += len(chunk)
+                    if size > max_size:
+                        raise ValueError(
+                            f"Image too large: >{max_size} bytes (max 5MB)"
+                        )
+                    chunks.append(chunk)
+                image_bytes = b"".join(chunks)
     else:
         image_bytes = base64.b64decode(thumbnail)
 

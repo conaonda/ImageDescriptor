@@ -51,7 +51,7 @@ async def describe(
             details={"lon": lon, "lat": lat},
         )
 
-    if len(body.thumbnail) > 5 * 1024 * 1024:
+    if not body.thumbnail.startswith("http") and len(body.thumbnail) > 5 * 1024 * 1024:
         raise DescriptorError(
             status_code=422,
             code="THUMBNAIL_TOO_LARGE",
