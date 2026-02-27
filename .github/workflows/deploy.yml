@@ -1,0 +1,50 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+    concurrency: deploy-production
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: cognito-descriptor
+          region: asia-northeast1
+          source: .
+          env_vars: |
+            CORS_ORIGINS=["https://cognito.conaonda.com","http://localhost:5173"]
+            LOG_LEVEL=INFO
+            CACHE_DB_PATH=/tmp/cache/cache.db
+          secrets: |
+            GOOGLE_AI_API_KEY=GOOGLE_AI_API_KEY:latest
+            SUPABASE_URL=SUPABASE_URL:latest
+            SUPABASE_SERVICE_KEY=SUPABASE_SERVICE_KEY:latest
+            API_KEY=DESCRIPTOR_API_KEY:latest
+          flags: >-
+            --allow-unauthenticated
+            --memory=512Mi
+            --cpu=1
+            --min-instances=0
+            --max-instances=2
+            --concurrency=50
+            --timeout=60s
