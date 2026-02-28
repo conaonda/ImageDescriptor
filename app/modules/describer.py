@@ -1,5 +1,8 @@
 import base64
 import io
+import ipaddress
+import socket
+from urllib.parse import urlparse
 
 import structlog
 from google import genai
@@ -9,6 +12,25 @@ from app.cache.store import CacheStore
 from app.config import settings
 
 logger = structlog.get_logger()
+
+
+def _validate_thumbnail_url(url: str) -> None:
+    """Block SSRF: reject private/link-local IPs and validate after DNS resolution."""
+    parsed = urlparse(url)
+    hostname = parsed.hostname
+    if not hostname:
+        raise ValueError("Invalid URL: no hostname")
+
+    # Resolve DNS and check all resulting IPs
+    try:
+        addrinfos = socket.getaddrinfo(hostname, None)
+    except socket.gaierror as e:
+        raise ValueError(f"DNS resolution failed for {hostname}") from e
+
+    for family, _, _, _, sockaddr in addrinfos:
+        ip = ipaddress.ip_address(sockaddr[0])
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+            raise ValueError(f"URL resolves to blocked IP: {ip}")
 
 
 def _resize_for_gemini(image_bytes: bytes, max_size: int) -> bytes:
@@ -57,6 +79,7 @@ async def describe_image(
         image_bytes = base64.b64decode(b64_data)
     elif thumbnail.startswith("http"):
         # URL인 경우 다운로드 (최대 5MB)
+        _validate_thumbnail_url(thumbnail)
         import httpx
 
         max_download = 5 * 1024 * 1024
