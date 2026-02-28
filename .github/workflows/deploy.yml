@@ -32,7 +32,7 @@ jobs:
           region: asia-northeast1
           source: .
           env_vars: |
-            CORS_ORIGINS=https://cognito.conaonda.com,http://localhost:5173
+            CORS_ORIGINS=https://cognito.conaonda.com,https://conaonda.github.io,http://localhost:5173
             LOG_LEVEL=INFO
             CACHE_DB_PATH=/tmp/cache/cache.db
           secrets: |
