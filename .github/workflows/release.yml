@@ -1,0 +1,104 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - 'tests/**'
+      - '.github/**'
+      - '.gitignore'
+      - '.env.example'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'Release v')"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine bump type from PR labels
+        id: bump
+        run: |
+          PR_NUM=$(git log -1 --pretty=%s | grep -oP '#\K\d+' || echo "")
+          BUMP="patch"
+          if [ -n "$PR_NUM" ]; then
+            LABELS=$(gh pr view "$PR_NUM" --json labels -q '.labels[].name' 2>/dev/null || echo "")
+            if echo "$LABELS" | grep -q "skip-release"; then
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            if echo "$LABELS" | grep -q "major"; then BUMP="major"
+            elif echo "$LABELS" | grep -q "minor"; then BUMP="minor"
+            fi
+          fi
+          echo "type=$BUMP" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump version in pyproject.toml
+        if: steps.bump.outputs.skip != 'true'
+        id: version
+        run: |
+          CURRENT=$(grep -oP 'version = "\K[^"]+' pyproject.toml)
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          case "${{ steps.bump.outputs.type }}" in
+            major) MAJOR=$((MAJOR+1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR+1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH+1)) ;;
+          esac
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          sed -i "s/version = \"${CURRENT}\"/version = \"${NEW_VERSION}\"/" pyproject.toml
+          echo "version=v${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "version_bare=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Update CHANGELOG
+        if: steps.bump.outputs.skip != 'true'
+        run: |
+          VERSION="${{ steps.version.outputs.version_bare }}"
+          DATE=$(date +%Y-%m-%d)
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$LAST_TAG" ]; then
+            CHANGES=$(git log "${LAST_TAG}..HEAD~1" --pretty=format:"- %s" --no-merges)
+          else
+            CHANGES="- Initial release"
+          fi
+          ENTRY="\n## [${VERSION}] - ${DATE}\n\n### Changed\n\n${CHANGES}\n"
+          sed -i "/^## \[/i\\${ENTRY}" CHANGELOG.md
+
+      - name: Commit, tag, and push
+        if: steps.bump.outputs.skip != 'true'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          git add pyproject.toml CHANGELOG.md
+          git commit -m "Release ${VERSION}"
+          git tag "${VERSION}"
+          git push origin main --tags
+
+      - name: Create GitHub Release
+        if: steps.bump.outputs.skip != 'true'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          LAST_TAG=$(git describe --tags --abbrev=0 "${VERSION}^" 2>/dev/null || echo "")
+          if [ -n "$LAST_TAG" ]; then
+            NOTES=$(git log "${LAST_TAG}..${VERSION}~1" --pretty=format:"- %s" --no-merges)
+          else
+            NOTES="Initial release"
+          fi
+          gh release create "${VERSION}" --title "${VERSION}" --notes "${NOTES}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
