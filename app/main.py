@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="COGnito Image Descriptor",
-    version="0.1.0",
+    version="0.2.0",
     lifespan=lifespan,
 )
 app.state.limiter = limiter

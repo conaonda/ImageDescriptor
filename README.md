@@ -27,6 +27,7 @@ uv run uvicorn app.main:app --reload
 | `CORS_ORIGINS` | - | `http://localhost:5173,http://localhost:3000` | CORS 허용 오리진 (쉼표 구분) |
 | `CACHE_DB_PATH` | - | `./cache.db` | 캐시 DB 경로 |
 | `LOG_LEVEL` | - | `INFO` | 로그 레벨 |
+| `THUMBNAIL_MAX_PIXELS` | - | `768` | Gemini 전송 전 이미지 리사이즈 최대 픽셀 |
 
 ## 인증
 
@@ -47,7 +48,7 @@ curl http://localhost:8000/api/health
 ```
 
 ```json
-{"status": "ok", "version": "0.1.0"}
+{"status": "ok", "version": "0.2.0"}
 ```
 
 ### `POST /api/describe`
