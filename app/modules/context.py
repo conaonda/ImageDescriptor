@@ -13,7 +13,7 @@ async def research_context(
     cache: CacheStore,
 ) -> Context:
     # 캐시 키: 지역명 + 월 단위
-    month = captured_at[:7] if len(captured_at) >= 7 else captured_at
+    month = captured_at[:7] if captured_at and len(captured_at) >= 7 else (captured_at or "unknown")
     cache_key = f"context:{place_name}:{month}"
 
     cached = await cache.get(cache_key)
