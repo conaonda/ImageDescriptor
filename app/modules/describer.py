@@ -1,12 +1,24 @@
 import base64
+import io
 
 import structlog
 from google import genai
+from PIL import Image
 
 from app.cache.store import CacheStore
 from app.config import settings
 
 logger = structlog.get_logger()
+
+
+def _resize_for_gemini(image_bytes: bytes, max_size: int) -> bytes:
+    """Resize image to max_size px (longest edge) to reduce Gemini input tokens."""
+    img = Image.open(io.BytesIO(image_bytes))
+    if max(img.size) > max_size:
+        img.thumbnail((max_size, max_size), Image.LANCZOS)
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=85)
+    return buf.getvalue()
 
 
 def _make_prompt(place_name: str, captured_at: str, land_cover_summary: str) -> str:
@@ -47,35 +59,39 @@ async def describe_image(
         # URL인 경우 다운로드 (최대 5MB)
         import httpx
 
-        max_size = 5 * 1024 * 1024
-        async with httpx.AsyncClient() as client:
-            async with client.stream("GET", thumbnail, timeout=10.0) as resp:
+        max_download = 5 * 1024 * 1024
+        async with httpx.AsyncClient() as http_client:
+            async with http_client.stream("GET", thumbnail, timeout=10.0) as resp:
                 resp.raise_for_status()
                 content_length = resp.headers.get("content-length")
-                if content_length and int(content_length) > max_size:
+                if content_length and int(content_length) > max_download:
                     raise ValueError(
-                        f"Image too large: {int(content_length)} bytes (max {max_size})"
+                        f"Image too large: {int(content_length)} bytes (max {max_download})"
                     )
                 chunks = []
                 size = 0
                 async for chunk in resp.aiter_bytes():
                     size += len(chunk)
-                    if size > max_size:
-                        raise ValueError(f"Image too large: >{max_size} bytes (max 5MB)")
+                    if size > max_download:
+                        raise ValueError(f"Image too large: >{max_download} bytes (max 5MB)")
                     chunks.append(chunk)
                 image_bytes = b"".join(chunks)
     else:
         image_bytes = base64.b64decode(thumbnail)
 
+    # Gemini 토큰 절감을 위해 이미지 리사이즈
+    image_bytes = _resize_for_gemini(image_bytes, settings.thumbnail_max_pixels)
+
     prompt = _make_prompt(place_name, captured_at, land_cover_summary)
 
     client = genai.Client(api_key=settings.google_ai_api_key)
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-2.0-flash",
         contents=[
-            genai.types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
+            genai.types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
             prompt,
         ],
+        config={"max_output_tokens": 300},
     )
 
     description = response.text.strip()

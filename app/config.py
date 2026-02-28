@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
     cache_db_path: str = "./cache.db"
     log_level: str = "INFO"
+    thumbnail_max_pixels: int = 768
 
     @property
     def cors_origins_list(self) -> list[str]:
