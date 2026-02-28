@@ -32,7 +32,7 @@ def verify_api_key(api_key: str = Security(api_key_header)) -> str:
 
 @router.get("/health")
 async def health():
-    return {"status": "ok", "version": "0.1.0"}
+    return {"status": "ok", "version": "0.2.0"}
 
 
 @router.post("/describe", response_model=DescribeResponse)
