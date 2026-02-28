@@ -46,7 +46,7 @@ def _resize_for_gemini(image_bytes: bytes, max_size: int) -> bytes:
 def _make_prompt(place_name: str, captured_at: str, land_cover_summary: str) -> str:
     return f"""이 위성영상을 분석해주세요.
 위치: {place_name}
-촬영일자: {captured_at}
+촬영일자: {captured_at or "정보 없음"}
 피복분류: {land_cover_summary}
 
 다음을 포함하여 2-3문장으로 설명해주세요:

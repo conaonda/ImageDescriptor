@@ -9,7 +9,7 @@ class DescribeRequest(BaseModel):
     bbox: list[float] | None = Field(
         None, description="[west, south, east, north]", min_length=4, max_length=4
     )
-    captured_at: str = Field(description="Capture date in ISO 8601 format")
+    captured_at: str | None = Field(None, description="Capture date in ISO 8601 format")
     cog_image_id: str | None = Field(None, description="Optional cog_images UUID for DB linking")
 
 
