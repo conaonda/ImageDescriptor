@@ -1,7 +1,5 @@
-from fastapi import APIRouter, Depends, Request, Security
-from fastapi.security import APIKeyHeader
+from fastapi import APIRouter, Depends, Request
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 from app.api.schemas import (
     Context,
@@ -10,29 +8,19 @@ from app.api.schemas import (
     LandCover,
     Location,
 )
-from app.config import settings
+from app.auth import authenticate
 from app.db import supabase as db
 from app.services.composer import compose_description
 from app.utils.errors import DescriptorError
+from app.utils.rate_limit import get_real_ip
 
 router = APIRouter()
-api_key_header = APIKeyHeader(name="X-API-Key")
-limiter = Limiter(key_func=get_remote_address)
-
-
-def verify_api_key(api_key: str = Security(api_key_header)) -> str:
-    if api_key != settings.api_key:
-        raise DescriptorError(
-            status_code=401,
-            code="INVALID_API_KEY",
-            message="Invalid API key",
-        )
-    return api_key
+limiter = Limiter(key_func=get_real_ip)
 
 
 @router.get("/health")
 async def health():
-    return {"status": "ok", "version": "0.2.0"}
+    return {"status": "ok", "version": "0.3.0"}
 
 
 @router.post("/describe", response_model=DescribeResponse)
@@ -40,7 +28,7 @@ async def health():
 async def describe(
     body: DescribeRequest,
     request: Request,
-    _api_key: str = Depends(verify_api_key),
+    _auth: dict = Depends(authenticate),
 ):
     lon, lat = body.coordinates
     if not (-180 <= lon <= 180) or not (-90 <= lat <= 90):
@@ -82,7 +70,7 @@ async def describe(
 async def geocode_endpoint(
     body: DescribeRequest,
     request: Request,
-    _api_key: str = Depends(verify_api_key),
+    _auth: dict = Depends(authenticate),
 ):
     from app.modules.geocoder import geocode
 
@@ -102,7 +90,7 @@ async def geocode_endpoint(
 async def landcover_endpoint(
     body: DescribeRequest,
     request: Request,
-    _api_key: str = Depends(verify_api_key),
+    _auth: dict = Depends(authenticate),
 ):
     from app.modules.landcover import get_land_cover
 
@@ -122,7 +110,7 @@ async def landcover_endpoint(
 async def context_endpoint(
     body: DescribeRequest,
     request: Request,
-    _api_key: str = Depends(verify_api_key),
+    _auth: dict = Depends(authenticate),
 ):
     from app.modules.context import research_context
 
@@ -139,7 +127,12 @@ async def context_endpoint(
 
 
 @router.get("/descriptions/{cog_image_id}")
-async def get_description(cog_image_id: str):
+@limiter.limit("30/minute")
+async def get_description(
+    cog_image_id: str,
+    request: Request,
+    _auth: dict = Depends(authenticate),
+):
     result = await db.get_description(cog_image_id)
     if result is None:
         raise DescriptorError(

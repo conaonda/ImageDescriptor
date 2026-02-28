@@ -55,3 +55,8 @@ async def test_describe_thumbnail_too_large(client):
         headers={"X-API-Key": "test-key"},
     )
     assert resp.status_code == 422
+
+
+async def test_get_description_no_auth(client):
+    resp = await client.get("/api/descriptions/some-id")
+    assert resp.status_code == 401

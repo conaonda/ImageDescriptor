@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.cache.store import CacheStore
-from app.modules.describer import _make_prompt, describe_image
+from app.modules.describer import _make_prompt, _validate_thumbnail_url, describe_image
 
 
 def test_make_prompt():
@@ -23,8 +23,9 @@ async def cache(tmp_path):
     await store.close()
 
 
+@patch("app.modules.describer._resize_for_gemini", return_value=b"resized")
 @patch("app.modules.describer.genai")
-async def test_describe_image(mock_genai, cache):
+async def test_describe_image(mock_genai, _mock_resize, cache):
     mock_response = MagicMock()
     mock_response.text = "  서울 도심의 위성영상입니다.  "
 
@@ -50,3 +51,23 @@ async def test_describe_image_cache_hit(mock_genai, cache):
 
     assert result == "cached description"
     mock_genai.Client.assert_not_called()
+
+
+@patch("app.modules.describer.socket.getaddrinfo")
+def test_validate_thumbnail_url_blocks_metadata_ip(mock_dns):
+    mock_dns.return_value = [(2, 1, 6, "", ("169.254.169.254", 0))]
+    with pytest.raises(ValueError, match="blocked IP"):
+        _validate_thumbnail_url("http://metadata.google.internal/")
+
+
+@patch("app.modules.describer.socket.getaddrinfo")
+def test_validate_thumbnail_url_blocks_private_ip(mock_dns):
+    mock_dns.return_value = [(2, 1, 6, "", ("192.168.1.1", 0))]
+    with pytest.raises(ValueError, match="blocked IP"):
+        _validate_thumbnail_url("http://internal-server.local/image.png")
+
+
+@patch("app.modules.describer.socket.getaddrinfo")
+def test_validate_thumbnail_url_allows_public_ip(mock_dns):
+    mock_dns.return_value = [(2, 1, 6, "", ("142.250.196.110", 0))]
+    _validate_thumbnail_url("https://example.com/image.png")
