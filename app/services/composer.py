@@ -39,6 +39,7 @@ async def compose_description(request: DescribeRequest, cache: CacheStore) -> De
             lc_summary,
             cache,
             request.cog_image_id,
+            request.bbox,
             warnings,
         )
     )
@@ -88,7 +89,7 @@ async def _safe_landcover(lon, lat, cache, warnings):
 
 
 async def _safe_describe(
-    thumbnail, place_name, captured_at, lc_summary, cache, cog_image_id, warnings
+    thumbnail, place_name, captured_at, lc_summary, cache, cog_image_id, bbox, warnings
 ):
     cb = _breakers["describer"]
     if cb.is_open:
@@ -96,7 +97,7 @@ async def _safe_describe(
         return None
     try:
         result = await describer.describe_image(
-            thumbnail, place_name, captured_at, lc_summary, cache, cog_image_id
+            thumbnail, place_name, captured_at, lc_summary, cache, cog_image_id, bbox
         )
         cb.record_success()
         return result

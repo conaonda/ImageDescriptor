@@ -45,13 +45,35 @@ def _resize_for_gemini(image_bytes: bytes, max_size: int) -> bytes:
     return buf.getvalue()
 
 
-def _make_prompt(place_name: str, captured_at: str, land_cover_summary: str) -> str:
+def _bbox_to_km(bbox: list[float]) -> tuple[float, float]:
+    """Calculate bbox dimensions in km. bbox = [west, south, east, north]."""
+    import math
+
+    west, south, east, north = bbox
+    mid_lat = math.radians((south + north) / 2)
+    width_km = abs(east - west) * 111.32 * math.cos(mid_lat)
+    height_km = abs(north - south) * 111.32
+    return round(width_km, 1), round(height_km, 1)
+
+
+def _make_prompt(
+    place_name: str,
+    captured_at: str,
+    land_cover_summary: str,
+    bbox: list[float] | None = None,
+) -> str:
     from datetime import date
 
     today = date.today().isoformat()
+
+    coverage = ""
+    if bbox:
+        w_km, h_km = _bbox_to_km(bbox)
+        coverage = f"\n영상 범위: 약 {w_km}km × {h_km}km"
+
     return f"""이 위성영상을 분석해주세요.
 오늘 날짜: {today}
-위치: {place_name}
+위치(중심점): {place_name}{coverage}
 촬영일자: {captured_at or "정보 없음"}
 피복분류: {land_cover_summary}
 
@@ -60,6 +82,7 @@ def _make_prompt(place_name: str, captured_at: str, land_cover_summary: str) -> 
 2. 영상의 특이사항이나 주목할 점
 3. 이 영상이 흥미로운 이유
 
+영상 전체 범위를 고려하여 설명해주세요. 중심 지점뿐 아니라 영상에 보이는 전체 지역을 아우르는 관점으로 작성해주세요.
 촬영일자는 과거 또는 현재의 실제 날짜입니다. 미래 시점으로 해석하지 마세요.
 한국어로 작성해주세요."""
 
@@ -71,6 +94,7 @@ async def describe_image(
     land_cover_summary: str,
     cache: CacheStore,
     cog_image_id: str | None = None,
+    bbox: list[float] | None = None,
 ) -> str:
     if cog_image_id:
         cache_key = f"describe:{cog_image_id}"
@@ -112,7 +136,7 @@ async def describe_image(
     # Gemini 토큰 절감을 위해 이미지 리사이즈
     image_bytes = _resize_for_gemini(image_bytes, settings.thumbnail_max_pixels)
 
-    prompt = _make_prompt(place_name, captured_at, land_cover_summary)
+    prompt = _make_prompt(place_name, captured_at, land_cover_summary, bbox)
 
     client = genai.Client(api_key=settings.google_ai_api_key)
     response = client.models.generate_content(

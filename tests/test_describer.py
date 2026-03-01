@@ -22,6 +22,13 @@ def test_make_prompt():
     assert "한국어" in prompt
 
 
+def test_make_prompt_with_bbox():
+    bbox = [126.0, 37.0, 127.0, 38.0]
+    prompt = _make_prompt("서울", "2025-06-15", "주거지역 50%", bbox=bbox)
+    assert "km" in prompt
+    assert "영상 범위" in prompt
+
+
 @pytest.fixture
 async def cache(tmp_path):
     store = CacheStore(str(tmp_path / "test.db"))
