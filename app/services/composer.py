@@ -43,7 +43,11 @@ async def compose_description(request: DescribeRequest, cache: CacheStore) -> De
             warnings,
         )
     )
-    ctx_task = asyncio.create_task(_safe_context(place_name, request.captured_at, cache, warnings))
+    region = location.region if location else ""
+    city = location.city if location else None
+    ctx_task = asyncio.create_task(
+        _safe_context(place_name, request.captured_at, cache, region, city, warnings)
+    )
     description, context_result = await asyncio.gather(desc_task, ctx_task)
 
     return DescribeResponse(
@@ -108,13 +112,15 @@ async def _safe_describe(
         return None
 
 
-async def _safe_context(place_name, captured_at, cache, warnings):
+async def _safe_context(place_name, captured_at, cache, region, city, warnings):
     cb = _breakers["context"]
     if cb.is_open:
         warnings.append(Warning(module="context", error="Circuit breaker open"))
         return None
     try:
-        result = await context.research_context(place_name, captured_at, cache)
+        result = await context.research_context(
+            place_name, captured_at, cache, region=region, city=city
+        )
         cb.record_success()
         return result
     except Exception as e:

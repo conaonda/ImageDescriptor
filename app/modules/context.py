@@ -11,10 +11,14 @@ async def research_context(
     place_name: str,
     captured_at: str,
     cache: CacheStore,
+    region: str = "",
+    city: str | None = None,
 ) -> Context:
     # 캐시 키: 지역명 + 월 단위
     month = captured_at[:7] if captured_at and len(captured_at) >= 7 else (captured_at or "unknown")
-    cache_key = f"context:{place_name}:{month}"
+    # 검색에는 region+city 조합 사용 (place_name보다 검색 적합)
+    search_name = " ".join(filter(None, [region, city])) or place_name
+    cache_key = f"context:{search_name}:{month}"
 
     cached = await cache.get(cache_key)
     if cached:
@@ -22,7 +26,7 @@ async def research_context(
         return Context(**cached)
 
     # DuckDuckGo Instant Answer API (MVP)
-    query = f"{place_name} {month}"
+    query = f"{search_name} {month}"
     events: list[Event] = []
 
     try:
@@ -52,9 +56,9 @@ async def research_context(
         logger.warning("context research failed", error=str(e))
 
     summary = (
-        f"{place_name} {month} 관련 정보 {len(events)}건 발견."
+        f"{search_name} {month} 관련 정보 {len(events)}건 발견."
         if events
-        else f"{place_name} {month}에 대한 관련 정보를 찾지 못했습니다."
+        else f"{search_name} {month}에 대한 관련 정보를 찾지 못했습니다."
     )
 
     result = Context(events=events, summary=summary)
