@@ -147,7 +147,7 @@ async def describe_image(
             prompt,
         ],
         config={
-            "max_output_tokens": 300,
+            "max_output_tokens": 600,
             "thinking_config": {"thinking_budget": 0},
         },
     )
