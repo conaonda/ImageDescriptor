@@ -1,10 +1,17 @@
 import base64
+import io
 from unittest.mock import MagicMock, patch
 
 import pytest
+from PIL import Image
 
 from app.cache.store import CacheStore
-from app.modules.describer import _make_prompt, _validate_thumbnail_url, describe_image
+from app.modules.describer import (
+    _make_prompt,
+    _resize_for_gemini,
+    _validate_thumbnail_url,
+    describe_image,
+)
 
 
 def test_make_prompt():
@@ -71,3 +78,14 @@ def test_validate_thumbnail_url_blocks_private_ip(mock_dns):
 def test_validate_thumbnail_url_allows_public_ip(mock_dns):
     mock_dns.return_value = [(2, 1, 6, "", ("142.250.196.110", 0))]
     _validate_thumbnail_url("https://example.com/image.png")
+
+
+def test_resize_for_gemini_rgba_to_rgb():
+    """RGBA PNG should be converted to RGB JPEG without error."""
+    img = Image.new("RGBA", (100, 100), (255, 0, 0, 128))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    result = _resize_for_gemini(buf.getvalue(), 200)
+    output = Image.open(io.BytesIO(result))
+    assert output.mode == "RGB"
+    assert output.format == "JPEG"
