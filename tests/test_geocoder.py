@@ -20,7 +20,7 @@ async def cache(tmp_path):
 
 async def test_geocode_seoul(cache, httpx_mock):
     httpx_mock.add_response(
-        url="https://nominatim.openstreetmap.org/reverse?lat=37.566&lon=126.978&format=jsonv2&accept-language=ko&zoom=14",
+        url="https://nominatim.openstreetmap.org/reverse?lat=37.566&lon=126.978&format=jsonv2&accept-language=ko&zoom=10",
         json={
             "display_name": "중구, 서울특별시, 대한민국",
             "address": {
