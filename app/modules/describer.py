@@ -116,7 +116,10 @@ async def describe_image(
             genai.types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
             prompt,
         ],
-        config={"max_output_tokens": 300},
+        config={
+            "max_output_tokens": 300,
+            "thinking_config": {"thinking_budget": 0},
+        },
     )
 
     description = response.text.strip()
