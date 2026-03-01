@@ -38,7 +38,7 @@ def _resize_for_gemini(image_bytes: bytes, max_size: int) -> bytes:
     img = Image.open(io.BytesIO(image_bytes))
     if max(img.size) > max_size:
         img.thumbnail((max_size, max_size), Image.LANCZOS)
-    if img.mode == "RGBA":
+    if img.mode != "RGB":
         img = img.convert("RGB")
     buf = io.BytesIO()
     img.save(buf, format="JPEG", quality=85)

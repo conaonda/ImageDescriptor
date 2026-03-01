@@ -80,9 +80,10 @@ def test_validate_thumbnail_url_allows_public_ip(mock_dns):
     _validate_thumbnail_url("https://example.com/image.png")
 
 
-def test_resize_for_gemini_rgba_to_rgb():
-    """RGBA PNG should be converted to RGB JPEG without error."""
-    img = Image.new("RGBA", (100, 100), (255, 0, 0, 128))
+@pytest.mark.parametrize("mode", ["RGBA", "P", "LA"])
+def test_resize_for_gemini_converts_non_rgb_to_rgb(mode):
+    """Non-RGB images should be converted to RGB JPEG without error."""
+    img = Image.new(mode, (100, 100))
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     result = _resize_for_gemini(buf.getvalue(), 200)
