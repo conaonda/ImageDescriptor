@@ -46,7 +46,11 @@ def _resize_for_gemini(image_bytes: bytes, max_size: int) -> bytes:
 
 
 def _make_prompt(place_name: str, captured_at: str, land_cover_summary: str) -> str:
+    from datetime import date
+
+    today = date.today().isoformat()
     return f"""이 위성영상을 분석해주세요.
+오늘 날짜: {today}
 위치: {place_name}
 촬영일자: {captured_at or "정보 없음"}
 피복분류: {land_cover_summary}
@@ -56,6 +60,7 @@ def _make_prompt(place_name: str, captured_at: str, land_cover_summary: str) -> 
 2. 영상의 특이사항이나 주목할 점
 3. 이 영상이 흥미로운 이유
 
+촬영일자는 과거 또는 현재의 실제 날짜입니다. 미래 시점으로 해석하지 마세요.
 한국어로 작성해주세요."""
 
 
