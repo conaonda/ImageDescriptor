@@ -1,4 +1,5 @@
 import asyncio
+import re
 
 import httpx
 import structlog
@@ -44,7 +45,7 @@ async def geocode(lon: float, lat: float, cache: CacheStore) -> Location:
                     "lon": lon,
                     "format": "jsonv2",
                     "accept-language": "ko",
-                    "zoom": 14,
+                    "zoom": 8,
                 },
                 headers={"User-Agent": "COGnito/1.2 (image-descriptor)"},
                 timeout=10.0,
@@ -58,9 +59,10 @@ async def geocode(lon: float, lat: float, cache: CacheStore) -> Location:
     location = Location(
         country=address.get("country", data.get("display_name", "Unknown")),
         country_code=address.get("country_code", ""),
-        region=address.get("state", address.get("province", "")),
+        region=address.get("state", address.get("province", ""))
+        or address.get("city", ""),
         city=address.get("city", address.get("town", address.get("village"))),
-        place_name=data.get("display_name", ""),
+        place_name=re.sub(r",?\s*\d{5}\s*", "", data.get("display_name", "")).strip(", "),
         lat=lat,
         lon=lon,
     )

@@ -36,6 +36,7 @@ select = ["E", "F", "I", "N", "W", "UP"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = ["e2e: end-to-end test requiring real API keys (.env)"]
 
 [dependency-groups]
 dev = [

@@ -58,10 +58,10 @@ async def get_land_cover(lon: float, lat: float, cache: CacheStore) -> LandCover
     query = f"""
 [out:json][timeout:10];
 (
-  way["landuse"](around:500,{lat},{lon});
-  way["natural"](around:500,{lat},{lon});
-  way["leisure"](around:500,{lat},{lon});
-  relation["landuse"](around:500,{lat},{lon});
+  way["landuse"](around:2000,{lat},{lon});
+  way["natural"](around:2000,{lat},{lon});
+  way["leisure"](around:2000,{lat},{lon});
+  relation["landuse"](around:2000,{lat},{lon});
 );
 out tags;
 """
