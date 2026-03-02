@@ -1,41 +1,32 @@
 """E2E 통합 테스트 — 실제 외부 API 호출.
 
-실행: uv run pytest -m e2e -v
+실행: uv run pytest -m e2e -v -s
 필수: .env 파일에 실제 API 키 설정
 """
 
-import base64
-import io
+import json
 
 import pytest
-from PIL import Image
-
-
-def _make_test_thumbnail() -> str:
-    """테스트용 작은 RGB 이미지를 base64 data URL로 생성."""
-    img = Image.new("RGB", (64, 64), color=(100, 150, 50))
-    buf = io.BytesIO()
-    img.save(buf, format="JPEG")
-    b64 = base64.b64encode(buf.getvalue()).decode()
-    return f"data:image/jpeg;base64,{b64}"
 
 
 @pytest.mark.e2e
 async def test_describe_full(authenticated_client):
-    """기존 curl 테스트를 pytest로 재현."""
+    """실제 Supabase 썸네일 URL로 /api/describe E2E 테스트."""
     resp = await authenticated_client.post(
         "/api/describe",
         json={
-            "thumbnail": _make_test_thumbnail(),
-            "coordinates": [127.20458984375, 37.40507375344987],
-            "captured_at": "2026-02-25T05:12:07Z",
+            "thumbnail": (
+                "https://nfbvxuwimdjgnegkvzwo.supabase.co/storage/v1/object/public"
+                "/cog-thumbnails/f1fabf89-c07d-4bd6-9e3d-883187b24512.png"
+            ),
+            "coordinates": [127.35975356339686, 37.44137290680084],
+            "captured_at": "2026-02-25T00:00:00.000Z",
             "bbox": [
-                126.56249999999999,
-                36.80928470205937,
-                127.84667968750001,
-                37.99616267972814,
+                126.75422786915422,
+                36.93664192316741,
+                127.97343994103075,
+                37.94311117380608,
             ],
-            "cog_image_id": None,
         },
         timeout=60.0,
     )
@@ -63,6 +54,10 @@ async def test_describe_full(authenticated_client):
 
     # warnings
     assert len(data["warnings"]) == 0, f"warnings 발생: {data['warnings']}"
+
+    # 전체 응답 출력
+    print("\n=== /api/describe 응답 ===")
+    print(json.dumps(data, ensure_ascii=False, indent=2))
 
 
 @pytest.mark.e2e
