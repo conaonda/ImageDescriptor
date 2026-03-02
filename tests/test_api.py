@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -39,7 +41,7 @@ async def test_describe_invalid_coordinates(client):
             "coordinates": [999, 999],
             "captured_at": "2025-06-15T00:00:00Z",
         },
-        headers={"X-API-Key": "test-key"},
+        headers={"X-API-Key": os.environ["API_KEY"]},
     )
     assert resp.status_code == 400
 
@@ -52,7 +54,7 @@ async def test_describe_thumbnail_too_large(client):
             "coordinates": [126.978, 37.566],
             "captured_at": "2025-06-15T00:00:00Z",
         },
-        headers={"X-API-Key": "test-key"},
+        headers={"X-API-Key": os.environ["API_KEY"]},
     )
     assert resp.status_code == 422
 
