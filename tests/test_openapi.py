@@ -3,7 +3,7 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.main import app
+from app.main import app, _app_version
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def test_app_title(openapi_schema):
 
 
 def test_app_version(openapi_schema):
-    assert openapi_schema["info"]["version"] == "0.6.0"
+    assert openapi_schema["info"]["version"] == _app_version
 
 
 def test_app_description(openapi_schema):
