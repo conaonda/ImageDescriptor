@@ -4,6 +4,8 @@ from collections import defaultdict
 
 import aiosqlite
 
+from app.utils.metrics import cache_hits, cache_misses
+
 
 class CacheStore:
     def __init__(self, db_path: str):
@@ -34,14 +36,17 @@ class CacheStore:
             row = await cursor.fetchone()
         if row is None:
             self._misses[module] += 1
+            cache_misses.labels(module=module).inc()
             return None
         value, expires_at = row
         if expires_at and time.time() > expires_at:
             await self._db.execute("DELETE FROM cache WHERE key = ?", (key,))
             await self._db.commit()
             self._misses[module] += 1
+            cache_misses.labels(module=module).inc()
             return None
         self._hits[module] += 1
+        cache_hits.labels(module=module).inc()
         return json.loads(value)
 
     async def set(self, key: str, value: dict, ttl_days: int | None = None):

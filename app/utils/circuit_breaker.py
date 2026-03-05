@@ -2,6 +2,8 @@ import time
 
 import structlog
 
+from app.utils.metrics import circuit_breaker_state
+
 logger = structlog.get_logger()
 
 
@@ -28,11 +30,13 @@ class CircuitBreaker:
     def record_success(self):
         self._failure_count = 0
         self._open_until = 0.0
+        circuit_breaker_state.labels(name=self.name).set(0)
 
     def record_failure(self):
         self._failure_count += 1
         if self._failure_count >= self.failure_threshold:
             self._open_until = time.time() + self.cooldown_sec
+            circuit_breaker_state.labels(name=self.name).set(1)
             logger.warning(
                 "circuit breaker opened",
                 name=self.name,

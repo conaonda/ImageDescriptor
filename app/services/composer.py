@@ -8,6 +8,7 @@ from app.api.schemas import DescribeRequest, DescribeResponse, Warning
 from app.cache.store import CacheStore
 from app.modules import context, describer, geocoder, landcover, mission
 from app.utils.circuit_breaker import CircuitBreaker
+from app.utils.metrics import external_api_duration, external_api_requests
 
 logger = structlog.get_logger()
 
@@ -26,12 +27,17 @@ async def _safe_call(name: str, coro: Awaitable, warnings: list[Warning]):
     if cb.is_open:
         warnings.append(Warning(module=name, error="Circuit breaker open"))
         return None
+    t0 = time.monotonic()
     try:
         result = await coro
         cb.record_success()
+        external_api_requests.labels(service=name, status="success").inc()
+        external_api_duration.labels(service=name).observe(time.monotonic() - t0)
         return result
     except Exception as e:
         cb.record_failure()
+        external_api_requests.labels(service=name, status="error").inc()
+        external_api_duration.labels(service=name).observe(time.monotonic() - t0)
         logger.error(f"{name} failed", error=str(e))
         warnings.append(Warning(module=name, error=str(e)))
         return None
