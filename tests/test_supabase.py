@@ -1,0 +1,131 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
+import app.db.supabase as db_module
+
+
+@pytest.fixture(autouse=True)
+def reset_client():
+    db_module._client = None
+    yield
+    db_module._client = None
+
+
+class TestGetClient:
+    async def test_creates_client_on_first_call(self):
+        mock_client = AsyncMock()
+        with patch.object(db_module, "acreate_client", new_callable=AsyncMock, return_value=mock_client):
+            client = await db_module.get_client()
+            assert client is mock_client
+
+    async def test_reuses_existing_client(self):
+        mock_client = AsyncMock()
+        with patch.object(db_module, "acreate_client", new_callable=AsyncMock, return_value=mock_client) as mock_create:
+            await db_module.get_client()
+            await db_module.get_client()
+            mock_create.assert_awaited_once()
+
+    async def test_propagates_init_error(self):
+        with patch.object(db_module, "acreate_client", new_callable=AsyncMock, side_effect=Exception("connection refused")):
+            with pytest.raises(Exception, match="connection refused"):
+                await db_module.get_client()
+
+
+class TestSaveDescription:
+    @pytest.fixture
+    def mock_client(self):
+        client = MagicMock()
+        result = MagicMock()
+        result.data = [{"id": 1, "cog_image_id": "test-img"}]
+        client.table.return_value.upsert.return_value.execute = AsyncMock(return_value=result)
+        return client
+
+    async def test_save_success(self, mock_client):
+        with patch.object(db_module, "get_client", new_callable=AsyncMock, return_value=mock_client):
+            result = await db_module.save_description(
+                cog_image_id="test-img",
+                coordinates=[127.0, 37.0],
+                captured_at="2024-01-01",
+                location={"country": "KR", "region": "Seoul", "city": "Gangnam", "country_code": "KR", "place_name": "Seoul"},
+                land_cover={"classes": [{"name": "urban"}], "summary": "urban area"},
+                description="test description",
+                context={"events": [], "summary": "no events"},
+            )
+            assert result == {"id": 1, "cog_image_id": "test-img"}
+
+    async def test_save_without_optional_fields(self, mock_client):
+        with patch.object(db_module, "get_client", new_callable=AsyncMock, return_value=mock_client):
+            result = await db_module.save_description(
+                cog_image_id="test-img",
+                coordinates=[127.0, 37.0],
+                captured_at=None,
+                location=None,
+                land_cover=None,
+                description=None,
+                context=None,
+            )
+            assert result is not None
+
+    async def test_save_returns_none_on_error(self):
+        mock_client = MagicMock()
+        mock_client.table.return_value.upsert.return_value.execute = AsyncMock(
+            side_effect=Exception("db error")
+        )
+        with patch.object(db_module, "get_client", new_callable=AsyncMock, return_value=mock_client):
+            result = await db_module.save_description(
+                cog_image_id="test-img",
+                coordinates=[127.0, 37.0],
+                captured_at=None,
+                location=None,
+                land_cover=None,
+                description="test",
+                context=None,
+            )
+            assert result is None
+
+    async def test_save_empty_result(self):
+        mock_client = MagicMock()
+        result = MagicMock()
+        result.data = []
+        mock_client.table.return_value.upsert.return_value.execute = AsyncMock(return_value=result)
+        with patch.object(db_module, "get_client", new_callable=AsyncMock, return_value=mock_client):
+            result = await db_module.save_description(
+                cog_image_id="test-img",
+                coordinates=[127.0, 37.0],
+                captured_at=None,
+                location=None,
+                land_cover=None,
+                description="test",
+                context=None,
+            )
+            assert result is None
+
+
+class TestGetDescription:
+    async def test_get_found(self):
+        mock_client = MagicMock()
+        result = MagicMock()
+        result.data = [{"cog_image_id": "img-1", "description": "test"}]
+        mock_client.table.return_value.select.return_value.eq.return_value.limit.return_value.execute = AsyncMock(return_value=result)
+        with patch.object(db_module, "get_client", new_callable=AsyncMock, return_value=mock_client):
+            row = await db_module.get_description("img-1")
+            assert row == {"cog_image_id": "img-1", "description": "test"}
+
+    async def test_get_not_found(self):
+        mock_client = MagicMock()
+        result = MagicMock()
+        result.data = []
+        mock_client.table.return_value.select.return_value.eq.return_value.limit.return_value.execute = AsyncMock(return_value=result)
+        with patch.object(db_module, "get_client", new_callable=AsyncMock, return_value=mock_client):
+            row = await db_module.get_description("nonexistent")
+            assert row is None
+
+    async def test_get_returns_none_on_error(self):
+        mock_client = MagicMock()
+        mock_client.table.return_value.select.return_value.eq.return_value.limit.return_value.execute = AsyncMock(
+            side_effect=Exception("network error")
+        )
+        with patch.object(db_module, "get_client", new_callable=AsyncMock, return_value=mock_client):
+            row = await db_module.get_description("img-1")
+            assert row is None
