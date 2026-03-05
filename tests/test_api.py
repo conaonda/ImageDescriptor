@@ -43,7 +43,7 @@ async def test_describe_invalid_coordinates(client):
         },
         headers={"X-API-Key": os.environ["API_KEY"]},
     )
-    assert resp.status_code == 400
+    assert resp.status_code == 422
 
 
 async def test_describe_thumbnail_too_large(client):

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class DescribeRequest(BaseModel):
@@ -6,6 +6,14 @@ class DescribeRequest(BaseModel):
     coordinates: list[float] = Field(
         description="[longitude, latitude]", min_length=2, max_length=2
     )
+
+    @field_validator("coordinates")
+    @classmethod
+    def validate_coordinates(cls, v: list[float]) -> list[float]:
+        lon, lat = v
+        if not (-180 <= lon <= 180) or not (-90 <= lat <= 90):
+            raise ValueError("Invalid coordinates range")
+        return v
     bbox: list[float] | None = Field(
         None, description="[west, south, east, north]", min_length=4, max_length=4
     )
