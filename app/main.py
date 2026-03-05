@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from importlib.metadata import PackageNotFoundError, version
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,9 +27,14 @@ async def lifespan(app: FastAPI):
     await app.state.cache.close()
 
 
+try:
+    _app_version = version("cognito-descriptor")
+except PackageNotFoundError:
+    _app_version = "unknown"
+
 app = FastAPI(
     title="COGnito Image Descriptor",
-    version="0.6.0",
+    version=_app_version,
     description=(
         "위성영상 분석 API - 좌표 기반 역지오코딩, 토지피복 분류, "
         "Gemini AI 영상 설명, 맥락 정보를 통합 제공합니다."
