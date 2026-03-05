@@ -1,0 +1,14 @@
+## 완료
+
+**Issue #49** 구현을 완료했습니다.
+
+### 작성된 테스트 파일 (32개 테스트)
+
+| 파일 | 테스트 수 | 커버리지 |
+|------|-----------|----------|
+| `tests/test_rate_limit.py` | 8 | `get_real_ip` IP 추출, 429 응답, 엔드포인트별 독립 제한, health 우회 |
+| `tests/test_logging.py` | 11 | structlog 설정, request_id 생성/패스스루, 보안 헤더 |
+| `tests/test_cache_stats.py` | 13 | CacheStore CRUD/TTL, hit/miss 추적, stats 엔드포인트 |
+
+- 전체 테스트 스위트 85개 모두 통과
+- PR: https://github.com/conaonda/ImageDescriptor/pull/50

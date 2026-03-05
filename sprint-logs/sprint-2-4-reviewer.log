@@ -1,0 +1,15 @@
+## 리뷰 완료
+
+GitHub에서 자신의 PR은 승인 불가(정책)하여 코멘트 형태로 리뷰를 제출했습니다.
+
+### PR #35 - bbox 좌표 범위 검증
+- **결론: LGTM ✅**
+- 구현: Pydantic `field_validator`로 경도/위도 범위 + 순서 검증 완비
+- 테스트: 4가지 실패 케이스 + null 정상 케이스 커버
+- Non-blocking 제안: east > 180 케이스 테스트 누락 (추후 보완 가능)
+
+### PR #36 - /health 동적 버전
+- **결론: LGTM ✅**
+- 구현: 표준 `importlib.metadata` 활용, `PackageNotFoundError` graceful fallback
+- 테스트: 버전 값 하드코딩 없이 필드 존재 여부만 검증 (유지보수성 우수)
+- Non-blocking 제안: 매 요청마다 `version()` 호출 (현재 규모에서는 무시 가능)

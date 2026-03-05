@@ -1,0 +1,17 @@
+## 리뷰 완료
+
+두 PR 모두 리뷰 코멘트를 제출했습니다 (자신의 PR은 승인 불가로 코멘트로 대체).
+
+---
+
+### PR #30 - `_safe_call` 제네릭 래퍼 ✅ 승인
+- `Awaitable` 타입힌트, 인자 순서, 로직 모두 정확
+- 리팩터링으로 81→41줄 의미 있는 감소
+
+### PR #31 - Pydantic 좌표 검증 ✅ 승인 (주의 사항 있음)
+
+**검증 핵심 사항**: `/geocode`, `/landcover`, `/context` 엔드포인트가 모두 `DescribeRequest`를 body 타입으로 사용하므로, `field_validator`가 전체 4개 엔드포인트에 자동 적용됩니다. 검증 로직 누락 없음.
+
+**Breaking Change**: 400 → 422 상태 코드 변경. API 소비자에게 별도 공지 필요.
+
+**Non-blocking 제안**: `validate_coordinates` 메서드 위치가 필드들 사이에 끼어 있는데, Pydantic 관례상 클래스 하단에 두는 것이 가독성에 유리합니다.

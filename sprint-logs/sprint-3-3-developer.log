@@ -1,0 +1,24 @@
+두 이슈 모두 구현 완료했습니다.
+
+## 결과 요약
+
+### #38 - composer 통합 테스트 및 커버리지 개선
+- **PR**: https://github.com/conaonda/ImageDescriptor/pull/40
+- 브랜치: `feature/38-composer-integration-tests`
+- 테스트 8개 추가 (기존 4개 → 12개):
+  - Phase 1 landcover만 실패 시 Phase 2 정상 동작
+  - Phase 1 양쪽 실패 시 fallback 값 전달 검증
+  - 다중 circuit breaker open 시나리오
+  - `captured_at` 없이 요청
+  - `bbox` 없이 요청
+  - 극지방 좌표 (남극 -89.99)
+  - 날짜변경선 좌표 (179.99)
+  - Phase 2 describer 실패 시 context 정상 반환
+
+### #39 - API 응답 캐시 히트율 모니터링 엔드포인트
+- **PR**: https://github.com/conaonda/ImageDescriptor/pull/41
+- 브랜치: `feature/39-cache-stats-endpoint`
+- `CacheStore`에 모듈별 hit/miss in-memory 카운터 추가
+- `GET /api/cache/stats` 엔드포인트 (인증 불필요)
+- 응답 예시: `{entry_count, total_bytes, modules: {geocode: {hits, misses, hit_rate}}}`
+- 테스트 2개 추가

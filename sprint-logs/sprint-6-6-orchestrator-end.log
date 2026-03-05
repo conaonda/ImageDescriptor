@@ -1,0 +1,21 @@
+# Sprint 6 - Orchestrator 마무리
+
+## 완료 이슈
+- #51 OpenAPI/Swagger 문서 자동 생성 → PR #53 머지 완료
+
+## 미완료 이슈
+- #48 retry/circuit breaker 패턴 → PR #52 변경 요청 상태
+  - retry_gemini retryable 조건 누락
+  - _call_gemini 동기 호출 이벤트 루프 블로킹
+  - 다음 스프린트에서 수정 예정
+
+## 잔여 오픈 이슈
+- #48 retry/circuit breaker (PR #52 수정 필요)
+- #27 위성 미션 메타데이터 STAC 연동
+
+## 릴리스
+- v0.6.1 릴리스 생성 완료
+- 포함: OpenAPI 문서 (#53), 테스트 추가 (#50)
+
+## 테스트 현황
+- 전체 112 passed, 3 skipped

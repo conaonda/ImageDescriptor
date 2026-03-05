@@ -22,6 +22,7 @@ def openapi_schema():
 
 # ── 앱 메타데이터 ──────────────────────────────────────────────────────────────
 
+
 def test_app_title(openapi_schema):
     assert openapi_schema["info"]["title"] == "COGnito Image Descriptor"
 
@@ -35,6 +36,7 @@ def test_app_description(openapi_schema):
 
 
 # ── 태그 정의 ──────────────────────────────────────────────────────────────────
+
 
 def test_openapi_tags_defined(openapi_schema):
     tag_names = {t["name"] for t in openapi_schema.get("tags", [])}
@@ -57,6 +59,7 @@ def test_openapi_tag_system_description(openapi_schema):
 
 
 # ── 엔드포인트 태그 ────────────────────────────────────────────────────────────
+
 
 def _get_op(openapi_schema, method: str, path: str) -> dict:
     return openapi_schema["paths"][path][method]
@@ -99,6 +102,7 @@ def test_descriptions_tag(openapi_schema):
 
 # ── 엔드포인트 summary / description ──────────────────────────────────────────
 
+
 def test_health_summary(openapi_schema):
     assert _get_op(openapi_schema, "get", "/api/health")["summary"]
 
@@ -126,6 +130,7 @@ def test_context_summary(openapi_schema):
 
 # ── 오류 응답 문서화 ───────────────────────────────────────────────────────────
 
+
 def test_describe_has_422_response(openapi_schema):
     responses = _get_op(openapi_schema, "post", "/api/describe")["responses"]
     assert "422" in responses
@@ -148,6 +153,7 @@ def test_geocode_has_429_response(openapi_schema):
 
 # ── DescribeRequest 스키마 예시 ────────────────────────────────────────────────
 
+
 def test_describe_request_schema_has_examples(openapi_schema):
     schemas = openapi_schema.get("components", {}).get("schemas", {})
     assert "DescribeRequest" in schemas
@@ -157,6 +163,7 @@ def test_describe_request_schema_has_examples(openapi_schema):
 
 
 # ── OpenAPI JSON 엔드포인트 접근 가능 여부 ────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_openapi_json_endpoint(client):

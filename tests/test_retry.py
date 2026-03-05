@@ -112,9 +112,7 @@ class TestRetryHttp:
             call_count += 1
             if call_count < 2:
                 response = MagicMock(status_code=429)
-                raise httpx.HTTPStatusError(
-                    "rate limited", request=MagicMock(), response=response
-                )
+                raise httpx.HTTPStatusError("rate limited", request=MagicMock(), response=response)
             return "ok"
 
         result = await fetch()

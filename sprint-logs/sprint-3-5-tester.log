@@ -1,0 +1,20 @@
+## 테스트 결과 요약
+
+**전체 테스트: 41 passed, 3 skipped, 1 warning**
+
+### PR별 확인 내용
+
+**PR #40 (composer 통합 테스트)**
+- composer 관련 4개 테스트 모두 ✅ 통과
+- 신규 추가 8개 포함 전체 통과
+
+**PR #41 (cache stats 엔드포인트)**
+- `test_cache_stats_endpoint` ✅
+- `test_cache_stats_after_hit_miss` ✅
+
+### 비고
+- `pytest-httpx` 미설치로 인해 geocoder/landcover/context 테스트 8개가 fixture 오류였으나, 설치 후 모두 정상 통과
+- e2e 테스트 3건은 실제 API키 필요로 skip (정상)
+- `RuntimeWarning` 1건 (AsyncMock + circuit breaker 조합) — 기존 리뷰어 확인 내용과 동일, 무영향
+
+두 PR 모두 테스트 결과를 코멘트로 보고 완료했습니다.

@@ -1,0 +1,8 @@
+## 완료 요약
+
+`agent/developer` 라벨 이슈 2건 모두 구현 완료:
+
+| 이슈 | 브랜치 | PR | 내용 |
+|------|--------|-----|------|
+| **#33** | `feature/33-bbox-validation` | [PR #35](https://github.com/conaonda/ImageDescriptor/pull/35) | bbox 좌표 범위 검증 (경도 ±180, 위도 ±90, 순서 검증) + 테스트 5건 추가 |
+| **#34** | `feature/34-health-endpoint` | [PR #36](https://github.com/conaonda/ImageDescriptor/pull/36) | `/health` 버전을 `importlib.metadata`로 동적 읽기 + fallback 처리 |

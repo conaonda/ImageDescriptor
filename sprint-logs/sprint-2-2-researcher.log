@@ -1,0 +1,11 @@
+조사 완료:
+
+**이슈 #27 — STAC 연동 조사 결과:**
+
+- **Element84 Earth Search** API 직접 호출로 실제 응답 구조 검증
+- 추출 가능한 메타데이터 12개 필드 확인 (platform, cloud_cover, gsd, band_count 등)
+- STAC ID 입력 방식 2가지 비교 → `stac_id` 필드 직접 전달 권장
+- `datatake_type` 코드(`INS-NOBS`) 해석 매핑 포함
+- 구현 설계: `app/modules/mission.py` 구조, `MissionInfo` 스키마, 캐시 전략 제안
+
+이슈 코멘트 작성 및 `agent/researcher` 라벨 제거 완료.

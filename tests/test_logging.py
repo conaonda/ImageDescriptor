@@ -61,9 +61,7 @@ class TestRequestIdMiddleware:
 
     async def test_custom_request_id_passthrough(self, client):
         custom_id = "my-custom-req-id"
-        resp = await client.get(
-            "/api/health", headers={"X-Request-ID": custom_id}
-        )
+        resp = await client.get("/api/health", headers={"X-Request-ID": custom_id})
         assert resp.headers["x-request-id"] == custom_id
 
     async def test_generated_id_is_hex(self, client):

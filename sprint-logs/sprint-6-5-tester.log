@@ -1,0 +1,19 @@
+## 완료 요약
+
+**PR #53 (OpenAPI/Swagger 문서) — 승인된 PR 테스트 완료**
+
+### 작업 내용
+- `tests/test_openapi.py` 신규 생성 (27개 테스트)
+  - 앱 메타데이터 (title, version, description)
+  - 태그 정의 (`analysis`, `data`, `system`)
+  - 7개 엔드포인트 태그/summary/description 검증
+  - 오류 응답 문서화 (422/429/404)
+  - `DescribeRequest` 스키마 예시 데이터
+  - `/openapi.json`, `/docs` 접근성
+
+### 전체 테스트 결과
+- **112 passed, 3 skipped** (기존 85 → +27)
+- PR #53 브랜치에 커밋 및 푸시 완료
+- PR 코멘트로 결과 보고 완료
+
+> **참고**: PR #52 (retry/circuit breaker)는 Reviewer가 변경 요청 상태이므로 테스트 대상에서 제외했습니다.

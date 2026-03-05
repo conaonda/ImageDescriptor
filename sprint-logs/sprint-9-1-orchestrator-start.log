@@ -1,0 +1,26 @@
+Sprint 9 - Orchestrator Start
+Date: 2026-03-05
+Version: 0.7.1 (current)
+
+## Selected Issues (3)
+
+### 1. #61 - fix: mission 모듈 타입 어노테이션 및 빈 instruments 엣지 케이스 수정
+- Priority: HIGH (bug fix)
+- Label: agent/developer, bug
+- Dependencies: None
+
+### 2. #27 - feat: 위성 미션 메타데이터 제공 (STAC 연동)
+- Priority: MEDIUM (core feature)
+- Label: agent/researcher
+- Dependencies: None
+
+### 3. #58 - test: mission 모듈 단위 테스트 및 STAC API 통합 테스트
+- Priority: LOW (test)
+- Label: agent/developer
+- Dependencies: #27
+
+## Execution Order
+#61 (bug fix) -> #27 (research) -> #58 (tests)
+
+## Sprint Goal
+mission 모듈 버그 수정, STAC 연동 기술 조사 완료, 테스트 작성

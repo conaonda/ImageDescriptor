@@ -1,0 +1,19 @@
+## Researcher 에이전트 완료
+
+두 이슈에 대한 기술 조사를 완료했습니다.
+
+### 조사 결과 요약
+
+**#27 — STAC 연동:**
+- Element84 STAC API 실제 호출 확인 (응답 정상, 필요 필드 모두 제공)
+- `stac_id` 선택적 입력 방식 권장 (기존 API 호환성 유지)
+- `httpx`는 이미 의존성 포함 → 추가 라이브러리 불필요
+- 캐시 TTL 90일 (메타데이터 불변)
+
+**#48 — Retry & Circuit Breaker:**
+- 기존 `CircuitBreaker` 클래스가 이미 구현되어 있음
+- `tenacity`가 이미 설치된 환경 → 의존성 추가만 필요
+- 모듈별 재시도 설정 권장 (Nominatim: 3회/60s CB, Gemini: 2회/30s CB)
+- `app/utils/retry.py` 공통 헬퍼 신규 생성 방식 권장
+
+두 이슈 모두 `agent/researcher` 라벨을 제거했습니다.

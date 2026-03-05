@@ -1,0 +1,14 @@
+## 리뷰 완료
+
+### PR #59 - 타이밍 로그 추가 ✅ 승인
+- `time.monotonic()` 사용 적절
+- structlog 컨벤션과 일관된 구조화 필드
+- 최소 변경 원칙 준수
+
+### PR #60 - mission 모듈 🔄 변경 요청
+
+두 가지 이슈를 지적했습니다:
+
+1. **타입 어노테이션 오류**: `get_mission_metadata(stac_id: str)` → `stac_id: str | None`으로 수정 필요. 실제로 `None`이 전달되는데 시그니처가 이를 반영하지 않음
+
+2. **빈 instruments 엣지 케이스**: `props.get("instruments", ["unknown"])` 패턴은 키가 아예 없을 때만 기본값 적용 → `[]`가 오면 빈 문자열이 저장됨. `or ["unknown"]` 추가 필요

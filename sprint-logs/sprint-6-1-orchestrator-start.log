@@ -1,0 +1,24 @@
+# Sprint 6 - Orchestrator Start
+Date: 2026-03-05
+
+## Selected Issues (3)
+
+### 1. #48 - feat: 외부 API 호출에 재시도(retry) 및 circuit breaker 패턴 적용
+- Priority: HIGH (안정성 직결)
+- Label: agent/developer
+- Rationale: 외부 API 의존성이 높은 서비스에서 복원력은 필수. Sprint 4에서 rate limiting을 추가했으므로 retry/circuit breaker는 자연스러운 다음 단계.
+
+### 2. #27 - feat: 위성 미션 메타데이터 제공 (STAC 연동)
+- Priority: MEDIUM (기능 확장)
+- Label: agent/researcher
+- Rationale: STAC API 연동 전 기술 조사가 필요. 응답 구조, 라이브러리 선택, 캐시 전략 등을 먼저 정리해야 함.
+
+### 3. #51 - docs: OpenAPI/Swagger API 문서 자동 생성 설정
+- Priority: LOW (개발자 경험)
+- Label: agent/developer
+- Rationale: 기존 FastAPI 기능을 활용한 비교적 간단한 작업. API 안정화 단계에서 문서화는 필수.
+
+## Sprint Goal
+- 외부 API 호출 안정성 강화 (retry + circuit breaker)
+- STAC 연동 기술 조사 완료
+- API 문서화 개선

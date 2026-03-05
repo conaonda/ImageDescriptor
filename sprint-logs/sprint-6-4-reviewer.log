@@ -1,0 +1,20 @@
+두 PR에 대한 코드 리뷰를 완료했습니다.
+
+---
+
+## 리뷰 결과 요약
+
+### PR #53 (OpenAPI/Swagger 문서) → ✅ **승인**
+문제 없음. 엔드포인트 메타데이터, 태그 구조, 예시 데이터 모두 잘 작성됨.
+
+---
+
+### PR #52 (retry/circuit breaker) → ⚠️ **변경 요청**
+
+두 가지 중요 이슈 발견:
+
+1. **`retry_gemini`가 모든 예외 재시도** — `retry_if_exception` 조건 없이 인증 오류(401), 잘못된 요청(400) 등 영구적 오류까지 재시도. `retry_http`처럼 retryable 조건 명시 필요.
+
+2. **`_call_gemini`에서 동기 SDK를 async로 래핑** — `genai.Client.models.generate_content`는 동기(blocking) 호출인데 `async def` 안에서 직접 실행하면 이벤트 루프 블로킹. `asyncio.to_thread()` 또는 비동기 SDK 사용 필요.
+
+3. (minor) `_log_retry`의 불필요한 `hasattr` 체크 — 제거 가능.

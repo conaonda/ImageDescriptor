@@ -31,9 +31,7 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if "e2e" in item.keywords:
                 if not _has_real_keys:
-                    item.add_marker(
-                        pytest.mark.skip(reason=".env 파일에 실제 API 키가 필요합니다")
-                    )
+                    item.add_marker(pytest.mark.skip(reason=".env 파일에 실제 API 키가 필요합니다"))
                 else:
                     item.add_marker(skip_e2e)
 

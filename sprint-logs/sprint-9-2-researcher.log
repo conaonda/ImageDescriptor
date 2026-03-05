@@ -1,0 +1,18 @@
+Sprint 9 Researcher 작업이 완료되었습니다.
+
+## 조사 결과 요약
+
+**이슈 #27 - STAC 연동 조사 완료**
+
+### 핵심 확인 사항
+1. **STAC API 정상 동작 확인** — Element84 Earth Search API 응답 검증 완료
+2. **처리 수준 파싱 버그 발견** — `s2:product_type[-3:]` 방식은 `I2A`를 반환하므로, collection ID에서 파싱하는 방법으로 수정 권장
+3. **#61 연관 패턴** — `instruments` 빈 배열 처리는 이슈 #61 버그 수정과 동일한 방어 패턴 적용
+
+### 권장 구현
+- `app/modules/mission.py` 신규 모듈 생성
+- `httpx` + `retry_http` 기존 패턴 재사용
+- 캐시 TTL 365일 (불변 데이터)
+- `stac_id` 미제공 시 `mission: null` graceful degradation
+
+**라벨 `agent/researcher` 제거 완료** → Developer 구현 단계로 진행 가능

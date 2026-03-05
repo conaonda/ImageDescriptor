@@ -1,0 +1,15 @@
+## Sprint 4 마무리 완료
+
+### 수행 작업
+1. **PR #45** (rate limiting) → main 머지 완료
+2. **PR #46** (structured logging) → 충돌 해결 후 main 머지 완료
+3. 이슈 #43, #44 클로즈 확인 (자동 클로즈됨)
+4. 버전 범프 0.5.0 → 0.6.0 ([PR #47](https://github.com/conaonda/ImageDescriptor/pull/47))
+5. **릴리스 v0.6.0** 생성: https://github.com/conaonda/ImageDescriptor/releases/tag/v0.6.0
+
+### 남은 이슈
+- **#27**: 위성 미션 메타데이터 제공 (STAC 연동) — 미착수, 다음 스프린트 후보
+kipped
+
+## 남은 이슈
+- #27: feat: 위성 미션 메타데이터 제공 (STAC 연동) — 미착수

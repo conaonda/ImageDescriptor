@@ -1,0 +1,10 @@
+## 테스트 결과
+
+**전체: 164 passed, 3 skipped** ✅
+
+### Mission 모듈 테스트 (11/11 통과)
+- `_guess_collection`: L2A/L1C/default 3개 경로 커버
+- `_parse_mission`: full/empty/missing instruments/collection fallback 커버
+- `get_mission_metadata`: None/성공/캐시히트/HTTP에러 커버
+
+기존 커버리지가 충분하여 추가 테스트 없이 PR #63에 결과를 코멘트로 보고했습니다.

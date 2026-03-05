@@ -1,0 +1,16 @@
+## 스프린트 7 마무리 완료
+
+### 수행 작업
+1. **PR 머지**: #52 (retry/circuit breaker) → #55 (테스트) 순서로 squash merge 완료
+2. **이슈 종료**: #48, #54 자동 종료 확인
+3. **버전 범프**: 0.6.0 → 0.7.0 (PR #56으로 머지)
+4. **릴리스 생성**: [v0.7.0](https://github.com/conaonda/ImageDescriptor/releases/tag/v0.7.0) 태그 및 릴리스 노트
+5. **스프린트 로그**: `sprint-logs/sprint-7.md` 작성
+
+### 스프린트 7 성과
+- 외부 API 호출에 **retry + circuit breaker** 패턴 적용으로 안정성 강화
+- **24개 테스트** 추가 (전체 136개 통과)
+- `tenacity>=9.0.0` 의존성 추가
+
+### 남은 이슈
+- **#27**: 위성 미션 메타데이터 제공 (STAC 연동) — 미착수 상태

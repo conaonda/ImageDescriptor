@@ -1,0 +1,17 @@
+## Sprint 1 계획 완료
+
+### 선택된 이슈 (3개)
+
+| 순서 | 이슈 | 라벨 | 우선순위 |
+|------|------|------|----------|
+| 1 | **#28** refactor: composer `_safe_*` 반복 패턴 통합 | `agent/developer` | 높음 (선행 작업) |
+| 2 | **#27** feat: 위성 미션 메타데이터 STAC 연동 | `agent/researcher` | 높음 (기술 조사) |
+| 3 | **#29** refactor: routes.py 좌표 검증 중복 제거 | `agent/developer` | 중간 |
+
+### 실행 순서 근거
+
+1. **#28을 먼저** — composer의 `_safe_*` 패턴을 제네릭 래퍼로 통합하면, #27에서 mission 모듈 추가 시 boilerplate 없이 1줄로 통합 가능
+2. **#27 조사 병행** — STAC API 기술 조사는 #28 구현과 병렬 진행 가능
+3. **#29는 독립적** — 스키마 레벨 검증 이동은 다른 이슈와 무관하게 진행 가능
+
+각 이슈에 스프린트 계획 코멘트를 남겼고, `agent/researcher`와 `agent/developer` 라벨을 새로 생성하여 지정했습니다.

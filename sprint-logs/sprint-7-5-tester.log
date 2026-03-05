@@ -1,0 +1,12 @@
+## 완료 요약
+
+**PR #55** 리뷰어 지적사항 수정 완료:
+
+- **문제**: `TestExternalModuleErrorHandling` 5개 테스트가 HTTP mock을 1개만 등록 → PR #52 병합 후 `@retry_http`(3회 재시도)와 충돌
+- **수정** (`80816ce`):
+  - 각 테스트에 3개 응답/예외 등록 (`_RETRY_ATTEMPTS = 3`)
+  - `no_retry_sleep` fixture로 `asyncio.sleep` 패치 → tenacity 백오프 지연 제거
+  - `@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)` 추가 → PR #52 병합 전후 모두 호환
+  - `context` 모듈도 PR #52에서 `@retry_http` 적용됨을 확인하여 동일 처리
+
+**전체 테스트: 136개 통과**

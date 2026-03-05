@@ -66,8 +66,7 @@ async def geocode(lon: float, lat: float, cache: CacheStore) -> Location:
     location = Location(
         country=address.get("country", data.get("display_name", "Unknown")),
         country_code=address.get("country_code", ""),
-        region=address.get("state", address.get("province", ""))
-        or address.get("city", ""),
+        region=address.get("state", address.get("province", "")) or address.get("city", ""),
         city=address.get("city", address.get("town", address.get("village"))),
         place_name=re.sub(r",?\s*\d{5}\s*", "", data.get("display_name", "")).strip(", "),
         lat=lat,

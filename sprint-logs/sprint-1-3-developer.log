@@ -1,0 +1,10 @@
+두 이슈 모두 구현 완료했습니다.
+
+### 결과 요약
+
+| 이슈 | PR | 변경 내용 |
+|------|-----|----------|
+| **#28** | [PR #30](https://github.com/conaonda/ImageDescriptor/pull/30) | 4개 `_safe_*` 함수를 `_safe_call` 제네릭 래퍼로 통합 (81→41줄) |
+| **#29** | [PR #31](https://github.com/conaonda/ImageDescriptor/pull/31) | 좌표 검증을 Pydantic `field_validator`로 이동, routes.py에서 4개 중복 블록 제거 |
+
+**참고**: #29에서 좌표 검증 실패 응답이 400 → 422로 변경됩니다 (Pydantic 표준 동작). 테스트도 함께 업데이트했습니다.

@@ -1,0 +1,17 @@
+## 완료 요약
+
+### 이슈 #48 - 재시도(retry) 및 circuit breaker 패턴
+- **PR**: https://github.com/conaonda/ImageDescriptor/pull/52
+- tenacity 기반 `retry_http` (3회, 1-4초 백오프) / `retry_gemini` (3회, 2-8초 백오프) 데코레이터 추가
+- 각 모듈의 HTTP 호출을 retryable 헬퍼 함수로 분리
+- 일시적 오류만 재시도 (connection error, timeout, 429/5xx)
+- 기존 circuit breaker와 자연스럽게 연동
+- 16개 유닛 테스트 추가, 전체 101개 통과
+
+### 이슈 #51 - OpenAPI/Swagger 문서 자동 생성
+- **PR**: https://github.com/conaonda/ImageDescriptor/pull/53
+- 앱 메타데이터 (version, description, tags) 정리
+- 엔드포인트별 summary, description, error responses 추가
+- Pydantic 모델에 json_schema_extra 예시 데이터 추가
+- ErrorResponse 모델로 에러 응답 문서화
+- 전체 85개 테스트 통과

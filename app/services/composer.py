@@ -54,7 +54,9 @@ async def compose_description(request: DescribeRequest, cache: CacheStore) -> De
         _safe_call("mission", mission.get_mission_metadata(request.stac_id, cache), warnings)
     )
     location, land_cover_result, mission_result = await asyncio.gather(
-        geo_task, lc_task, mission_task,
+        geo_task,
+        lc_task,
+        mission_task,
     )
     logger.info("phase1_complete", duration_ms=round((time.monotonic() - t_phase1) * 1000))
 

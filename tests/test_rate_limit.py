@@ -86,9 +86,7 @@ class TestRateLimitMiddleware:
         }
         with patch("app.config.settings.rate_limit", "1/minute"):
             await rate_limit_client.post("/api/describe", json=body, headers=headers)
-            resp = await rate_limit_client.post(
-                "/api/describe", json=body, headers=headers
-            )
+            resp = await rate_limit_client.post("/api/describe", json=body, headers=headers)
             assert resp.status_code == 429
 
     async def test_429_response_body(self, rate_limit_client):
@@ -101,9 +99,7 @@ class TestRateLimitMiddleware:
         }
         with patch("app.config.settings.rate_limit", "1/minute"):
             await rate_limit_client.post("/api/describe", json=body, headers=headers)
-            resp = await rate_limit_client.post(
-                "/api/describe", json=body, headers=headers
-            )
+            resp = await rate_limit_client.post("/api/describe", json=body, headers=headers)
             assert resp.status_code == 429
             data = resp.json()
             assert "error" in data or "detail" in data
@@ -125,9 +121,7 @@ class TestRateLimitMiddleware:
         with patch("app.config.settings.rate_limit", "1/minute"):
             # Exhaust describe limit
             await rate_limit_client.post("/api/describe", json=body, headers=headers)
-            resp = await rate_limit_client.post(
-                "/api/describe", json=body, headers=headers
-            )
+            resp = await rate_limit_client.post("/api/describe", json=body, headers=headers)
             assert resp.status_code == 429
             # cache/stats should still work (no rate limit)
             resp = await rate_limit_client.get("/api/cache/stats")

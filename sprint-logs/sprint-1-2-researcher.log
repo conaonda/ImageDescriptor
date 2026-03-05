@@ -1,0 +1,16 @@
+조사 완료했습니다.
+
+**수행 작업 요약:**
+
+1. **Element84 Earth Search STAC API 실제 호출** 확인
+   - 인증 불필요, 공개 API
+   - 이슈에서 참조한 예시 아이템 조회 성공
+
+2. **추출 가능한 핵심 필드 확인**: platform, instruments, constellation, eo:cloud_cover, grid:code, s2:datatake_type, view:sun_elevation, gsd 등
+
+3. **권장 사항 작성** — [이슈 #27 코멘트](https://github.com/conaonda/ImageDescriptor/issues/27#issuecomment-4004858749)에 구조화된 비교 표와 함께 게시:
+   - **입력 방식**: `stac_id` + `stac_collection` 파라미터 직접 추가 권장
+   - **캐시 전략**: TTL 365일 (STAC 아이템 불변)
+   - **모듈 패턴**: 기존 geocoder.py와 동일한 패턴 적용 가능
+
+4. **`agent/researcher` 라벨 제거** 완료
