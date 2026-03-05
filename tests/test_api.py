@@ -29,12 +29,21 @@ async def client_with_cache(tmp_path):
     await cache.close()
 
 
-async def test_health(client):
-    resp = await client.get("/api/health")
+async def test_health(client_with_cache):
+    with pytest.MonkeyPatch.context() as mp:
+        import app.db.supabase as supabase_mod
+
+        async def _mock_ping():
+            return True
+
+        mp.setattr(supabase_mod, "ping", _mock_ping)
+        resp = await client_with_cache.get("/api/health")
     assert resp.status_code == 200
     data = resp.json()
     assert data["status"] == "ok"
     assert "version" in data
+    assert data["checks"]["cache"] == "ok"
+    assert data["checks"]["supabase"] == "ok"
 
 
 async def test_describe_no_api_key(client):
@@ -203,21 +212,39 @@ async def test_rate_limit_returns_429(tmp_path):
         await cache.close()
 
 
-async def test_health_no_rate_limit(client):
+async def test_health_no_rate_limit(client_with_cache, monkeypatch):
     """Health endpoint should not be rate limited."""
+    import app.db.supabase as supabase_mod
+
+    async def _mock_ping():
+        return True
+
+    monkeypatch.setattr(supabase_mod, "ping", _mock_ping)
     for _ in range(5):
-        resp = await client.get("/api/health")
+        resp = await client_with_cache.get("/api/health")
         assert resp.status_code == 200
 
 
-async def test_request_id_header(client):
-    resp = await client.get("/api/health")
+async def test_request_id_header(client_with_cache, monkeypatch):
+    import app.db.supabase as supabase_mod
+
+    async def _mock_ping():
+        return True
+
+    monkeypatch.setattr(supabase_mod, "ping", _mock_ping)
+    resp = await client_with_cache.get("/api/health")
     assert resp.status_code == 200
     assert "x-request-id" in resp.headers
     assert len(resp.headers["x-request-id"]) == 16
 
 
-async def test_request_id_passthrough(client):
+async def test_request_id_passthrough(client_with_cache, monkeypatch):
+    import app.db.supabase as supabase_mod
+
+    async def _mock_ping():
+        return True
+
+    monkeypatch.setattr(supabase_mod, "ping", _mock_ping)
     custom_id = "my-custom-request-id"
-    resp = await client.get("/api/health", headers={"X-Request-ID": custom_id})
+    resp = await client_with_cache.get("/api/health", headers={"X-Request-ID": custom_id})
     assert resp.headers["x-request-id"] == custom_id

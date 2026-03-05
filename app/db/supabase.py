@@ -61,6 +61,16 @@ async def save_description(
         return None
 
 
+async def ping() -> bool:
+    try:
+        client = await get_client()
+        await client.table("image_descriptions").select("cog_image_id").limit(1).execute()
+        return True
+    except Exception as e:
+        logger.warning("supabase ping failed", error=str(e))
+        return False
+
+
 async def get_description(cog_image_id: str) -> dict | None:
     try:
         client = await get_client()

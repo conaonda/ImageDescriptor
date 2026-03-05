@@ -84,6 +84,14 @@ class CacheStore:
             "modules": per_module,
         }
 
+    async def ping(self) -> bool:
+        try:
+            async with self._db.execute("SELECT 1") as cursor:
+                await cursor.fetchone()
+            return True
+        except Exception:
+            return False
+
     async def close(self):
         if self._db:
             await self._db.close()
