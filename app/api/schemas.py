@@ -36,6 +36,20 @@ class DescribeRequest(BaseModel):
     captured_at: str | None = Field(None, description="Capture date in ISO 8601 format")
     cog_image_id: str | None = Field(None, description="Optional cog_images UUID for DB linking")
 
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "thumbnail": "https://example.com/satellite-image.jpg",
+                    "coordinates": [126.978, 37.566],
+                    "bbox": [126.9, 37.5, 127.1, 37.6],
+                    "captured_at": "2025-01-15",
+                    "cog_image_id": "550e8400-e29b-41d4-a716-446655440000",
+                }
+            ]
+        }
+    }
+
 
 class Location(BaseModel):
     country: str
@@ -45,6 +59,22 @@ class Location(BaseModel):
     place_name: str
     lat: float
     lon: float
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "country": "대한민국",
+                    "country_code": "kr",
+                    "region": "서울특별시",
+                    "city": "서울",
+                    "place_name": "서울특별시, 대한민국",
+                    "lat": 37.566,
+                    "lon": 126.978,
+                }
+            ]
+        }
+    }
 
 
 class LandCoverClass(BaseModel):
@@ -56,6 +86,21 @@ class LandCoverClass(BaseModel):
 class LandCover(BaseModel):
     classes: list[LandCoverClass]
     summary: str
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "classes": [
+                        {"type": "residential", "label": "주거지역", "percentage": 45},
+                        {"type": "commercial", "label": "상업지역", "percentage": 30},
+                        {"type": "park", "label": "공원", "percentage": 25},
+                    ],
+                    "summary": "주거지역 45%, 상업지역 30%, 공원 25%",
+                }
+            ]
+        }
+    }
 
 
 class Event(BaseModel):
@@ -82,3 +127,51 @@ class DescribeResponse(BaseModel):
     context: Context | None = None
     warnings: list[Warning] = []
     cached: bool = False
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "description": "서울 도심부의 위성영상으로, 한강이 동서로 흐르며 ...",
+                    "location": {
+                        "country": "대한민국",
+                        "country_code": "kr",
+                        "region": "서울특별시",
+                        "city": "서울",
+                        "place_name": "서울특별시, 대한민국",
+                        "lat": 37.566,
+                        "lon": 126.978,
+                    },
+                    "land_cover": {
+                        "classes": [
+                            {"type": "residential", "label": "주거지역", "percentage": 45},
+                        ],
+                        "summary": "주거지역 45%",
+                    },
+                    "context": {"events": [], "summary": "관련 정보를 찾지 못했습니다."},
+                    "warnings": [],
+                    "cached": False,
+                }
+            ]
+        }
+    }
+
+
+class ErrorResponse(BaseModel):
+    """API 에러 응답 모델"""
+
+    code: str = Field(description="에러 코드")
+    message: str = Field(description="에러 메시지")
+    details: dict | None = Field(None, description="추가 에러 상세 정보")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "code": "NOT_FOUND",
+                    "message": "Description not found for cog_image_id: ...",
+                    "details": None,
+                }
+            ]
+        }
+    }

@@ -27,8 +27,26 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="COGnito Image Descriptor",
-    version="0.3.0",
+    version="0.6.0",
+    description=(
+        "위성영상 분석 API - 좌표 기반 역지오코딩, 토지피복 분류, "
+        "Gemini AI 영상 설명, 맥락 정보를 통합 제공합니다."
+    ),
     lifespan=lifespan,
+    openapi_tags=[
+        {
+            "name": "analysis",
+            "description": "위성영상 분석 및 설명 생성 엔드포인트",
+        },
+        {
+            "name": "data",
+            "description": "개별 모듈 데이터 조회 (지오코딩, 토지피복, 맥락)",
+        },
+        {
+            "name": "system",
+            "description": "헬스체크 및 캐시 통계",
+        },
+    ],
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
