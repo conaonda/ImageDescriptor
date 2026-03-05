@@ -6,8 +6,6 @@ from starlette.requests import Request
 
 from app.config import settings
 
-_request_id_ctx: structlog.contextvars = structlog.contextvars
-
 
 def setup_logging() -> None:
     """Configure structlog with JSON output and standard library integration."""
