@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     cache_db_path: str = "./cache.db"
     log_level: str = "INFO"
     thumbnail_max_pixels: int = 768
+    rate_limit: str = "30/minute"
 
     @property
     def cors_origins_list(self) -> list[str]:

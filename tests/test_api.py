@@ -166,3 +166,45 @@ async def test_cache_stats_after_hit_miss(client_with_cache):
     assert geocode_stats["hits"] == 1
     assert geocode_stats["misses"] == 1
     assert geocode_stats["hit_rate"] == 0.5
+
+
+async def test_rate_limit_returns_429(tmp_path):
+    """Rate limit exceeded returns 429 with appropriate headers."""
+    from unittest.mock import patch
+
+    from app.cache.store import CacheStore
+    from app.main import app, limiter
+
+    cache = CacheStore(str(tmp_path / "test.db"))
+    await cache.init()
+    app.state.cache = cache
+
+    limiter.reset()
+    try:
+        with patch("app.config.settings.rate_limit", "1/minute"):
+            async with AsyncClient(
+                transport=ASGITransport(app=app),
+                base_url="http://test",
+            ) as c:
+                api_key = os.environ["API_KEY"]
+                headers = {"X-API-Key": api_key}
+                body = {
+                    "thumbnail": "dGVzdA==",
+                    "coordinates": [126.978, 37.566],
+                    "captured_at": "2025-06-15T00:00:00Z",
+                }
+                # First request consumes the 1/minute limit
+                await c.post("/api/describe", json=body, headers=headers)
+                # Second request should be rate limited
+                resp2 = await c.post("/api/describe", json=body, headers=headers)
+                assert resp2.status_code == 429
+    finally:
+        limiter.reset()
+        await cache.close()
+
+
+async def test_health_no_rate_limit(client):
+    """Health endpoint should not be rate limited."""
+    for _ in range(5):
+        resp = await client.get("/api/health")
+        assert resp.status_code == 200

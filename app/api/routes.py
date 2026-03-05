@@ -11,6 +11,7 @@ from app.api.schemas import (
     Location,
 )
 from app.auth import authenticate
+from app.config import settings
 from app.db import supabase as db
 from app.services.composer import compose_description
 from app.utils.errors import DescriptorError
@@ -36,7 +37,7 @@ async def health():
 
 
 @router.post("/describe", response_model=DescribeResponse)
-@limiter.limit("10/minute")
+@limiter.limit(lambda: settings.rate_limit)
 async def describe(
     body: DescribeRequest,
     request: Request,
@@ -69,7 +70,7 @@ async def describe(
 
 
 @router.post("/geocode", response_model=Location)
-@limiter.limit("10/minute")
+@limiter.limit(lambda: settings.rate_limit)
 async def geocode_endpoint(
     body: DescribeRequest,
     request: Request,
@@ -83,7 +84,7 @@ async def geocode_endpoint(
 
 
 @router.post("/landcover", response_model=LandCover)
-@limiter.limit("10/minute")
+@limiter.limit(lambda: settings.rate_limit)
 async def landcover_endpoint(
     body: DescribeRequest,
     request: Request,
@@ -97,7 +98,7 @@ async def landcover_endpoint(
 
 
 @router.post("/context", response_model=Context)
-@limiter.limit("10/minute")
+@limiter.limit(lambda: settings.rate_limit)
 async def context_endpoint(
     body: DescribeRequest,
     request: Request,
