@@ -188,7 +188,15 @@ class TestSafeCall:
 
 
 class TestExternalModuleErrorHandling:
-    """Tests for error handling in external API modules."""
+    """Tests for error handling in external API modules.
+
+    NOTE: After PR #52 (retry/circuit-breaker) is merged, geocoder/landcover/context
+    will be decorated with @retry_http (up to 3 attempts for HTTP 500 and timeouts).
+    Each test registers responses for all 3 attempts and patches asyncio.sleep to
+    avoid ~3 seconds of backoff delay.
+    """
+
+    _RETRY_ATTEMPTS = 3  # stop_after_attempt(3) in retry_http
 
     @pytest.fixture
     async def cache(self, tmp_path):
@@ -199,41 +207,60 @@ class TestExternalModuleErrorHandling:
         yield store
         await store.close()
 
-    async def test_geocoder_http_error(self, cache, httpx_mock):
-        httpx_mock.add_response(status_code=500)
+    @pytest.fixture
+    def no_retry_sleep(self, monkeypatch):
+        """Patch asyncio.sleep to eliminate tenacity backoff delay in tests."""
+
+        async def _instant_sleep(_):
+            pass
+
+        monkeypatch.setattr("asyncio.sleep", _instant_sleep)
+
+    @pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
+    async def test_geocoder_http_error(self, cache, httpx_mock, no_retry_sleep):
+        for _ in range(self._RETRY_ATTEMPTS):
+            httpx_mock.add_response(status_code=500)
         with pytest.raises(Exception):
             await __import__("app.modules.geocoder", fromlist=["geocode"]).geocode(
                 126.978, 37.566, cache
             )
 
-    async def test_landcover_http_error(self, cache, httpx_mock):
-        httpx_mock.add_response(status_code=500)
+    @pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
+    async def test_landcover_http_error(self, cache, httpx_mock, no_retry_sleep):
+        for _ in range(self._RETRY_ATTEMPTS):
+            httpx_mock.add_response(status_code=500)
         with pytest.raises(Exception):
             await __import__("app.modules.landcover", fromlist=["get_land_cover"]).get_land_cover(
                 126.978, 37.566, cache
             )
 
-    async def test_context_http_error_graceful(self, cache, httpx_mock):
-        """Context module handles errors gracefully (try/except)."""
-        httpx_mock.add_response(status_code=500)
+    @pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
+    async def test_context_http_error_graceful(self, cache, httpx_mock, no_retry_sleep):
+        """Context module handles errors gracefully (try/except) after all retries."""
+        for _ in range(self._RETRY_ATTEMPTS):
+            httpx_mock.add_response(status_code=500)
         from app.modules.context import research_context
 
         result = await research_context("서울", "2025-06-15", cache)
         assert len(result.events) == 0
 
-    async def test_geocoder_timeout(self, cache, httpx_mock):
+    @pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
+    async def test_geocoder_timeout(self, cache, httpx_mock, no_retry_sleep):
         import httpx
 
-        httpx_mock.add_exception(httpx.ReadTimeout("timeout"))
+        for _ in range(self._RETRY_ATTEMPTS):
+            httpx_mock.add_exception(httpx.ReadTimeout("timeout"))
         with pytest.raises(httpx.ReadTimeout):
             from app.modules.geocoder import geocode
 
             await geocode(126.978, 37.566, cache)
 
-    async def test_landcover_timeout(self, cache, httpx_mock):
+    @pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
+    async def test_landcover_timeout(self, cache, httpx_mock, no_retry_sleep):
         import httpx
 
-        httpx_mock.add_exception(httpx.ReadTimeout("timeout"))
+        for _ in range(self._RETRY_ATTEMPTS):
+            httpx_mock.add_exception(httpx.ReadTimeout("timeout"))
         with pytest.raises(httpx.ReadTimeout):
             from app.modules.landcover import get_land_cover
 
