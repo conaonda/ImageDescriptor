@@ -105,12 +105,7 @@ async def test_batch_no_auth():
     assert resp.status_code == 401
 
 
-@patch(
-    "app.api.routes.compose_description",
-    new_callable=AsyncMock,
-    return_value=_mock_response(),
-)
-async def test_batch_thumbnail_too_large(mock_compose, client_with_cache):
+async def test_batch_thumbnail_too_large(client_with_cache):
     large_item = {
         "thumbnail": "x" * (5 * 1024 * 1024 + 1),
         "coordinates": [126.978, 37.566],
@@ -119,8 +114,4 @@ async def test_batch_thumbnail_too_large(mock_compose, client_with_cache):
         "/api/describe/batch",
         json={"items": [_make_item(), large_item]},
     )
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["succeeded"] == 1
-    assert data["failed"] == 1
-    assert "too large" in data["results"][1]["error"].lower()
+    assert resp.status_code == 422

@@ -35,6 +35,13 @@ class DescribeRequest(BaseModel):
             raise ValueError("south must be less than north")
         return v
 
+    @field_validator("thumbnail")
+    @classmethod
+    def validate_thumbnail_size(cls, v: str) -> str:
+        if not v.startswith("http") and len(v) > 5 * 1024 * 1024:
+            raise ValueError("Thumbnail too large (max 5MB)")
+        return v
+
     captured_at: str | None = Field(None, description="Capture date in ISO 8601 format")
     cog_image_id: str | None = Field(None, description="Optional cog_images UUID for DB linking")
     stac_id: str | None = Field(None, description="STAC item ID for satellite mission metadata")
