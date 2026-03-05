@@ -1,4 +1,5 @@
 import asyncio
+import time
 from collections.abc import Awaitable
 
 import structlog
@@ -38,8 +39,10 @@ async def _safe_call(name: str, coro: Awaitable, warnings: list[Warning]):
 async def compose_description(request: DescribeRequest, cache: CacheStore) -> DescribeResponse:
     warnings: list[Warning] = []
     lon, lat = request.coordinates
+    t_start = time.monotonic()
 
     # Phase 1: Geocoder + LandCover 병렬 실행 (Describer의 입력이 됨)
+    t_phase1 = time.monotonic()
     geo_task = asyncio.create_task(
         _safe_call("geocoder", geocoder.geocode(lon, lat, cache), warnings)
     )
@@ -47,11 +50,13 @@ async def compose_description(request: DescribeRequest, cache: CacheStore) -> De
         _safe_call("landcover", landcover.get_land_cover(lon, lat, cache), warnings)
     )
     location, land_cover_result = await asyncio.gather(geo_task, lc_task)
+    logger.info("phase1_complete", duration_ms=round((time.monotonic() - t_phase1) * 1000))
 
     # Phase 2: Describer + Context 병렬 실행 (Phase 1 결과 활용)
     place_name = location.place_name if location else f"{lat}, {lon}"
     lc_summary = land_cover_result.summary if land_cover_result else "정보 없음"
 
+    t_phase2 = time.monotonic()
     desc_task = asyncio.create_task(
         _safe_call(
             "describer",
@@ -79,6 +84,10 @@ async def compose_description(request: DescribeRequest, cache: CacheStore) -> De
         )
     )
     description, context_result = await asyncio.gather(desc_task, ctx_task)
+    logger.info("phase2_complete", duration_ms=round((time.monotonic() - t_phase2) * 1000))
+
+    total_ms = round((time.monotonic() - t_start) * 1000)
+    logger.info("compose_complete", total_duration_ms=total_ms, warning_count=len(warnings))
 
     return DescribeResponse(
         description=description,

@@ -1,6 +1,7 @@
 from unittest.mock import AsyncMock, patch
 
 import pytest
+import structlog.testing
 
 from app.api.schemas import Context, DescribeRequest, Event, LandCover, LandCoverClass, Location
 from app.cache.store import CacheStore
@@ -388,3 +389,34 @@ async def test_compose_describer_fail_context_ok(mock_geo, mock_lc, mock_desc, m
     assert result.context.summary == "뉴스 요약"
     assert len(result.warnings) == 1
     assert result.warnings[0].module == "describer"
+
+
+@patch("app.services.composer.context")
+@patch("app.services.composer.describer")
+@patch("app.services.composer.landcover")
+@patch("app.services.composer.geocoder")
+async def test_compose_timing_logs_emitted(mock_geo, mock_lc, mock_desc, mock_ctx, cache):
+    """Phase 타이밍 로그(phase1_complete, phase2_complete, compose_complete)가 출력되는지 검증."""
+    mock_geo.geocode = AsyncMock(
+        return_value=Location(
+            country="대한민국", country_code="kr", region="서울",
+            city="중구", place_name="서울특별시", lat=37.566, lon=126.978,
+        )
+    )
+    mock_lc.get_land_cover = AsyncMock(return_value=LandCover(classes=[], summary="정보 없음"))
+    mock_desc.describe_image = AsyncMock(return_value="설명")
+    mock_ctx.research_context = AsyncMock(return_value=Context(events=[], summary="없음"))
+
+    with structlog.testing.capture_logs() as logs:
+        await compose_description(_make_request(), cache)
+
+    event_names = [log["event"] for log in logs]
+    assert "phase1_complete" in event_names
+    assert "phase2_complete" in event_names
+    assert "compose_complete" in event_names
+
+    compose_log = next(l for l in logs if l["event"] == "compose_complete")
+    assert "total_duration_ms" in compose_log
+    assert isinstance(compose_log["total_duration_ms"], int)
+    assert compose_log["total_duration_ms"] >= 0
+    assert compose_log["warning_count"] == 0
