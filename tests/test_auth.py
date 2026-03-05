@@ -34,6 +34,7 @@ FAKE_JWKS = {
 def reset_jwks_cache():
     """Reset JWKS cache before each test."""
     import app.auth as auth_module
+
     auth_module._jwks_cache = None
     auth_module._jwks_cache_ts = 0.0
     yield
