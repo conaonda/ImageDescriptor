@@ -183,7 +183,7 @@ MAX_BATCH_SIZE = 10
 
 
 class BatchDescribeItem(BaseModel):
-    """Batch item without validators — validation deferred to per-item processing."""
+    """Batch item — thumbnail size validation deferred to per-item processing."""
 
     thumbnail: str = Field(description="base64 PNG or URL of lowest pyramid image")
     coordinates: list[float] = Field(

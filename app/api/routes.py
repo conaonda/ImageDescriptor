@@ -4,8 +4,6 @@ from importlib.metadata import PackageNotFoundError, version
 from fastapi import APIRouter, Depends, Request
 from slowapi import Limiter
 
-from pydantic import ValidationError
-
 from app.api.schemas import (
     BatchDescribeItem,
     BatchDescribeRequest,
