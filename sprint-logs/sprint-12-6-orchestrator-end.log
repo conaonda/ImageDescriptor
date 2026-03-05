@@ -1,0 +1,15 @@
+## 스프린트 12 마무리 완료
+
+| 항목 | 상태 |
+|------|------|
+| PR #76 (Docker 멀티스테이지 빌드 + docker-compose) | ✅ Merged |
+| PR #77 (GitHub Actions CI/CD 파이프라인) | ✅ Merged |
+| PR #73 (썸네일 검증 리팩터링) | ⚠️ 변경 요청 — 다음 스프린트 이월 |
+| 이슈 #71 (Docker) | ✅ Closed |
+| 이슈 #75 (CI/CD) | ✅ Closed |
+
+### 테스트 결과
+- 185 passed, 3 skipped (Python 3.12.3, 29.37s)
+
+### 다음 스프린트 이월 항목
+- **#70 / PR #73**: 썸네일 검증 리팩터링 — 배치 엔드포인트 partial success 동작 복원 필요
