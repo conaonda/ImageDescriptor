@@ -2,12 +2,15 @@ import hmac
 import time
 
 import httpx
+import structlog
 from fastapi import Security
 from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 
 from app.config import settings
 from app.utils.errors import DescriptorError
+
+logger = structlog.get_logger()
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -44,6 +47,7 @@ async def authenticate(
     """Authenticate via API Key or JWT. Returns auth info dict or raises 401."""
     # 1) API Key (timing-safe comparison)
     if api_key and hmac.compare_digest(api_key, settings.api_key):
+        logger.debug("auth_success", auth_type="api_key")
         return {"type": "api_key"}
 
     # 2) Bearer JWT
@@ -51,10 +55,12 @@ async def authenticate(
         try:
             jwks = await _get_jwks()
             payload = _verify_jwt(credentials.credentials, jwks)
+            logger.debug("auth_success", auth_type="jwt", sub=payload["sub"])
             return {"type": "jwt", "sub": payload["sub"]}
         except JWTError:
-            pass
+            logger.warning("auth_jwt_invalid")
 
+    logger.warning("auth_failed")
     raise DescriptorError(
         status_code=401,
         code="UNAUTHORIZED",
