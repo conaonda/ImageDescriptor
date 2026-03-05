@@ -173,36 +173,34 @@ async def test_rate_limit_returns_429(tmp_path):
     from unittest.mock import patch
 
     from app.cache.store import CacheStore
-    from app.main import app
+    from app.main import app, limiter
 
     cache = CacheStore(str(tmp_path / "test.db"))
     await cache.init()
     app.state.cache = cache
 
-    with patch("app.config.settings.rate_limit", "1/minute"):
-        async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test",
-        ) as c:
-            # First request should succeed
-            resp1 = await c.get("/api/health")
-            assert resp1.status_code == 200
-
-            # Health endpoint has no rate limit, so test on describe
-            api_key = os.environ["API_KEY"]
-            headers = {"X-API-Key": api_key}
-            body = {
-                "thumbnail": "dGVzdA==",
-                "coordinates": [126.978, 37.566],
-                "captured_at": "2025-06-15T00:00:00Z",
-            }
-            # First request (may succeed or fail due to mock, but we just need 429)
-            await c.post("/api/describe", json=body, headers=headers)
-            # Second request should be rate limited
-            resp2 = await c.post("/api/describe", json=body, headers=headers)
-            assert resp2.status_code == 429
-
-    await cache.close()
+    limiter.reset()
+    try:
+        with patch("app.config.settings.rate_limit", "1/minute"):
+            async with AsyncClient(
+                transport=ASGITransport(app=app),
+                base_url="http://test",
+            ) as c:
+                api_key = os.environ["API_KEY"]
+                headers = {"X-API-Key": api_key}
+                body = {
+                    "thumbnail": "dGVzdA==",
+                    "coordinates": [126.978, 37.566],
+                    "captured_at": "2025-06-15T00:00:00Z",
+                }
+                # First request consumes the 1/minute limit
+                await c.post("/api/describe", json=body, headers=headers)
+                # Second request should be rate limited
+                resp2 = await c.post("/api/describe", json=body, headers=headers)
+                assert resp2.status_code == 429
+    finally:
+        limiter.reset()
+        await cache.close()
 
 
 async def test_health_no_rate_limit(client):
