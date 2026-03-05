@@ -27,6 +27,21 @@ router = APIRouter()
 limiter = Limiter(key_func=get_real_ip)
 
 
+async def _describe_and_save(item: DescribeRequest, cache) -> DescribeResponse:
+    result = await compose_description(item, cache)
+    if item.cog_image_id and result.description:
+        await db.save_description(
+            cog_image_id=item.cog_image_id,
+            coordinates=item.coordinates,
+            captured_at=item.captured_at,
+            location=result.location.model_dump() if result.location else None,
+            land_cover=result.land_cover.model_dump() if result.land_cover else None,
+            description=result.description,
+            context=result.context.model_dump() if result.context else None,
+        )
+    return result
+
+
 @router.get(
     "/cache/stats",
     tags=["system"],
@@ -76,21 +91,7 @@ async def describe(
     _auth: dict = Depends(authenticate),
 ):
     cache = request.app.state.cache
-    result = await compose_description(body, cache)
-
-    # Save to Supabase if cog_image_id provided
-    if body.cog_image_id and result.description:
-        await db.save_description(
-            cog_image_id=body.cog_image_id,
-            coordinates=body.coordinates,
-            captured_at=body.captured_at,
-            location=result.location.model_dump() if result.location else None,
-            land_cover=result.land_cover.model_dump() if result.land_cover else None,
-            description=result.description,
-            context=result.context.model_dump() if result.context else None,
-        )
-
-    return result
+    return await _describe_and_save(body, cache)
 
 
 @router.post(
@@ -117,17 +118,7 @@ async def describe_batch(
     async def _process_one(index: int, raw_item: BatchDescribeItem) -> BatchItemResult:
         try:
             item = DescribeRequest.model_validate(raw_item.model_dump())
-            result = await compose_description(item, cache)
-            if item.cog_image_id and result.description:
-                await db.save_description(
-                    cog_image_id=item.cog_image_id,
-                    coordinates=item.coordinates,
-                    captured_at=item.captured_at,
-                    location=result.location.model_dump() if result.location else None,
-                    land_cover=result.land_cover.model_dump() if result.land_cover else None,
-                    description=result.description,
-                    context=result.context.model_dump() if result.context else None,
-                )
+            result = await _describe_and_save(item, cache)
             return BatchItemResult(index=index, result=result)
         except Exception as e:
             return BatchItemResult(index=index, error=str(e))
