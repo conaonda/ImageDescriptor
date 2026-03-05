@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import Awaitable
 
 import structlog
 
@@ -18,13 +19,33 @@ _breakers = {
 }
 
 
+async def _safe_call(name: str, coro: Awaitable, warnings: list[Warning]):
+    cb = _breakers[name]
+    if cb.is_open:
+        warnings.append(Warning(module=name, error="Circuit breaker open"))
+        return None
+    try:
+        result = await coro
+        cb.record_success()
+        return result
+    except Exception as e:
+        cb.record_failure()
+        logger.error(f"{name} failed", error=str(e))
+        warnings.append(Warning(module=name, error=str(e)))
+        return None
+
+
 async def compose_description(request: DescribeRequest, cache: CacheStore) -> DescribeResponse:
     warnings: list[Warning] = []
     lon, lat = request.coordinates
 
     # Phase 1: Geocoder + LandCover 병렬 실행 (Describer의 입력이 됨)
-    geo_task = asyncio.create_task(_safe_geocode(lon, lat, cache, warnings))
-    lc_task = asyncio.create_task(_safe_landcover(lon, lat, cache, warnings))
+    geo_task = asyncio.create_task(
+        _safe_call("geocoder", geocoder.geocode(lon, lat, cache), warnings)
+    )
+    lc_task = asyncio.create_task(
+        _safe_call("landcover", landcover.get_land_cover(lon, lat, cache), warnings)
+    )
     location, land_cover_result = await asyncio.gather(geo_task, lc_task)
 
     # Phase 2: Describer + Context 병렬 실행 (Phase 1 결과 활용)
@@ -32,21 +53,30 @@ async def compose_description(request: DescribeRequest, cache: CacheStore) -> De
     lc_summary = land_cover_result.summary if land_cover_result else "정보 없음"
 
     desc_task = asyncio.create_task(
-        _safe_describe(
-            request.thumbnail,
-            place_name,
-            request.captured_at,
-            lc_summary,
-            cache,
-            request.cog_image_id,
-            request.bbox,
+        _safe_call(
+            "describer",
+            describer.describe_image(
+                request.thumbnail,
+                place_name,
+                request.captured_at,
+                lc_summary,
+                cache,
+                request.cog_image_id,
+                request.bbox,
+            ),
             warnings,
         )
     )
     region = location.region if location else ""
     city = location.city if location else None
     ctx_task = asyncio.create_task(
-        _safe_context(place_name, request.captured_at, cache, region, city, warnings)
+        _safe_call(
+            "context",
+            context.research_context(
+                place_name, request.captured_at, cache, region=region, city=city
+            ),
+            warnings,
+        )
     )
     description, context_result = await asyncio.gather(desc_task, ctx_task)
 
@@ -58,73 +88,3 @@ async def compose_description(request: DescribeRequest, cache: CacheStore) -> De
         warnings=warnings,
         cached=False,
     )
-
-
-async def _safe_geocode(lon, lat, cache, warnings):
-    cb = _breakers["geocoder"]
-    if cb.is_open:
-        warnings.append(Warning(module="geocoder", error="Circuit breaker open"))
-        return None
-    try:
-        result = await geocoder.geocode(lon, lat, cache)
-        cb.record_success()
-        return result
-    except Exception as e:
-        cb.record_failure()
-        logger.error("geocoder failed", error=str(e))
-        warnings.append(Warning(module="geocoder", error=str(e)))
-        return None
-
-
-async def _safe_landcover(lon, lat, cache, warnings):
-    cb = _breakers["landcover"]
-    if cb.is_open:
-        warnings.append(Warning(module="landcover", error="Circuit breaker open"))
-        return None
-    try:
-        result = await landcover.get_land_cover(lon, lat, cache)
-        cb.record_success()
-        return result
-    except Exception as e:
-        cb.record_failure()
-        logger.error("landcover failed", error=str(e))
-        warnings.append(Warning(module="landcover", error=str(e)))
-        return None
-
-
-async def _safe_describe(
-    thumbnail, place_name, captured_at, lc_summary, cache, cog_image_id, bbox, warnings
-):
-    cb = _breakers["describer"]
-    if cb.is_open:
-        warnings.append(Warning(module="describer", error="Circuit breaker open"))
-        return None
-    try:
-        result = await describer.describe_image(
-            thumbnail, place_name, captured_at, lc_summary, cache, cog_image_id, bbox
-        )
-        cb.record_success()
-        return result
-    except Exception as e:
-        cb.record_failure()
-        logger.error("describer failed", error=str(e))
-        warnings.append(Warning(module="describer", error=str(e)))
-        return None
-
-
-async def _safe_context(place_name, captured_at, cache, region, city, warnings):
-    cb = _breakers["context"]
-    if cb.is_open:
-        warnings.append(Warning(module="context", error="Circuit breaker open"))
-        return None
-    try:
-        result = await context.research_context(
-            place_name, captured_at, cache, region=region, city=city
-        )
-        cb.record_success()
-        return result
-    except Exception as e:
-        cb.record_failure()
-        logger.error("context failed", error=str(e))
-        warnings.append(Warning(module="context", error=str(e)))
-        return None
