@@ -1,0 +1,11 @@
+## 완료 요약
+
+**#48** (retry/circuit breaker): 이미 PR #52로 구현 완료 상태
+
+**#54** (circuit breaker 테스트): PR #55 생성 완료
+- https://github.com/conaonda/ImageDescriptor/pull/55
+- 24개 테스트 추가:
+  - **CircuitBreaker 단위 테스트** (12건): closed 유지, threshold 도달 시 open, cooldown 후 half-open → closed 복구, edge cases
+  - **composer._safe_call 테스트** (5건): 성공/실패/circuit open skip/failure 기록/success 리셋
+  - **외부 API 에러 핸들링** (5건): geocoder/landcover HTTP 500, timeout, context 모듈 graceful 처리
+- 전체 테스트 스위트 136개 통과

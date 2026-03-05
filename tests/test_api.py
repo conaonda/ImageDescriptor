@@ -65,10 +65,10 @@ async def test_describe_invalid_coordinates(client):
 @pytest.mark.parametrize(
     "bbox",
     [
-        [999, 0, 10, 10],        # west out of range
-        [0, -100, 10, 10],       # south out of range
-        [10, 0, 5, 10],          # west >= east
-        [0, 10, 10, 5],          # south >= north
+        [999, 0, 10, 10],  # west out of range
+        [0, -100, 10, 10],  # south out of range
+        [10, 0, 5, 10],  # west >= east
+        [0, 10, 10, 5],  # south >= north
     ],
 )
 async def test_describe_invalid_bbox(client, bbox):

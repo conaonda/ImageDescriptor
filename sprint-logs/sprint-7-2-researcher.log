@@ -1,0 +1,17 @@
+작업 완료:
+
+## 결과 요약
+
+**이슈 #27** (STAC 미션 메타데이터) 기술 조사 완료:
+
+### 주요 발견사항
+1. **실측 검증**: Element84 Earth Search API를 직접 호출하여 응답 구조 확인
+2. **분광밴드 수정**: 이슈 본문의 "13개"는 L1C 기준 — L2A 실측 결과 **12개** (B10 Cirrus 미포함)
+3. **MGRS 필드**: `grid:code` 하나로 `"MGRS-52SCG"` 형식 제공 (별도 조합 불필요)
+4. **cloud_cover**: API에서 소수(0.47681)로 반환 → ×100 변환 필요
+5. **stac_id 파싱**: thumbnail URL 패턴 분석 완료, 정규식 추출 로직 설계
+
+### 산출물
+- [이슈 코멘트](https://github.com/conaonda/ImageDescriptor/issues/27#issuecomment-4005413371)에 구조화된 조사 결과 작성
+- `agent/researcher` 라벨 제거 완료
+- Sprint 8 구현 가이드 포함 (모듈 인터페이스, composer 통합, Gemini 프롬프트 설계)

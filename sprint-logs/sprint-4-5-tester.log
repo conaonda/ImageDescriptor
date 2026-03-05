@@ -1,0 +1,12 @@
+## 완료 요약
+
+### PR #45 (rate limiting)
+- 리뷰어 권장사항 적용: `limiter.reset()`으로 테스트 간 카운터 격리
+- `try/finally`로 정리 코드 보장
+- 51 passed, 3 skipped ✅
+- 코멘트: https://github.com/conaonda/ImageDescriptor/pull/45#issuecomment-4005158196
+
+### PR #46 (structured JSON logging)
+- 리뷰어 지적 데드 코드 제거: `_request_id_ctx` 미사용 변수 삭제
+- 51 passed, 3 skipped ✅
+- 코멘트: https://github.com/conaonda/ImageDescriptor/pull/46#issuecomment-4005158817

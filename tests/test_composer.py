@@ -245,13 +245,16 @@ async def test_compose_without_captured_at(mock_geo, mock_lc, mock_desc, mock_ct
     )
     mock_geo.geocode = AsyncMock(
         return_value=Location(
-            country="대한민국", country_code="kr", region="서울",
-            city="중구", place_name="서울특별시", lat=37.566, lon=126.978,
+            country="대한민국",
+            country_code="kr",
+            region="서울",
+            city="중구",
+            place_name="서울특별시",
+            lat=37.566,
+            lon=126.978,
         )
     )
-    mock_lc.get_land_cover = AsyncMock(
-        return_value=LandCover(classes=[], summary="정보 없음")
-    )
+    mock_lc.get_land_cover = AsyncMock(return_value=LandCover(classes=[], summary="정보 없음"))
     mock_desc.describe_image = AsyncMock(return_value="설명")
     mock_ctx.research_context = AsyncMock(return_value=Context(events=[], summary="없음"))
 
@@ -277,13 +280,16 @@ async def test_compose_without_bbox(mock_geo, mock_lc, mock_desc, mock_ctx, cach
     )
     mock_geo.geocode = AsyncMock(
         return_value=Location(
-            country="대한민국", country_code="kr", region="서울",
-            city="중구", place_name="서울특별시", lat=37.566, lon=126.978,
+            country="대한민국",
+            country_code="kr",
+            region="서울",
+            city="중구",
+            place_name="서울특별시",
+            lat=37.566,
+            lon=126.978,
         )
     )
-    mock_lc.get_land_cover = AsyncMock(
-        return_value=LandCover(classes=[], summary="정보 없음")
-    )
+    mock_lc.get_land_cover = AsyncMock(return_value=LandCover(classes=[], summary="정보 없음"))
     mock_desc.describe_image = AsyncMock(return_value="설명")
     mock_ctx.research_context = AsyncMock(return_value=Context(events=[], summary="없음"))
 
@@ -308,13 +314,15 @@ async def test_compose_polar_coordinates(mock_geo, mock_lc, mock_desc, mock_ctx,
     )
     mock_geo.geocode = AsyncMock(
         return_value=Location(
-            country="Antarctica", country_code="aq", region="Antarctica",
-            place_name="South Pole", lat=-89.99, lon=0.0,
+            country="Antarctica",
+            country_code="aq",
+            region="Antarctica",
+            place_name="South Pole",
+            lat=-89.99,
+            lon=0.0,
         )
     )
-    mock_lc.get_land_cover = AsyncMock(
-        return_value=LandCover(classes=[], summary="빙하")
-    )
+    mock_lc.get_land_cover = AsyncMock(return_value=LandCover(classes=[], summary="빙하"))
     mock_desc.describe_image = AsyncMock(return_value="극지 설명")
     mock_ctx.research_context = AsyncMock(return_value=Context(events=[], summary="없음"))
 
@@ -338,13 +346,15 @@ async def test_compose_dateline_coordinates(mock_geo, mock_lc, mock_desc, mock_c
     )
     mock_geo.geocode = AsyncMock(
         return_value=Location(
-            country="Fiji", country_code="fj", region="Pacific",
-            place_name="Date Line", lat=0.0, lon=179.99,
+            country="Fiji",
+            country_code="fj",
+            region="Pacific",
+            place_name="Date Line",
+            lat=0.0,
+            lon=179.99,
         )
     )
-    mock_lc.get_land_cover = AsyncMock(
-        return_value=LandCover(classes=[], summary="해양")
-    )
+    mock_lc.get_land_cover = AsyncMock(return_value=LandCover(classes=[], summary="해양"))
     mock_desc.describe_image = AsyncMock(return_value="태평양 설명")
     mock_ctx.research_context = AsyncMock(return_value=Context(events=[], summary="없음"))
 
@@ -362,20 +372,25 @@ async def test_compose_describer_fail_context_ok(mock_geo, mock_lc, mock_desc, m
     """Phase 2에서 describer만 실패해도 context는 정상 반환되는지 검증."""
     mock_geo.geocode = AsyncMock(
         return_value=Location(
-            country="대한민국", country_code="kr", region="서울",
-            city="중구", place_name="서울특별시", lat=37.566, lon=126.978,
+            country="대한민국",
+            country_code="kr",
+            region="서울",
+            city="중구",
+            place_name="서울특별시",
+            lat=37.566,
+            lon=126.978,
         )
     )
-    mock_lc.get_land_cover = AsyncMock(
-        return_value=LandCover(classes=[], summary="정보 없음")
-    )
+    mock_lc.get_land_cover = AsyncMock(return_value=LandCover(classes=[], summary="정보 없음"))
     mock_desc.describe_image = AsyncMock(side_effect=Exception("Gemini API error"))
     mock_ctx.research_context = AsyncMock(
         return_value=Context(
             events=[
                 Event(
-                    title="뉴스", date="2025-06",
-                    source_url="https://example.com", relevance="high",
+                    title="뉴스",
+                    date="2025-06",
+                    source_url="https://example.com",
+                    relevance="high",
                 )
             ],
             summary="뉴스 요약",
@@ -399,8 +414,13 @@ async def test_compose_timing_logs_emitted(mock_geo, mock_lc, mock_desc, mock_ct
     """Phase 타이밍 로그(phase1_complete, phase2_complete, compose_complete)가 출력되는지 검증."""
     mock_geo.geocode = AsyncMock(
         return_value=Location(
-            country="대한민국", country_code="kr", region="서울",
-            city="중구", place_name="서울특별시", lat=37.566, lon=126.978,
+            country="대한민국",
+            country_code="kr",
+            region="서울",
+            city="중구",
+            place_name="서울특별시",
+            lat=37.566,
+            lon=126.978,
         )
     )
     mock_lc.get_land_cover = AsyncMock(return_value=LandCover(classes=[], summary="정보 없음"))
@@ -415,7 +435,7 @@ async def test_compose_timing_logs_emitted(mock_geo, mock_lc, mock_desc, mock_ct
     assert "phase2_complete" in event_names
     assert "compose_complete" in event_names
 
-    compose_log = next(l for l in logs if l["event"] == "compose_complete")
+    compose_log = next(entry for entry in logs if entry["event"] == "compose_complete")
     assert "total_duration_ms" in compose_log
     assert isinstance(compose_log["total_duration_ms"], int)
     assert compose_log["total_duration_ms"] >= 0

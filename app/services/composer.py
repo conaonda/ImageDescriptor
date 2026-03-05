@@ -6,7 +6,7 @@ import structlog
 
 from app.api.schemas import DescribeRequest, DescribeResponse, Warning
 from app.cache.store import CacheStore
-from app.modules import context, describer, geocoder, landcover
+from app.modules import context, describer, geocoder, landcover, mission
 from app.utils.circuit_breaker import CircuitBreaker
 
 logger = structlog.get_logger()
@@ -17,6 +17,7 @@ _breakers = {
     "landcover": CircuitBreaker("landcover"),
     "describer": CircuitBreaker("describer"),
     "context": CircuitBreaker("context"),
+    "mission": CircuitBreaker("mission"),
 }
 
 
@@ -49,7 +50,14 @@ async def compose_description(request: DescribeRequest, cache: CacheStore) -> De
     lc_task = asyncio.create_task(
         _safe_call("landcover", landcover.get_land_cover(lon, lat, cache), warnings)
     )
-    location, land_cover_result = await asyncio.gather(geo_task, lc_task)
+    mission_task = asyncio.create_task(
+        _safe_call("mission", mission.get_mission_metadata(request.stac_id, cache), warnings)
+    )
+    location, land_cover_result, mission_result = await asyncio.gather(
+        geo_task,
+        lc_task,
+        mission_task,
+    )
     logger.info("phase1_complete", duration_ms=round((time.monotonic() - t_phase1) * 1000))
 
     # Phase 2: Describer + Context 병렬 실행 (Phase 1 결과 활용)
@@ -94,6 +102,7 @@ async def compose_description(request: DescribeRequest, cache: CacheStore) -> De
         location=location,
         land_cover=land_cover_result,
         context=context_result,
+        mission=mission_result,
         warnings=warnings,
         cached=False,
     )

@@ -14,6 +14,7 @@ class DescribeRequest(BaseModel):
         if not (-180 <= lon <= 180) or not (-90 <= lat <= 90):
             raise ValueError("Invalid coordinates range")
         return v
+
     bbox: list[float] | None = Field(
         None, description="[west, south, east, north]", min_length=4, max_length=4
     )
@@ -33,8 +34,10 @@ class DescribeRequest(BaseModel):
         if south >= north:
             raise ValueError("south must be less than north")
         return v
+
     captured_at: str | None = Field(None, description="Capture date in ISO 8601 format")
     cog_image_id: str | None = Field(None, description="Optional cog_images UUID for DB linking")
+    stac_id: str | None = Field(None, description="STAC item ID for satellite mission metadata")
 
     model_config = {
         "json_schema_extra": {
@@ -115,6 +118,16 @@ class Context(BaseModel):
     summary: str
 
 
+class Mission(BaseModel):
+    platform: str
+    instrument: str
+    constellation: str | None = None
+    processing_level: str | None = None
+    cloud_cover: float | None = None
+    gsd: float | None = None
+    spectral_bands: int | None = None
+
+
 class Warning(BaseModel):
     module: str
     error: str
@@ -125,6 +138,7 @@ class DescribeResponse(BaseModel):
     location: Location | None = None
     land_cover: LandCover | None = None
     context: Context | None = None
+    mission: Mission | None = None
     warnings: list[Warning] = []
     cached: bool = False
 

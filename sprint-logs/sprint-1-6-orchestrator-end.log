@@ -1,0 +1,28 @@
+# Sprint 1 - Orchestrator End Report
+Date: 2026-03-05
+
+## Completed Tasks
+
+### Issue #28 - _safe_* 제네릭 래퍼 통합
+- PR #30 -> merged (squash)
+- composer.py 81줄 -> 41줄로 감소
+- circuit breaker open 상태 테스트 추가
+
+### Issue #29 - 좌표 검증 Pydantic 이동
+- PR #31 -> merged (squash)
+- routes.py에서 4개 중복 검증 블록 제거
+- Breaking change: 400 -> 422 (Pydantic 표준)
+- /geocode, /landcover, /context 엔드포인트 테스트 6개 추가
+
+## Release
+- PR #32: release v0.4.0 (pending merge)
+- Breaking change 포함으로 minor version bump
+
+## Remaining Backlog
+- Issue #27: feat: 위성 미션 메타데이터 제공 (STAC 연동) - Sprint 2 대상
+
+## Metrics
+- Issues closed: 2/2 (100%)
+- PRs merged: 2/2
+- Tests added: 7 (1 + 6)
+- All tests passing: 20 passed

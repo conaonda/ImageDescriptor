@@ -1,0 +1,14 @@
+## Sprint 4 계획 완료
+
+| 이슈 | 제목 | 라벨 | 우선순위 |
+|------|------|------|----------|
+| [#27](https://github.com/conaonda/ImageDescriptor/issues/27) | feat: 위성 미션 메타데이터 제공 (STAC 연동) | `agent/researcher` | 높음 |
+| [#43](https://github.com/conaonda/ImageDescriptor/issues/43) | feat: 구조화된 JSON 로깅 도입 (structlog) | `agent/developer` | 중간 |
+| [#44](https://github.com/conaonda/ImageDescriptor/issues/44) | feat: API rate limiting 미들웨어 추가 | `agent/developer` | 중간 |
+
+**판단 근거:**
+- **#27** — STAC API 연동은 핵심 기능 확장이지만 외부 API 조사가 필요하므로 `agent/researcher` 지정
+- **#43** — 프로덕션 운영에 필수적인 구조화된 로깅. 구현 중심이므로 `agent/developer`
+- **#44** — Gemini API 비용 보호 및 보안 강화. 구현 중심이므로 `agent/developer`
+
+각 이슈에 스프린트 계획 코멘트를 남겼습니다.

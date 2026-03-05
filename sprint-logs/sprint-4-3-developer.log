@@ -1,0 +1,17 @@
+## 완료 요약
+
+두 `agent/developer` 이슈를 모두 구현했습니다:
+
+### #43 — 구조화된 JSON 로깅 (structlog)
+- **PR**: https://github.com/conaonda/ImageDescriptor/pull/46
+- `app/utils/logging.py` 생성: JSON 포맷터, `request_id` contextvars 바인딩
+- 요청별 `X-Request-ID` 헤더 자동 생성/pass-through
+- `request_started`/`request_finished` 이벤트 로깅
+
+### #44 — API rate limiting 미들웨어
+- **PR**: https://github.com/conaonda/ImageDescriptor/pull/45
+- `RATE_LIMIT` 환경변수로 설정 가능 (기본값: `30/minute`)
+- `/api/health`, `/api/cache/stats`는 rate limit 미적용
+- 429 응답 테스트 추가
+
+두 브랜치 모두 전체 테스트 51개 통과 (3 skipped).

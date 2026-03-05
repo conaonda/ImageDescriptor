@@ -1,4 +1,3 @@
-import logging
 from unittest.mock import patch
 
 import pytest
@@ -7,7 +6,7 @@ from httpx import ASGITransport, AsyncClient
 
 from app.cache.store import CacheStore
 from app.main import app
-from app.utils.logging import generate_request_id, request_id_middleware, setup_logging
+from app.utils.logging import generate_request_id, setup_logging
 
 
 @pytest.fixture
@@ -62,9 +61,7 @@ class TestRequestIdMiddleware:
 
     async def test_custom_request_id_passthrough(self, client):
         custom_id = "my-custom-req-id"
-        resp = await client.get(
-            "/api/health", headers={"X-Request-ID": custom_id}
-        )
+        resp = await client.get("/api/health", headers={"X-Request-ID": custom_id})
         assert resp.headers["x-request-id"] == custom_id
 
     async def test_generated_id_is_hex(self, client):

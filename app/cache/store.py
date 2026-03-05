@@ -57,9 +57,7 @@ class CacheStore:
             row = await cursor.fetchone()
             entry_count = row[0]
 
-        async with self._db.execute(
-            "SELECT SUM(LENGTH(key) + LENGTH(value)) FROM cache"
-        ) as cursor:
+        async with self._db.execute("SELECT SUM(LENGTH(key) + LENGTH(value)) FROM cache") as cursor:
             row = await cursor.fetchone()
             total_bytes = row[0] or 0
 

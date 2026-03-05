@@ -1,0 +1,17 @@
+## 스프린트 2 완료 요약
+
+### 릴리스
+- **v0.4.0** 릴리스 생성 완료: https://github.com/conaonda/ImageDescriptor/releases/tag/v0.4.0
+
+### 머지된 PR
+| PR | 이슈 | 내용 |
+|----|------|------|
+| [#35](https://github.com/conaonda/ImageDescriptor/pull/35) | #33 | bbox 좌표 범위 검증 (경도 ±180, 위도 ±90) |
+| [#36](https://github.com/conaonda/ImageDescriptor/pull/36) | #34 | `/health` 동적 버전 읽기 |
+| [#37](https://github.com/conaonda/ImageDescriptor/pull/37) | - | 버전 0.3.1 → 0.4.0 bump |
+
+### 이월 이슈
+- **#27** (STAC 연동): researcher 조사 완료, 구현은 Sprint 3으로 이월
+
+### 테스트
+- 전체 27/27 통과, 추가 테스트 불필요 판정

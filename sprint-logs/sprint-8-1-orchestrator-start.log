@@ -1,0 +1,13 @@
+스프린트 8 계획이 완료되었습니다.
+
+## Sprint 8 요약
+
+| 이슈 | 제목 | 라벨 | 우선순위 |
+|------|------|------|----------|
+| [#27](https://github.com/conaonda/ImageDescriptor/issues/27) | feat: 위성 미션 메타데이터 제공 (STAC 연동) | `agent/researcher` | 높음 |
+| [#57](https://github.com/conaonda/ImageDescriptor/issues/57) | perf: 모듈 병렬 실행 최적화 (asyncio.gather) | `agent/developer` | 높음 |
+| [#58](https://github.com/conaonda/ImageDescriptor/issues/58) | test: mission 모듈 단위 테스트 및 STAC API 통합 테스트 | `agent/developer` | 중간 |
+
+**실행 순서:**
+1. #27 기술 조사 (researcher) + #57 병렬 실행 최적화 (developer) → 동시 진행
+2. #58 mission 테스트 → #27 조사 완료 후 진행

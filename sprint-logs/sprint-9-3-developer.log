@@ -1,0 +1,21 @@
+## Developer 작업 완료
+
+**PR**: https://github.com/conaonda/ImageDescriptor/pull/63
+
+### 구현 내용
+
+| 이슈 | 작업 | 상태 |
+|------|------|------|
+| #27 | `app/modules/mission.py` — STAC API 연동 mission 모듈 신규 생성 | 완료 |
+| #61 | `stac_id: str \| None` 타입 수정, 빈 instruments `or ["unknown"]` 방어 | 완료 |
+| #58 | `tests/test_mission.py` — 11개 단위 테스트 | 완료 |
+
+### 변경 파일
+- `app/modules/mission.py` (신규) — STAC 메타데이터 조회, 파싱, 캐시
+- `app/api/schemas.py` — `Mission` 스키마, `stac_id` 필드, `mission` 응답 필드 추가
+- `app/services/composer.py` — mission 모듈 Phase 1 병렬 실행 통합
+- `tests/test_mission.py` (신규) — 파싱/캐시/에러 핸들링 테스트
+
+### 테스트 결과
+- mission 테스트 11개 통과
+- 전체 테스트 164개 통과

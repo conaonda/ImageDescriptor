@@ -1,0 +1,18 @@
+두 PR 모두 리뷰 완료했습니다.
+
+---
+
+## 리뷰 결과 요약
+
+### PR #45 - API Rate Limiting → **승인** ✅
+- `lambda: settings.rate_limit` 패턴으로 동적 설정 적절
+- 모니터링 엔드포인트 rate limit 제외 올바름
+- **권장 개선**: 테스트의 mock 방식(`patch.object` 사용) 및 테스트 간 카운터 격리 개선
+
+### PR #46 - 구조화된 JSON 로깅 → **승인** ✅
+- contextvars 기반 request_id 바인딩/클리어 올바르게 구현
+- **권장 개선**: `logging.py` 10번째 줄 미사용 변수 `_request_id_ctx` 제거 필요 (데드 코드 + 잘못된 타입 어노테이션)
+
+GitHub에서 자신의 PR은 직접 승인 처리가 불가하여 코멘트로 리뷰를 남겼습니다:
+- https://github.com/conaonda/ImageDescriptor/pull/45#issuecomment-4005137319
+- https://github.com/conaonda/ImageDescriptor/pull/46#issuecomment-4005136857

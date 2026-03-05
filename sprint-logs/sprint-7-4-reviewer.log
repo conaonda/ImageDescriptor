@@ -1,0 +1,18 @@
+두 PR에 대한 리뷰를 완료했습니다.
+
+---
+
+## 리뷰 결과 요약
+
+### PR #52 — `feat: retry/circuit breaker` ✅ 승인
+자체 PR 승인 제한으로 comment로 제출됨.
+
+**이슈 없음**, 개선 제안만:
+1. `retry_gemini`에 `retry_if_exception` 필터 없음 — 코드 버그도 3회 재시도하게 됨 (non-blocking)
+2. `_log_retry`의 불필요한 `hasattr` 가드 — tenacity>=9.0 에서 항상 존재 (minor)
+
+### PR #55 — `test: circuit breaker 테스트` ⚠️ 변경 요청
+자체 PR 제한으로 comment로 제출됨.
+
+**수정 권장:**
+- `test_geocoder_http_error`, `test_landcover_http_error` — httpx_mock 500 응답이 1개만 등록되어 있으나, PR #52 병합 후 `@retry_http`가 최대 3회 재시도하므로 mock을 3개 등록하거나 retry를 patch해야 함. 미수정 시 PR #52 병합 후 테스트 실패 또는 느림(~3초) 발생 가능

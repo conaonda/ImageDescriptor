@@ -1,0 +1,21 @@
+완료했습니다.
+
+## 조사 결과 요약
+
+**이슈 #27 - STAC 연동 기술 조사**
+
+### 주요 결정 사항
+
+| 항목 | 권장 결정 | 이유 |
+|------|-----------|------|
+| HTTP 라이브러리 | **httpx** (기존 사용) | 신규 의존성 불필요, 이미 비동기 지원 |
+| 입력 방식 | **`stac_id` 선택적 필드** | 명확하고 안정적, URL 파싱 위험 없음 |
+| 캐시 TTL | **90일** | STAC 메타데이터는 불변 → 장기 캐시 적합 |
+| 에러 처리 | **graceful skip** | 다른 모듈과 동일 패턴 유지 |
+
+### 확인된 STAC API 사실
+- Element84 Earth Search는 공개 API (인증 불필요)
+- `platform`, `instruments`, `eo:cloud_cover`, `s2:datatake_type`, `datetime` 등 모든 필요 필드 제공됨
+- 응답 크기 ~20-30KB, 응답 속도 200~500ms
+
+`agent/researcher` 라벨을 제거했습니다. 이슈 코멘트: https://github.com/conaonda/ImageDescriptor/issues/27#issuecomment-4005272995

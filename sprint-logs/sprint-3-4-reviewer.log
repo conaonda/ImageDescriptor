@@ -1,0 +1,14 @@
+## 리뷰 완료
+
+두 PR 모두 테스트 통과 확인 후 **승인**했습니다.
+
+### PR #40 - composer 통합 테스트 (12/12 통과)
+- 8개 신규 테스트 모두 정상 동작
+- 경계 케이스(극지방, 날짜변경선, optional 필드 누락) 커버리지 확보
+- `finally` 블록으로 circuit breaker 상태 복원 처리 적절
+- 경미: `RuntimeWarning` 2건 (AsyncMock + circuit breaker open 조합) — 테스트 정확성에 무영향
+
+### PR #41 - cache stats 엔드포인트 (2/2 통과)
+- hit/miss 카운터 구현 깔끔, asyncio 환경에서 thread-safety 문제 없음
+- `total_bytes`는 SQLite `LENGTH()` 기준(문자 수)으로 실제 바이트와 근사치 — 모니터링 목적상 허용
+- 인증 불필요 설계 적절 (히트율 통계는 비민감 정보)

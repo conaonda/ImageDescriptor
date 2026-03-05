@@ -1,0 +1,17 @@
+조사 완료 및 `agent/researcher` 라벨을 제거했습니다.
+
+## 조사 결과 요약 (이슈 #27)
+
+**Element84 Earth Search STAC API** 실제 호출로 다음을 확인했습니다:
+
+### 주요 발견
+- **인증 불필요**: 무료 공개 API, 즉시 사용 가능
+- **핵심 필드**: `platform`, `instruments`, `eo:cloud_cover`, `datetime`, `s2:datatake_type`, `view:sun_elevation` 등 이슈에서 요청한 모든 정보 제공
+- **13개 밴드 확인**: assets 분석으로 L2A 표준 13개 밴드 하드코딩 가능
+- **불변 데이터**: TTL 365일 캐시 권장
+- **기존 패턴 유지**: `httpx` 직접 사용 (pystac-client 불필요)
+
+### 구현 권장사항
+- `stac_id` 직접 입력 (thumbnail URL 파싱 불안정)
+- `stac_id` 미제공 시 `mission: null` 반환으로 하위 호환 유지
+- `app/modules/mission.py` 신규 모듈로 구현
