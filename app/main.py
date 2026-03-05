@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
@@ -77,3 +78,5 @@ async def security_headers_middleware(request, call_next):
 
 
 app.include_router(router, prefix="/api")
+
+Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
