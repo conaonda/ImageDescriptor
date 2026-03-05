@@ -35,6 +35,7 @@ class DescribeRequest(BaseModel):
         return v
     captured_at: str | None = Field(None, description="Capture date in ISO 8601 format")
     cog_image_id: str | None = Field(None, description="Optional cog_images UUID for DB linking")
+    stac_id: str | None = Field(None, description="STAC item ID for satellite mission metadata")
 
     model_config = {
         "json_schema_extra": {
@@ -115,6 +116,16 @@ class Context(BaseModel):
     summary: str
 
 
+class Mission(BaseModel):
+    platform: str = Field(description="Satellite platform (e.g. Sentinel-2C)")
+    instrument: str = Field(description="Sensor instrument (e.g. MSI)")
+    constellation: str | None = Field(None, description="Mission constellation")
+    processing_level: str | None = Field(None, description="Processing level (e.g. L2A)")
+    cloud_cover: float | None = Field(None, description="Cloud cover percentage")
+    gsd: float | None = Field(None, description="Ground sample distance in meters")
+    spectral_bands: int | None = Field(None, description="Number of spectral bands")
+
+
 class Warning(BaseModel):
     module: str
     error: str
@@ -125,6 +136,7 @@ class DescribeResponse(BaseModel):
     location: Location | None = None
     land_cover: LandCover | None = None
     context: Context | None = None
+    mission: Mission | None = None
     warnings: list[Warning] = []
     cached: bool = False
 
