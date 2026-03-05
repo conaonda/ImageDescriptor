@@ -4,17 +4,23 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.security import HTTPAuthorizationCredentials
-from jose import jwt
+from jose import JWTError
 
-from app.auth import _JWKS_TTL, _get_jwks, _verify_jwt, authenticate
+from app.auth import _JWKS_TTL, _get_jwks, authenticate
 from app.utils.errors import DescriptorError
-
 
 FAKE_JWKS = {
     "keys": [
         {
             "kty": "RSA",
-            "n": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMstn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n91CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqbw0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw",
+            "n": (
+                "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAt"
+                "VT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMstn6"
+                "4tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_F"
+                "DW2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n"
+                "91CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksIN"
+                "HaQ-G_xBniIqbw0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw"
+            ),
             "e": "AQAB",
             "alg": "RS256",
             "kid": "test-key-id",
@@ -76,7 +82,7 @@ class TestJwtAuth:
         creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="expired.jwt.token")
         with (
             patch("app.auth._get_jwks", new_callable=AsyncMock, return_value=FAKE_JWKS),
-            patch("app.auth._verify_jwt", side_effect=__import__("jose").JWTError("expired")),
+            patch("app.auth._verify_jwt", side_effect=JWTError("expired")),
             patch("app.auth.settings") as mock_settings,
         ):
             mock_settings.api_key = "different-key"
@@ -88,7 +94,7 @@ class TestJwtAuth:
         creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="bad.sig.token")
         with (
             patch("app.auth._get_jwks", new_callable=AsyncMock, return_value=FAKE_JWKS),
-            patch("app.auth._verify_jwt", side_effect=__import__("jose").JWTError("bad signature")),
+            patch("app.auth._verify_jwt", side_effect=JWTError("bad signature")),
             patch("app.auth.settings") as mock_settings,
         ):
             mock_settings.api_key = "different-key"
@@ -100,7 +106,7 @@ class TestJwtAuth:
         creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="wrong.aud.token")
         with (
             patch("app.auth._get_jwks", new_callable=AsyncMock, return_value=FAKE_JWKS),
-            patch("app.auth._verify_jwt", side_effect=__import__("jose").JWTError("Invalid audience")),
+            patch("app.auth._verify_jwt", side_effect=JWTError("Invalid audience")),
             patch("app.auth.settings") as mock_settings,
         ):
             mock_settings.api_key = "different-key"
@@ -121,8 +127,6 @@ class TestNoAuth:
 
 class TestJwksCache:
     async def test_jwks_cache_hit(self):
-        import app.auth as auth_module
-
         mock_response = MagicMock()
         mock_response.json.return_value = FAKE_JWKS
         mock_response.raise_for_status = MagicMock()

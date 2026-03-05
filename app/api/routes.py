@@ -1,3 +1,4 @@
+import asyncio
 from importlib.metadata import PackageNotFoundError, version
 
 from fastapi import APIRouter, Depends, Request
@@ -14,8 +15,6 @@ from app.api.schemas import (
     LandCover,
     Location,
 )
-import asyncio
-
 from app.auth import authenticate
 from app.config import settings
 from app.db import supabase as db
@@ -106,7 +105,10 @@ async def describe(
     response_model=BatchDescribeResponse,
     tags=["analysis"],
     summary="위성영상 배치 분석",
-    description="최대 10건의 분석 요청을 병렬 처리합니다. 개별 실패 시 해당 항목만 에러를 반환합니다.",
+    description=(
+        "최대 10건의 분석 요청을 병렬 처리합니다. "
+        "개별 실패 시 해당 항목만 에러를 반환합니다."
+    ),
     responses={
         422: {"model": ErrorResponse, "description": "유효하지 않은 요청"},
         429: {"description": "요청 횟수 초과"},
