@@ -7,6 +7,7 @@ import structlog
 from app.api.schemas import Location
 from app.cache.store import CacheStore
 from app.config import settings
+from app.utils.retry import retry_http
 
 logger = structlog.get_logger()
 
@@ -18,6 +19,25 @@ _last_request_time = 0.0
 def _round_coords(lon: float, lat: float, decimals: int = 3) -> tuple[float, float]:
     """좌표를 반올림하여 캐시 키 생성 (~111m 정밀도)."""
     return round(lon, decimals), round(lat, decimals)
+
+
+@retry_http
+async def _fetch_nominatim(lon: float, lat: float) -> httpx.Response:
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{settings.nominatim_url}/reverse",
+            params={
+                "lat": lat,
+                "lon": lon,
+                "format": "jsonv2",
+                "accept-language": "ko",
+                "zoom": 8,
+            },
+            headers={"User-Agent": "COGnito/1.2 (image-descriptor)"},
+            timeout=10.0,
+        )
+        resp.raise_for_status()
+        return resp
 
 
 async def geocode(lon: float, lat: float, cache: CacheStore) -> Location:
@@ -37,21 +57,8 @@ async def geocode(lon: float, lat: float, cache: CacheStore) -> Location:
         if wait > 0:
             await asyncio.sleep(wait)
 
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(
-                f"{settings.nominatim_url}/reverse",
-                params={
-                    "lat": lat,
-                    "lon": lon,
-                    "format": "jsonv2",
-                    "accept-language": "ko",
-                    "zoom": 8,
-                },
-                headers={"User-Agent": "COGnito/1.2 (image-descriptor)"},
-                timeout=10.0,
-            )
-            resp.raise_for_status()
-            _last_request_time = asyncio.get_event_loop().time()
+        resp = await _fetch_nominatim(lon, lat)
+        _last_request_time = asyncio.get_event_loop().time()
 
     data = resp.json()
     address = data.get("address", {})
