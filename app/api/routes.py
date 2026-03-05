@@ -7,6 +7,7 @@ from app.api.schemas import (
     Context,
     DescribeRequest,
     DescribeResponse,
+    ErrorResponse,
     LandCover,
     Location,
 )
@@ -21,13 +22,23 @@ router = APIRouter()
 limiter = Limiter(key_func=get_real_ip)
 
 
-@router.get("/cache/stats")
+@router.get(
+    "/cache/stats",
+    tags=["system"],
+    summary="캐시 통계 조회",
+    description="SQLite 캐시의 히트/미스 통계 및 항목 수를 반환합니다.",
+)
 async def cache_stats(request: Request):
     cache = request.app.state.cache
     return await cache.stats()
 
 
-@router.get("/health")
+@router.get(
+    "/health",
+    tags=["system"],
+    summary="헬스체크",
+    description="서비스 상태와 버전 정보를 반환합니다.",
+)
 async def health():
     try:
         ver = version("cognito-descriptor")
@@ -36,7 +47,23 @@ async def health():
     return {"status": "ok", "version": ver}
 
 
-@router.post("/describe", response_model=DescribeResponse)
+@router.post(
+    "/describe",
+    response_model=DescribeResponse,
+    tags=["analysis"],
+    summary="위성영상 통합 분석",
+    description=(
+        "썸네일과 좌표를 입력받아 역지오코딩, 토지피복 분류, "
+        "Gemini AI 영상 설명, 맥락 정보를 통합 생성합니다."
+    ),
+    responses={
+        422: {
+            "model": ErrorResponse,
+            "description": "유효하지 않은 요청 (좌표 범위 초과, 썸네일 과대 등)",
+        },
+        429: {"description": "요청 횟수 초과 (Rate Limit Exceeded)"},
+    },
+)
 @limiter.limit(lambda: settings.rate_limit)
 async def describe(
     body: DescribeRequest,
@@ -69,7 +96,16 @@ async def describe(
     return result
 
 
-@router.post("/geocode", response_model=Location)
+@router.post(
+    "/geocode",
+    response_model=Location,
+    tags=["data"],
+    summary="역지오코딩",
+    description="좌표를 입력받아 Nominatim 기반 역지오코딩 결과를 반환합니다.",
+    responses={
+        429: {"description": "요청 횟수 초과"},
+    },
+)
 @limiter.limit(lambda: settings.rate_limit)
 async def geocode_endpoint(
     body: DescribeRequest,
@@ -83,7 +119,16 @@ async def geocode_endpoint(
     return await geocode(lon, lat, cache)
 
 
-@router.post("/landcover", response_model=LandCover)
+@router.post(
+    "/landcover",
+    response_model=LandCover,
+    tags=["data"],
+    summary="토지피복 분류",
+    description="좌표를 입력받아 Overpass API 기반 토지피복 분류 결과를 반환합니다.",
+    responses={
+        429: {"description": "요청 횟수 초과"},
+    },
+)
 @limiter.limit(lambda: settings.rate_limit)
 async def landcover_endpoint(
     body: DescribeRequest,
@@ -97,7 +142,16 @@ async def landcover_endpoint(
     return await get_land_cover(lon, lat, cache)
 
 
-@router.post("/context", response_model=Context)
+@router.post(
+    "/context",
+    response_model=Context,
+    tags=["data"],
+    summary="맥락 정보 조회",
+    description="좌표와 촬영일자를 기반으로 DuckDuckGo API에서 관련 맥락 정보를 검색합니다.",
+    responses={
+        429: {"description": "요청 횟수 초과"},
+    },
+)
 @limiter.limit(lambda: settings.rate_limit)
 async def context_endpoint(
     body: DescribeRequest,
@@ -112,7 +166,16 @@ async def context_endpoint(
     return await research_context(place_name, body.captured_at, cache)
 
 
-@router.get("/descriptions/{cog_image_id}")
+@router.get(
+    "/descriptions/{cog_image_id}",
+    tags=["analysis"],
+    summary="저장된 설명 조회",
+    description="cog_image_id로 Supabase에 저장된 분석 결과를 조회합니다.",
+    responses={
+        404: {"model": ErrorResponse, "description": "해당 ID의 설명을 찾을 수 없음"},
+        429: {"description": "요청 횟수 초과"},
+    },
+)
 @limiter.limit("30/minute")
 async def get_description(
     cog_image_id: str,
