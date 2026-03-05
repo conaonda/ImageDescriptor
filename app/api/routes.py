@@ -1,3 +1,5 @@
+from importlib.metadata import PackageNotFoundError, version
+
 from fastapi import APIRouter, Depends, Request
 from slowapi import Limiter
 
@@ -20,7 +22,11 @@ limiter = Limiter(key_func=get_real_ip)
 
 @router.get("/health")
 async def health():
-    return {"status": "ok", "version": "0.3.0"}
+    try:
+        ver = version("cognito-descriptor")
+    except PackageNotFoundError:
+        ver = "unknown"
+    return {"status": "ok", "version": ver}
 
 
 @router.post("/describe", response_model=DescribeResponse)

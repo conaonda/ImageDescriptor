@@ -18,7 +18,9 @@ async def client():
 async def test_health(client):
     resp = await client.get("/api/health")
     assert resp.status_code == 200
-    assert resp.json()["status"] == "ok"
+    data = resp.json()
+    assert data["status"] == "ok"
+    assert "version" in data
 
 
 async def test_describe_no_api_key(client):
