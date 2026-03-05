@@ -1,9 +1,13 @@
+import asyncio
 from importlib.metadata import PackageNotFoundError, version
 
 from fastapi import APIRouter, Depends, Request
 from slowapi import Limiter
 
 from app.api.schemas import (
+    BatchDescribeRequest,
+    BatchDescribeResponse,
+    BatchItemResult,
     Context,
     DescribeRequest,
     DescribeResponse,
@@ -94,6 +98,56 @@ async def describe(
         )
 
     return result
+
+
+@router.post(
+    "/describe/batch",
+    response_model=BatchDescribeResponse,
+    tags=["analysis"],
+    summary="위성영상 배치 분석",
+    description=(
+        "최대 10건의 분석 요청을 병렬 처리합니다. 개별 실패 시 해당 항목만 에러를 반환합니다."
+    ),
+    responses={
+        422: {"model": ErrorResponse, "description": "유효하지 않은 요청"},
+        429: {"description": "요청 횟수 초과"},
+    },
+)
+@limiter.limit(lambda: settings.rate_limit)
+async def describe_batch(
+    body: BatchDescribeRequest,
+    request: Request,
+    _auth: dict = Depends(authenticate),
+):
+    cache = request.app.state.cache
+
+    async def _process_one(index: int, item: DescribeRequest) -> BatchItemResult:
+        try:
+            if not item.thumbnail.startswith("http") and len(item.thumbnail) > 5 * 1024 * 1024:
+                return BatchItemResult(index=index, error="Thumbnail too large (max 5MB)")
+            result = await compose_description(item, cache)
+            if item.cog_image_id and result.description:
+                await db.save_description(
+                    cog_image_id=item.cog_image_id,
+                    coordinates=item.coordinates,
+                    captured_at=item.captured_at,
+                    location=result.location.model_dump() if result.location else None,
+                    land_cover=result.land_cover.model_dump() if result.land_cover else None,
+                    description=result.description,
+                    context=result.context.model_dump() if result.context else None,
+                )
+            return BatchItemResult(index=index, result=result)
+        except Exception as e:
+            return BatchItemResult(index=index, error=str(e))
+
+    results = await asyncio.gather(*[_process_one(i, item) for i, item in enumerate(body.items)])
+    succeeded = sum(1 for r in results if r.result is not None)
+    return BatchDescribeResponse(
+        results=list(results),
+        total=len(body.items),
+        succeeded=succeeded,
+        failed=len(body.items) - succeeded,
+    )
 
 
 @router.post(

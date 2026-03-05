@@ -171,6 +171,30 @@ class DescribeResponse(BaseModel):
     }
 
 
+MAX_BATCH_SIZE = 10
+
+
+class BatchDescribeRequest(BaseModel):
+    items: list[DescribeRequest] = Field(
+        description="배치 분석 요청 목록 (최대 10건)",
+        min_length=1,
+        max_length=MAX_BATCH_SIZE,
+    )
+
+
+class BatchItemResult(BaseModel):
+    index: int
+    result: DescribeResponse | None = None
+    error: str | None = None
+
+
+class BatchDescribeResponse(BaseModel):
+    results: list[BatchItemResult]
+    total: int
+    succeeded: int
+    failed: int
+
+
 class ErrorResponse(BaseModel):
     """API 에러 응답 모델"""
 
