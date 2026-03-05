@@ -28,6 +28,11 @@ cache_misses = Counter(
     ["module"],
 )
 
+cache_cleanup_total = Counter(
+    "cache_cleanup_total",
+    "Total expired cache entries removed",
+)
+
 # Circuit breaker metrics
 circuit_breaker_state = Gauge(
     "circuit_breaker_open",

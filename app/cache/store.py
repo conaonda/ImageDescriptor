@@ -3,8 +3,11 @@ import time
 from collections import defaultdict
 
 import aiosqlite
+import structlog
 
-from app.utils.metrics import cache_hits, cache_misses
+from app.utils.metrics import cache_cleanup_total, cache_hits, cache_misses
+
+logger = structlog.get_logger()
 
 
 class CacheStore:
@@ -91,6 +94,18 @@ class CacheStore:
             return True
         except Exception:
             return False
+
+    async def cleanup_expired(self) -> int:
+        now = time.time()
+        async with self._db.execute(
+            "DELETE FROM cache WHERE expires_at IS NOT NULL AND expires_at < ?", (now,)
+        ) as cursor:
+            deleted = cursor.rowcount
+        await self._db.commit()
+        if deleted > 0:
+            cache_cleanup_total.inc(deleted)
+            logger.info("cache_cleanup", deleted=deleted)
+        return deleted
 
     async def close(self):
         if self._db:
