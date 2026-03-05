@@ -248,3 +248,78 @@ async def test_request_id_passthrough(client_with_cache, monkeypatch):
     custom_id = "my-custom-request-id"
     resp = await client_with_cache.get("/api/health", headers={"X-Request-ID": custom_id})
     assert resp.headers["x-request-id"] == custom_id
+
+
+class TestDescribeAndSave:
+    async def test_saved_true_when_save_succeeds(self, monkeypatch):
+        from unittest.mock import AsyncMock, MagicMock
+
+        import app.db.supabase as db_mod
+        from app.api.routes import _describe_and_save
+        from app.api.schemas import DescribeRequest, DescribeResponse
+
+        mock_result = DescribeResponse(description="test desc")
+        monkeypatch.setattr(
+            "app.api.routes.compose_description",
+            AsyncMock(return_value=mock_result),
+        )
+        monkeypatch.setattr(db_mod, "save_description", AsyncMock(return_value=True))
+
+        item = DescribeRequest(
+            thumbnail="dGVzdA==",
+            coordinates=[127.0, 37.0],
+            cog_image_id="img-1",
+        )
+        result = await _describe_and_save(item, MagicMock())
+
+        assert result.saved is True
+        assert result.warnings == []
+
+    async def test_saved_false_and_warning_when_save_fails(self, monkeypatch):
+        from unittest.mock import AsyncMock, MagicMock
+
+        import app.db.supabase as db_mod
+        from app.api.routes import _describe_and_save
+        from app.api.schemas import DescribeRequest, DescribeResponse
+
+        mock_result = DescribeResponse(description="test desc")
+        monkeypatch.setattr(
+            "app.api.routes.compose_description",
+            AsyncMock(return_value=mock_result),
+        )
+        monkeypatch.setattr(db_mod, "save_description", AsyncMock(return_value=False))
+
+        item = DescribeRequest(
+            thumbnail="dGVzdA==",
+            coordinates=[127.0, 37.0],
+            cog_image_id="img-1",
+        )
+        result = await _describe_and_save(item, MagicMock())
+
+        assert result.saved is False
+        assert len(result.warnings) == 1
+        assert result.warnings[0].module == "supabase"
+
+    async def test_save_not_called_without_cog_image_id(self, monkeypatch):
+        from unittest.mock import AsyncMock, MagicMock
+
+        import app.db.supabase as db_mod
+        from app.api.routes import _describe_and_save
+        from app.api.schemas import DescribeRequest, DescribeResponse
+
+        mock_result = DescribeResponse(description="test desc")
+        monkeypatch.setattr(
+            "app.api.routes.compose_description",
+            AsyncMock(return_value=mock_result),
+        )
+        mock_save = AsyncMock(return_value=True)
+        monkeypatch.setattr(db_mod, "save_description", mock_save)
+
+        item = DescribeRequest(
+            thumbnail="dGVzdA==",
+            coordinates=[127.0, 37.0],
+        )
+        result = await _describe_and_save(item, MagicMock())
+
+        mock_save.assert_not_awaited()
+        assert result.saved is None

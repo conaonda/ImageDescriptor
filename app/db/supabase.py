@@ -1,7 +1,11 @@
+import asyncio
+
 import structlog
 from supabase import AsyncClient, acreate_client
 
 from app.config import settings
+
+SAVE_TIMEOUT_SECONDS = 10
 
 logger = structlog.get_logger()
 
@@ -49,16 +53,20 @@ async def save_description(
             row["context_json"] = context.get("events")
             row["context_summary"] = context.get("summary")
 
-        result = (
-            await client.table("image_descriptions")
+        result = await asyncio.wait_for(
+            client.table("image_descriptions")
             .upsert(row, on_conflict="cog_image_id")
-            .execute()
+            .execute(),
+            timeout=SAVE_TIMEOUT_SECONDS,
         )
         logger.info("saved description to supabase", cog_image_id=cog_image_id)
-        return result.data[0] if result.data else None
+        return True
+    except asyncio.TimeoutError:
+        logger.error("supabase save timed out", cog_image_id=cog_image_id)
+        return False
     except Exception as e:
         logger.error("supabase save failed", error=str(e))
-        return None
+        return False
 
 
 async def ping() -> bool:

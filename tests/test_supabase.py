@@ -1,3 +1,4 @@
+import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -52,7 +53,7 @@ class TestSaveDescription:
                 description="test description",
                 context={"events": [], "summary": "no events"},
             )
-            assert result == {"id": 1, "cog_image_id": "test-img"}
+            assert result is True
 
     async def test_save_without_optional_fields(self, mock_client):
         with patch.object(db_module, "get_client", new_callable=AsyncMock, return_value=mock_client):
@@ -65,9 +66,9 @@ class TestSaveDescription:
                 description=None,
                 context=None,
             )
-            assert result is not None
+            assert result is True
 
-    async def test_save_returns_none_on_error(self):
+    async def test_save_returns_false_on_error(self):
         mock_client = MagicMock()
         mock_client.table.return_value.upsert.return_value.execute = AsyncMock(
             side_effect=Exception("db error")
@@ -82,9 +83,9 @@ class TestSaveDescription:
                 description="test",
                 context=None,
             )
-            assert result is None
+            assert result is False
 
-    async def test_save_empty_result(self):
+    async def test_save_returns_true_on_empty_result(self):
         mock_client = MagicMock()
         result = MagicMock()
         result.data = []
@@ -99,7 +100,27 @@ class TestSaveDescription:
                 description="test",
                 context=None,
             )
-            assert result is None
+            assert result is True
+
+    async def test_save_timeout(self):
+        mock_client = MagicMock()
+
+        async def slow_execute():
+            await asyncio.sleep(20)
+
+        mock_client.table.return_value.upsert.return_value.execute = slow_execute
+        with patch.object(db_module, "get_client", new_callable=AsyncMock, return_value=mock_client):
+            with patch.object(db_module, "SAVE_TIMEOUT_SECONDS", 0.1):
+                result = await db_module.save_description(
+                    cog_image_id="test-img",
+                    coordinates=[127.0, 37.0],
+                    captured_at=None,
+                    location=None,
+                    land_cover=None,
+                    description="test",
+                    context=None,
+                )
+                assert result is False
 
 
 class TestGetDescription:

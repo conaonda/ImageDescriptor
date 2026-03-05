@@ -149,6 +149,7 @@ class DescribeResponse(BaseModel):
     mission: Mission | None = None
     warnings: list[Warning] = []
     cached: bool = False
+    saved: bool | None = None
 
     model_config = {
         "json_schema_extra": {
