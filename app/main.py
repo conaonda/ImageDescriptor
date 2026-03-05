@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from importlib.metadata import PackageNotFoundError, version
 
@@ -16,14 +17,31 @@ from app.utils.rate_limit import get_real_ip
 
 setup_logging()
 
+CACHE_CLEANUP_INTERVAL_SECONDS = 3600
+
 limiter = Limiter(key_func=get_real_ip)
+
+
+async def _cache_cleanup_loop(cache: CacheStore):
+    while True:
+        await asyncio.sleep(CACHE_CLEANUP_INTERVAL_SECONDS)
+        try:
+            await cache.cleanup_expired()
+        except Exception:
+            pass
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.cache = CacheStore(settings.cache_db_path)
     await app.state.cache.init()
+    cleanup_task = asyncio.create_task(_cache_cleanup_loop(app.state.cache))
     yield
+    cleanup_task.cancel()
+    try:
+        await cleanup_task
+    except asyncio.CancelledError:
+        pass
     await app.state.cache.close()
 
 
