@@ -3,6 +3,7 @@ from importlib.metadata import PackageNotFoundError, version
 
 import structlog
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
 from slowapi import Limiter
 
 from app.api.schemas import (
@@ -60,14 +61,36 @@ async def cache_stats(request: Request):
     "/health",
     tags=["system"],
     summary="헬스체크",
-    description="서비스 상태와 버전 정보를 반환합니다.",
+    description="서비스 상태와 버전 정보, 의존성 상태를 반환합니다.",
 )
-async def health():
+async def health(request: Request):
     try:
         ver = version("cognito-descriptor")
     except PackageNotFoundError:
         ver = "unknown"
-    return {"status": "ok", "version": ver}
+
+    cache = request.app.state.cache
+    cache_ok = await cache.ping()
+    supabase_ok = await db.ping()
+
+    checks = {
+        "supabase": "ok" if supabase_ok else "fail",
+        "cache": "ok" if cache_ok else "fail",
+    }
+
+    all_fail = not supabase_ok and not cache_ok
+    any_fail = not supabase_ok or not cache_ok
+
+    if all_fail:
+        status = "unhealthy"
+    elif any_fail:
+        status = "degraded"
+    else:
+        status = "ok"
+
+    body = {"status": status, "version": ver, "checks": checks}
+    status_code = 503 if all_fail else 200
+    return JSONResponse(content=body, status_code=status_code)
 
 
 @router.post(
