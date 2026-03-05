@@ -4,7 +4,10 @@ from importlib.metadata import PackageNotFoundError, version
 from fastapi import APIRouter, Depends, Request
 from slowapi import Limiter
 
+from pydantic import ValidationError
+
 from app.api.schemas import (
+    BatchDescribeItem,
     BatchDescribeRequest,
     BatchDescribeResponse,
     BatchItemResult,
@@ -74,14 +77,6 @@ async def describe(
     request: Request,
     _auth: dict = Depends(authenticate),
 ):
-    if not body.thumbnail.startswith("http") and len(body.thumbnail) > 5 * 1024 * 1024:
-        raise DescriptorError(
-            status_code=422,
-            code="THUMBNAIL_TOO_LARGE",
-            message="Thumbnail too large (max 5MB)",
-            details={"size": len(body.thumbnail), "max": 5 * 1024 * 1024},
-        )
-
     cache = request.app.state.cache
     result = await compose_description(body, cache)
 
@@ -121,10 +116,9 @@ async def describe_batch(
 ):
     cache = request.app.state.cache
 
-    async def _process_one(index: int, item: DescribeRequest) -> BatchItemResult:
+    async def _process_one(index: int, raw_item: BatchDescribeItem) -> BatchItemResult:
         try:
-            if not item.thumbnail.startswith("http") and len(item.thumbnail) > 5 * 1024 * 1024:
-                return BatchItemResult(index=index, error="Thumbnail too large (max 5MB)")
+            item = DescribeRequest.model_validate(raw_item.model_dump())
             result = await compose_description(item, cache)
             if item.cog_image_id and result.description:
                 await db.save_description(

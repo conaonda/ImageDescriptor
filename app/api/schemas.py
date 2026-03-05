@@ -7,6 +7,14 @@ class DescribeRequest(BaseModel):
         description="[longitude, latitude]", min_length=2, max_length=2
     )
 
+    @field_validator("thumbnail")
+    @classmethod
+    def validate_thumbnail_size(cls, v: str) -> str:
+        max_size = 5 * 1024 * 1024
+        if not v.startswith("http") and len(v) > max_size:
+            raise ValueError(f"Thumbnail too large (max 5MB, got {len(v)} bytes)")
+        return v
+
     @field_validator("coordinates")
     @classmethod
     def validate_coordinates(cls, v: list[float]) -> list[float]:
@@ -174,8 +182,23 @@ class DescribeResponse(BaseModel):
 MAX_BATCH_SIZE = 10
 
 
+class BatchDescribeItem(BaseModel):
+    """Batch item without validators — validation deferred to per-item processing."""
+
+    thumbnail: str = Field(description="base64 PNG or URL of lowest pyramid image")
+    coordinates: list[float] = Field(
+        description="[longitude, latitude]", min_length=2, max_length=2
+    )
+    bbox: list[float] | None = Field(
+        None, description="[west, south, east, north]", min_length=4, max_length=4
+    )
+    captured_at: str | None = Field(None, description="Capture date in ISO 8601 format")
+    cog_image_id: str | None = Field(None, description="Optional cog_images UUID for DB linking")
+    stac_id: str | None = Field(None, description="STAC item ID for satellite mission metadata")
+
+
 class BatchDescribeRequest(BaseModel):
-    items: list[DescribeRequest] = Field(
+    items: list[BatchDescribeItem] = Field(
         description="배치 분석 요청 목록 (최대 10건)",
         min_length=1,
         max_length=MAX_BATCH_SIZE,
