@@ -3,6 +3,7 @@ import os
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from app.cache.store import CacheStore
 from app.main import app
 
 
@@ -13,6 +14,19 @@ async def client():
         base_url="http://test",
     ) as c:
         yield c
+
+
+@pytest.fixture
+async def client_with_cache(tmp_path):
+    cache = CacheStore(str(tmp_path / "test.db"))
+    await cache.init()
+    app.state.cache = cache
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as c:
+        yield c
+    await cache.close()
 
 
 async def test_health(client):
@@ -122,3 +136,33 @@ async def test_valid_coordinates_require_auth_on_sub_endpoints(client, endpoint)
         },
     )
     assert resp.status_code == 401
+
+
+async def test_cache_stats_endpoint(client_with_cache):
+    resp = await client_with_cache.get("/api/cache/stats")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "entry_count" in data
+    assert "total_bytes" in data
+    assert "modules" in data
+    assert data["entry_count"] == 0
+    assert data["modules"] == {}
+
+
+async def test_cache_stats_after_hit_miss(client_with_cache):
+    cache = app.state.cache
+    # miss
+    result = await cache.get("geocode:127:37")
+    assert result is None
+    # set + hit
+    await cache.set("geocode:127:37", {"place": "Seoul"})
+    result = await cache.get("geocode:127:37")
+    assert result is not None
+
+    resp = await client_with_cache.get("/api/cache/stats")
+    data = resp.json()
+    assert data["entry_count"] == 1
+    geocode_stats = data["modules"]["geocode"]
+    assert geocode_stats["hits"] == 1
+    assert geocode_stats["misses"] == 1
+    assert geocode_stats["hit_rate"] == 0.5

@@ -20,6 +20,12 @@ router = APIRouter()
 limiter = Limiter(key_func=get_real_ip)
 
 
+@router.get("/cache/stats")
+async def cache_stats(request: Request):
+    cache = request.app.state.cache
+    return await cache.stats()
+
+
 @router.get("/health")
 async def health():
     try:
