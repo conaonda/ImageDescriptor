@@ -43,7 +43,7 @@ async def test_describe_invalid_coordinates(client):
         },
         headers={"X-API-Key": os.environ["API_KEY"]},
     )
-    assert resp.status_code == 400
+    assert resp.status_code == 422
 
 
 async def test_describe_thumbnail_too_large(client):
@@ -61,4 +61,29 @@ async def test_describe_thumbnail_too_large(client):
 
 async def test_get_description_no_auth(client):
     resp = await client.get("/api/descriptions/some-id")
+    assert resp.status_code == 401
+
+
+@pytest.mark.parametrize("endpoint", ["/api/geocode", "/api/landcover", "/api/context"])
+async def test_invalid_coordinates_on_sub_endpoints(client, endpoint):
+    resp = await client.post(
+        endpoint,
+        json={
+            "thumbnail": "dGVzdA==",
+            "coordinates": [999, 999],
+        },
+        headers={"X-API-Key": os.environ["API_KEY"]},
+    )
+    assert resp.status_code == 422
+
+
+@pytest.mark.parametrize("endpoint", ["/api/geocode", "/api/landcover", "/api/context"])
+async def test_valid_coordinates_require_auth_on_sub_endpoints(client, endpoint):
+    resp = await client.post(
+        endpoint,
+        json={
+            "thumbnail": "dGVzdA==",
+            "coordinates": [126.978, 37.566],
+        },
+    )
     assert resp.status_code == 401

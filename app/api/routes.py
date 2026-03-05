@@ -30,15 +30,6 @@ async def describe(
     request: Request,
     _auth: dict = Depends(authenticate),
 ):
-    lon, lat = body.coordinates
-    if not (-180 <= lon <= 180) or not (-90 <= lat <= 90):
-        raise DescriptorError(
-            status_code=400,
-            code="INVALID_COORDINATES",
-            message="Invalid coordinates range",
-            details={"lon": lon, "lat": lat},
-        )
-
     if not body.thumbnail.startswith("http") and len(body.thumbnail) > 5 * 1024 * 1024:
         raise DescriptorError(
             status_code=422,
@@ -75,12 +66,6 @@ async def geocode_endpoint(
     from app.modules.geocoder import geocode
 
     lon, lat = body.coordinates
-    if not (-180 <= lon <= 180) or not (-90 <= lat <= 90):
-        raise DescriptorError(
-            status_code=400,
-            code="INVALID_COORDINATES",
-            message="Invalid coordinates range",
-        )
     cache = request.app.state.cache
     return await geocode(lon, lat, cache)
 
@@ -95,12 +80,6 @@ async def landcover_endpoint(
     from app.modules.landcover import get_land_cover
 
     lon, lat = body.coordinates
-    if not (-180 <= lon <= 180) or not (-90 <= lat <= 90):
-        raise DescriptorError(
-            status_code=400,
-            code="INVALID_COORDINATES",
-            message="Invalid coordinates range",
-        )
     cache = request.app.state.cache
     return await get_land_cover(lon, lat, cache)
 
@@ -115,12 +94,6 @@ async def context_endpoint(
     from app.modules.context import research_context
 
     lon, lat = body.coordinates
-    if not (-180 <= lon <= 180) or not (-90 <= lat <= 90):
-        raise DescriptorError(
-            status_code=400,
-            code="INVALID_COORDINATES",
-            message="Invalid coordinates range",
-        )
     cache = request.app.state.cache
     place_name = f"{lat}, {lon}"
     return await research_context(place_name, body.captured_at, cache)
