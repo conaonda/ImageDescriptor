@@ -17,6 +17,22 @@ class DescribeRequest(BaseModel):
     bbox: list[float] | None = Field(
         None, description="[west, south, east, north]", min_length=4, max_length=4
     )
+
+    @field_validator("bbox")
+    @classmethod
+    def validate_bbox(cls, v: list[float] | None) -> list[float] | None:
+        if v is None:
+            return v
+        west, south, east, north = v
+        if not (-180 <= west <= 180) or not (-180 <= east <= 180):
+            raise ValueError("Longitude must be between -180 and 180")
+        if not (-90 <= south <= 90) or not (-90 <= north <= 90):
+            raise ValueError("Latitude must be between -90 and 90")
+        if west >= east:
+            raise ValueError("west must be less than east")
+        if south >= north:
+            raise ValueError("south must be less than north")
+        return v
     captured_at: str | None = Field(None, description="Capture date in ISO 8601 format")
     cog_image_id: str | None = Field(None, description="Optional cog_images UUID for DB linking")
 
