@@ -10,6 +10,7 @@ from PIL import Image
 
 from app.cache.store import CacheStore
 from app.config import settings
+from app.utils.retry import retry_gemini, retry_http
 
 logger = structlog.get_logger()
 
@@ -88,6 +89,46 @@ def _make_prompt(
 한국어로 작성해주세요."""
 
 
+@retry_http
+async def _download_image(url: str) -> bytes:
+    import httpx
+
+    max_download = 5 * 1024 * 1024
+    async with httpx.AsyncClient() as http_client:
+        async with http_client.stream("GET", url, timeout=10.0) as resp:
+            resp.raise_for_status()
+            content_length = resp.headers.get("content-length")
+            if content_length and int(content_length) > max_download:
+                raise ValueError(
+                    f"Image too large: {int(content_length)} bytes (max {max_download})"
+                )
+            chunks = []
+            size = 0
+            async for chunk in resp.aiter_bytes():
+                size += len(chunk)
+                if size > max_download:
+                    raise ValueError(f"Image too large: >{max_download} bytes (max 5MB)")
+                chunks.append(chunk)
+            return b"".join(chunks)
+
+
+@retry_gemini
+async def _call_gemini(image_bytes: bytes, prompt: str) -> str:
+    client = genai.Client(api_key=settings.google_ai_api_key)
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=[
+            genai.types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+            prompt,
+        ],
+        config={
+            "max_output_tokens": 600,
+            "thinking_config": {"thinking_budget": 0},
+        },
+    )
+    return response.text.strip()
+
+
 async def describe_image(
     thumbnail: str,
     place_name: str,
@@ -112,25 +153,7 @@ async def describe_image(
     elif thumbnail.startswith("http"):
         # URL인 경우 다운로드 (최대 5MB)
         _validate_thumbnail_url(thumbnail)
-        import httpx
-
-        max_download = 5 * 1024 * 1024
-        async with httpx.AsyncClient() as http_client:
-            async with http_client.stream("GET", thumbnail, timeout=10.0) as resp:
-                resp.raise_for_status()
-                content_length = resp.headers.get("content-length")
-                if content_length and int(content_length) > max_download:
-                    raise ValueError(
-                        f"Image too large: {int(content_length)} bytes (max {max_download})"
-                    )
-                chunks = []
-                size = 0
-                async for chunk in resp.aiter_bytes():
-                    size += len(chunk)
-                    if size > max_download:
-                        raise ValueError(f"Image too large: >{max_download} bytes (max 5MB)")
-                    chunks.append(chunk)
-                image_bytes = b"".join(chunks)
+        image_bytes = await _download_image(thumbnail)
     else:
         image_bytes = base64.b64decode(thumbnail)
 
@@ -139,20 +162,7 @@ async def describe_image(
 
     prompt = _make_prompt(place_name, captured_at, land_cover_summary, bbox)
 
-    client = genai.Client(api_key=settings.google_ai_api_key)
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=[
-            genai.types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
-            prompt,
-        ],
-        config={
-            "max_output_tokens": 600,
-            "thinking_config": {"thinking_budget": 0},
-        },
-    )
-
-    description = response.text.strip()
+    description = await _call_gemini(image_bytes, prompt)
 
     if cog_image_id:
         await cache.set(f"describe:{cog_image_id}", {"description": description})
