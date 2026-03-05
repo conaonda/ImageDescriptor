@@ -1,7 +1,6 @@
 """Unit tests for CircuitBreaker and composer._safe_call error handling."""
 
 import time
-from unittest.mock import AsyncMock, patch
 
 import pytest
 

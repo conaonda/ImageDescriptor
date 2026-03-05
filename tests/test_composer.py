@@ -415,7 +415,7 @@ async def test_compose_timing_logs_emitted(mock_geo, mock_lc, mock_desc, mock_ct
     assert "phase2_complete" in event_names
     assert "compose_complete" in event_names
 
-    compose_log = next(l for l in logs if l["event"] == "compose_complete")
+    compose_log = next(entry for entry in logs if entry["event"] == "compose_complete")
     assert "total_duration_ms" in compose_log
     assert isinstance(compose_log["total_duration_ms"], int)
     assert compose_log["total_duration_ms"] >= 0

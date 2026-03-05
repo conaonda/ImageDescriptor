@@ -1,4 +1,3 @@
-import logging
 from unittest.mock import patch
 
 import pytest
@@ -7,7 +6,7 @@ from httpx import ASGITransport, AsyncClient
 
 from app.cache.store import CacheStore
 from app.main import app
-from app.utils.logging import generate_request_id, request_id_middleware, setup_logging
+from app.utils.logging import generate_request_id, setup_logging
 
 
 @pytest.fixture

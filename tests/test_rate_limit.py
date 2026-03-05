@@ -26,7 +26,6 @@ async def rate_limit_client(tmp_path):
 
 class TestGetRealIp:
     def test_extracts_first_ip_from_forwarded_header(self):
-        from starlette.testclient import TestClient
         from starlette.requests import Request
 
         scope = {

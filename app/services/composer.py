@@ -53,7 +53,9 @@ async def compose_description(request: DescribeRequest, cache: CacheStore) -> De
     mission_task = asyncio.create_task(
         _safe_call("mission", mission.get_mission_metadata(request.stac_id, cache), warnings)
     )
-    location, land_cover_result, mission_result = await asyncio.gather(geo_task, lc_task, mission_task)
+    location, land_cover_result, mission_result = await asyncio.gather(
+        geo_task, lc_task, mission_task,
+    )
     logger.info("phase1_complete", duration_ms=round((time.monotonic() - t_phase1) * 1000))
 
     # Phase 2: Describer + Context 병렬 실행 (Phase 1 결과 활용)

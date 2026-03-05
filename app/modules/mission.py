@@ -42,7 +42,8 @@ def _parse_mission(data: dict) -> dict:
     instrument = ", ".join(instruments)
 
     collection_id = data.get("collection", "")
-    processing_level = _COLLECTION_PROCESSING_LEVEL.get(collection_id, props.get("s2:processing_level"))
+    default_level = props.get("s2:processing_level")
+    processing_level = _COLLECTION_PROCESSING_LEVEL.get(collection_id, default_level)
 
     eo_bands = props.get("eo:bands")
     spectral_bands = len(eo_bands) if eo_bands else None
