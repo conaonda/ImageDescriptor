@@ -46,6 +46,39 @@ async def test_describe_invalid_coordinates(client):
     assert resp.status_code == 422
 
 
+@pytest.mark.parametrize(
+    "bbox",
+    [
+        [999, 0, 10, 10],        # west out of range
+        [0, -100, 10, 10],       # south out of range
+        [10, 0, 5, 10],          # west >= east
+        [0, 10, 10, 5],          # south >= north
+    ],
+)
+async def test_describe_invalid_bbox(client, bbox):
+    resp = await client.post(
+        "/api/describe",
+        json={
+            "thumbnail": "dGVzdA==",
+            "coordinates": [126.978, 37.566],
+            "bbox": bbox,
+        },
+        headers={"X-API-Key": os.environ["API_KEY"]},
+    )
+    assert resp.status_code == 422
+
+
+def test_describe_bbox_null_accepted():
+    from app.api.schemas import DescribeRequest
+
+    req = DescribeRequest(
+        thumbnail="dGVzdA==",
+        coordinates=[126.978, 37.566],
+        bbox=None,
+    )
+    assert req.bbox is None
+
+
 async def test_describe_thumbnail_too_large(client):
     resp = await client.post(
         "/api/describe",
