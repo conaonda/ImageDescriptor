@@ -4,7 +4,7 @@ import pytest
 
 from app.api.schemas import Context, DescribeRequest, Event, LandCover, LandCoverClass, Location
 from app.cache.store import CacheStore
-from app.services.composer import compose_description
+from app.services.composer import _breakers, compose_description
 
 
 @pytest.fixture
@@ -110,3 +110,30 @@ async def test_compose_all_fail(mock_geo, mock_lc, mock_desc, mock_ctx, cache):
     assert result.land_cover is None
     assert result.context is None
     assert len(result.warnings) == 4
+
+
+@patch("app.services.composer.context")
+@patch("app.services.composer.describer")
+@patch("app.services.composer.landcover")
+@patch("app.services.composer.geocoder")
+async def test_compose_circuit_breaker_open(mock_geo, mock_lc, mock_desc, mock_ctx, cache):
+    """Circuit breaker가 열려있을 때 경고 반환 및 모듈 호출 생략 테스트."""
+    mock_geo.geocode = AsyncMock(return_value=None)
+    mock_lc.get_land_cover = AsyncMock(return_value=None)
+    mock_desc.describe_image = AsyncMock(return_value=None)
+    mock_ctx.research_context = AsyncMock(return_value=None)
+
+    # geocoder circuit breaker를 강제로 열기
+    _breakers["geocoder"]._open_until = float("inf")
+
+    try:
+        result = await compose_description(_make_request(), cache)
+
+        assert result.location is None
+        assert len(result.warnings) == 1
+        assert result.warnings[0].module == "geocoder"
+        assert "Circuit breaker open" in result.warnings[0].error
+    finally:
+        # 테스트 격리를 위해 breaker 상태 복원
+        _breakers["geocoder"]._open_until = 0.0
+        _breakers["geocoder"]._failure_count = 0
