@@ -208,3 +208,16 @@ async def test_health_no_rate_limit(client):
     for _ in range(5):
         resp = await client.get("/api/health")
         assert resp.status_code == 200
+
+
+async def test_request_id_header(client):
+    resp = await client.get("/api/health")
+    assert resp.status_code == 200
+    assert "x-request-id" in resp.headers
+    assert len(resp.headers["x-request-id"]) == 16
+
+
+async def test_request_id_passthrough(client):
+    custom_id = "my-custom-request-id"
+    resp = await client.get("/api/health", headers={"X-Request-ID": custom_id})
+    assert resp.headers["x-request-id"] == custom_id

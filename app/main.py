@@ -1,7 +1,5 @@
-import logging
 from contextlib import asynccontextmanager
 
-import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -11,12 +9,10 @@ from app.api.routes import router
 from app.cache.store import CacheStore
 from app.config import settings
 from app.utils.errors import DescriptorError, descriptor_error_handler
+from app.utils.logging import request_id_middleware, setup_logging
 from app.utils.rate_limit import get_real_ip
 
-_log_level = getattr(logging, settings.log_level.upper(), logging.INFO)
-structlog.configure(
-    wrapper_class=structlog.make_filtering_bound_logger(_log_level),
-)
+setup_logging()
 
 limiter = Limiter(key_func=get_real_ip)
 
@@ -45,6 +41,11 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["Authorization", "Content-Type", "X-API-Key"],
 )
+
+
+@app.middleware("http")
+async def logging_middleware(request, call_next):
+    return await request_id_middleware(request, call_next)
 
 
 @app.middleware("http")
