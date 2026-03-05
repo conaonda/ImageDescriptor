@@ -17,6 +17,7 @@ from app.api.schemas import (
     ErrorResponse,
     LandCover,
     Location,
+    Warning,
 )
 from app.auth import authenticate
 from app.config import settings
@@ -34,7 +35,7 @@ limiter = Limiter(key_func=get_real_ip)
 async def _describe_and_save(item: DescribeRequest, cache) -> DescribeResponse:
     result = await compose_description(item, cache)
     if item.cog_image_id and result.description:
-        await db.save_description(
+        saved = await db.save_description(
             cog_image_id=item.cog_image_id,
             coordinates=item.coordinates,
             captured_at=item.captured_at,
@@ -43,6 +44,11 @@ async def _describe_and_save(item: DescribeRequest, cache) -> DescribeResponse:
             description=result.description,
             context=result.context.model_dump() if result.context else None,
         )
+        result.saved = saved
+        if not saved:
+            result.warnings.append(
+                Warning(module="supabase", error="Failed to save description to database")
+            )
     return result
 
 
