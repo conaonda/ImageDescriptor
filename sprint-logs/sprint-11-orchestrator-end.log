@@ -1,0 +1,38 @@
+# Sprint 11 — Orchestrator End
+
+## 결과 요약
+
+| 항목 | 상태 |
+|------|------|
+| PR #72 (Prometheus 메트릭) | Merged (squash) |
+| PR #73 (썸네일 검증 리팩터링) | 변경 요청 — 미머지 |
+| Release v0.10.0 | Published |
+| 이슈 #66 | Closed |
+| 오픈 이슈 | #70, #71 |
+
+## 완료 작업
+
+### 1. Prometheus 메트릭 엔드포인트 (PR #72, 이슈 #66)
+- `GET /metrics` 엔드포인트 추가 (prometheus-fastapi-instrumentator)
+- HTTP 요청 메트릭 자동 수집 (method, path, status, latency)
+- 외부 API 호출 카운터/히스토그램 (`app/services/composer.py`)
+- 캐시 히트/미스 카운터 (`app/cache/store.py`)
+- Circuit breaker 상태 게이지 (`app/utils/circuit_breaker.py`)
+- `app/utils/metrics.py` — 커스텀 메트릭 정의
+- 5개 테스트 추가, 전체 185 passed, 3 skipped
+
+### 2. 썸네일 검증 리팩터링 (PR #73, 이슈 #70) — 미완료
+- Pydantic field_validator로 썸네일 크기 검증 이동
+- Reviewer가 배치 엔드포인트의 파괴적 API 변경 발견
+  - 기존: 부분 성공/실패 반환 (200)
+  - 변경 후: 하나라도 실패 시 전체 422 반환
+- 배치 per-item 처리 방식 복원 필요 → 다음 스프린트로 이월
+
+## 미해결 이슈
+- #70: 썸네일 검증 리팩터링 (변경 요청 상태)
+- #71: Docker 멀티스테이지 빌드 및 docker-compose 설정
+
+## 다음 스프린트 고려 사항
+- PR #73 배치 엔드포인트 API 호환성 수정 후 재리뷰
+- Docker 빌드 구성 (#71)
+- Reviewer 코멘트: _reset_metrics fixture 개선, 프라이빗 API 사용 제거, CircuitBreaker 초기 상태 등록
