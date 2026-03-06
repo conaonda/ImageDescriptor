@@ -26,6 +26,7 @@ from app.db import supabase as db
 from app.services.composer import compose_description
 from app.utils.errors import DescriptorError
 from app.utils.rate_limit import get_real_ip
+from app.utils.timeout import apply_timeout
 
 logger = structlog.get_logger()
 
@@ -95,8 +96,13 @@ async def health(request: Request):
     else:
         status = "ok"
 
+    from app.main import is_shutting_down
+
+    if is_shutting_down():
+        status = "shutting_down"
+
     body = {"status": status, "version": ver, "checks": checks}
-    status_code = 503 if all_fail else 200
+    status_code = 503 if all_fail or is_shutting_down() else 200
     return JSONResponse(content=body, status_code=status_code)
 
 
@@ -130,7 +136,7 @@ async def describe(
     if_none_match: str | None = Header(None),
 ):
     cache = request.app.state.cache
-    result = await _describe_and_save(body, cache)
+    result = await apply_timeout(_describe_and_save(body, cache), request)
 
     body_bytes = result.model_dump_json().encode()
     etag = _generate_etag(body_bytes)
@@ -174,7 +180,13 @@ async def describe_batch(
         except Exception as e:
             return BatchItemResult(index=index, error=str(e))
 
-    results = await asyncio.gather(*[_process_one(i, item) for i, item in enumerate(body.items)])
+    semaphore = asyncio.Semaphore(settings.batch_concurrency)
+
+    async def _limited(index: int, item: BatchDescribeItem) -> BatchItemResult:
+        async with semaphore:
+            return await _process_one(index, item)
+
+    results = await asyncio.gather(*[_limited(i, item) for i, item in enumerate(body.items)])
     succeeded = sum(1 for r in results if r.result is not None)
     logger.info(
         "batch_complete",
