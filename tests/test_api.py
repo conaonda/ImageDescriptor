@@ -38,7 +38,7 @@ async def test_health(client_with_cache):
             return True
 
         mp.setattr(supabase_mod, "ping", _mock_ping)
-        resp = await client_with_cache.get("/api/health")
+        resp = await client_with_cache.get("/api/v1/health")
     assert resp.status_code == 200
     data = resp.json()
     assert data["status"] == "ok"
@@ -49,7 +49,7 @@ async def test_health(client_with_cache):
 
 async def test_describe_no_api_key(client):
     resp = await client.post(
-        "/api/describe",
+        "/api/v1/describe",
         json={
             "thumbnail": "dGVzdA==",
             "coordinates": [126.978, 37.566],
@@ -61,7 +61,7 @@ async def test_describe_no_api_key(client):
 
 async def test_describe_invalid_coordinates(client):
     resp = await client.post(
-        "/api/describe",
+        "/api/v1/describe",
         json={
             "thumbnail": "dGVzdA==",
             "coordinates": [999, 999],
@@ -83,7 +83,7 @@ async def test_describe_invalid_coordinates(client):
 )
 async def test_describe_invalid_bbox(client, bbox):
     resp = await client.post(
-        "/api/describe",
+        "/api/v1/describe",
         json={
             "thumbnail": "dGVzdA==",
             "coordinates": [126.978, 37.566],
@@ -107,7 +107,7 @@ def test_describe_bbox_null_accepted():
 
 async def test_describe_thumbnail_too_large(client):
     resp = await client.post(
-        "/api/describe",
+        "/api/v1/describe",
         json={
             "thumbnail": "x" * (5 * 1024 * 1024 + 1),
             "coordinates": [126.978, 37.566],
@@ -119,11 +119,11 @@ async def test_describe_thumbnail_too_large(client):
 
 
 async def test_get_description_no_auth(client):
-    resp = await client.get("/api/descriptions/some-id")
+    resp = await client.get("/api/v1/descriptions/some-id")
     assert resp.status_code == 401
 
 
-@pytest.mark.parametrize("endpoint", ["/api/geocode", "/api/landcover", "/api/context"])
+@pytest.mark.parametrize("endpoint", ["/api/v1/geocode", "/api/v1/landcover", "/api/v1/context"])
 async def test_invalid_coordinates_on_sub_endpoints(client, endpoint):
     resp = await client.post(
         endpoint,
@@ -136,7 +136,7 @@ async def test_invalid_coordinates_on_sub_endpoints(client, endpoint):
     assert resp.status_code == 422
 
 
-@pytest.mark.parametrize("endpoint", ["/api/geocode", "/api/landcover", "/api/context"])
+@pytest.mark.parametrize("endpoint", ["/api/v1/geocode", "/api/v1/landcover", "/api/v1/context"])
 async def test_valid_coordinates_require_auth_on_sub_endpoints(client, endpoint):
     resp = await client.post(
         endpoint,
@@ -149,7 +149,7 @@ async def test_valid_coordinates_require_auth_on_sub_endpoints(client, endpoint)
 
 
 async def test_cache_stats_endpoint(client_with_cache):
-    resp = await client_with_cache.get("/api/cache/stats")
+    resp = await client_with_cache.get("/api/v1/cache/stats")
     assert resp.status_code == 200
     data = resp.json()
     assert "entry_count" in data
@@ -169,7 +169,7 @@ async def test_cache_stats_after_hit_miss(client_with_cache):
     result = await cache.get("geocode:127:37")
     assert result is not None
 
-    resp = await client_with_cache.get("/api/cache/stats")
+    resp = await client_with_cache.get("/api/v1/cache/stats")
     data = resp.json()
     assert data["entry_count"] == 1
     geocode_stats = data["modules"]["geocode"]
@@ -204,9 +204,9 @@ async def test_rate_limit_returns_429(tmp_path):
                     "captured_at": "2025-06-15T00:00:00Z",
                 }
                 # First request consumes the 1/minute limit
-                await c.post("/api/describe", json=body, headers=headers)
+                await c.post("/api/v1/describe", json=body, headers=headers)
                 # Second request should be rate limited
-                resp2 = await c.post("/api/describe", json=body, headers=headers)
+                resp2 = await c.post("/api/v1/describe", json=body, headers=headers)
                 assert resp2.status_code == 429
     finally:
         limiter.reset()
@@ -222,7 +222,7 @@ async def test_health_no_rate_limit(client_with_cache, monkeypatch):
 
     monkeypatch.setattr(supabase_mod, "ping", _mock_ping)
     for _ in range(5):
-        resp = await client_with_cache.get("/api/health")
+        resp = await client_with_cache.get("/api/v1/health")
         assert resp.status_code == 200
 
 
@@ -233,7 +233,7 @@ async def test_request_id_header(client_with_cache, monkeypatch):
         return True
 
     monkeypatch.setattr(supabase_mod, "ping", _mock_ping)
-    resp = await client_with_cache.get("/api/health")
+    resp = await client_with_cache.get("/api/v1/health")
     assert resp.status_code == 200
     assert "x-request-id" in resp.headers
     assert len(resp.headers["x-request-id"]) == 16
@@ -247,7 +247,7 @@ async def test_request_id_passthrough(client_with_cache, monkeypatch):
 
     monkeypatch.setattr(supabase_mod, "ping", _mock_ping)
     custom_id = "my-custom-request-id"
-    resp = await client_with_cache.get("/api/health", headers={"X-Request-ID": custom_id})
+    resp = await client_with_cache.get("/api/v1/health", headers={"X-Request-ID": custom_id})
     assert resp.headers["x-request-id"] == custom_id
 
 
@@ -343,7 +343,7 @@ class TestDescribeCacheHeaders:
     async def test_describe_returns_etag_header(self, _mock_describe):
         client, _ = _mock_describe
         resp = await client.post(
-            "/api/describe",
+            "/api/v1/describe",
             json={"thumbnail": "dGVzdA==", "coordinates": [126.978, 37.566]},
             headers={"X-API-Key": os.environ["API_KEY"]},
         )
@@ -362,7 +362,7 @@ class TestDescribeCacheHeaders:
             AsyncMock(return_value=mock_result),
         )
         resp = await client_with_cache.post(
-            "/api/describe",
+            "/api/v1/describe",
             json={"thumbnail": "dGVzdA==", "coordinates": [126.978, 37.566]},
             headers={"X-API-Key": os.environ["API_KEY"]},
         )
@@ -374,17 +374,17 @@ class TestDescribeCacheHeaders:
         body = {"thumbnail": "dGVzdA==", "coordinates": [126.978, 37.566]}
         headers = {"X-API-Key": os.environ["API_KEY"]}
 
-        resp1 = await client.post("/api/describe", json=body, headers=headers)
+        resp1 = await client.post("/api/v1/describe", json=body, headers=headers)
         etag = resp1.headers["etag"]
 
         headers["If-None-Match"] = etag
-        resp2 = await client.post("/api/describe", json=body, headers=headers)
+        resp2 = await client.post("/api/v1/describe", json=body, headers=headers)
         assert resp2.status_code == 304
 
     async def test_describe_200_with_mismatched_etag(self, _mock_describe):
         client, _ = _mock_describe
         resp = await client.post(
-            "/api/describe",
+            "/api/v1/describe",
             json={"thumbnail": "dGVzdA==", "coordinates": [126.978, 37.566]},
             headers={
                 "X-API-Key": os.environ["API_KEY"],
@@ -399,15 +399,15 @@ class TestDescribeCacheHeaders:
         body = {"thumbnail": "dGVzdA==", "coordinates": [126.978, 37.566]}
         headers = {"X-API-Key": os.environ["API_KEY"]}
 
-        resp1 = await client.post("/api/describe", json=body, headers=headers)
-        resp2 = await client.post("/api/describe", json=body, headers=headers)
+        resp1 = await client.post("/api/v1/describe", json=body, headers=headers)
+        resp2 = await client.post("/api/v1/describe", json=body, headers=headers)
         assert resp1.headers["etag"] == resp2.headers["etag"]
 
     async def test_etag_format_is_quoted_string(self, _mock_describe):
         """ETag must be a quoted string per HTTP spec."""
         client, _ = _mock_describe
         resp = await client.post(
-            "/api/describe",
+            "/api/v1/describe",
             json={"thumbnail": "dGVzdA==", "coordinates": [126.978, 37.566]},
             headers={"X-API-Key": os.environ["API_KEY"]},
         )
@@ -421,11 +421,11 @@ class TestDescribeCacheHeaders:
         body = {"thumbnail": "dGVzdA==", "coordinates": [126.978, 37.566]}
         headers = {"X-API-Key": os.environ["API_KEY"]}
 
-        resp1 = await client.post("/api/describe", json=body, headers=headers)
+        resp1 = await client.post("/api/v1/describe", json=body, headers=headers)
         etag = resp1.headers["etag"]
 
         headers["If-None-Match"] = etag
-        resp2 = await client.post("/api/describe", json=body, headers=headers)
+        resp2 = await client.post("/api/v1/describe", json=body, headers=headers)
         assert resp2.status_code == 304
         assert resp2.headers["etag"] == etag
 
@@ -435,10 +435,10 @@ class TestDescribeCacheHeaders:
         body = {"thumbnail": "dGVzdA==", "coordinates": [126.978, 37.566]}
         headers = {"X-API-Key": os.environ["API_KEY"]}
 
-        resp1 = await client.post("/api/describe", json=body, headers=headers)
+        resp1 = await client.post("/api/v1/describe", json=body, headers=headers)
         headers["If-None-Match"] = resp1.headers["etag"]
 
-        resp2 = await client.post("/api/describe", json=body, headers=headers)
+        resp2 = await client.post("/api/v1/describe", json=body, headers=headers)
         assert resp2.status_code == 304
         assert resp2.content == b""
 
@@ -456,14 +456,14 @@ class TestDescribeCacheHeaders:
             "app.api.routes._describe_and_save",
             AsyncMock(return_value=mock1),
         )
-        resp1 = await client_with_cache.post("/api/describe", json=body, headers=headers)
+        resp1 = await client_with_cache.post("/api/v1/describe", json=body, headers=headers)
 
         mock2 = DescribeResponse(description="second description", cached=False)
         monkeypatch.setattr(
             "app.api.routes._describe_and_save",
             AsyncMock(return_value=mock2),
         )
-        resp2 = await client_with_cache.post("/api/describe", json=body, headers=headers)
+        resp2 = await client_with_cache.post("/api/v1/describe", json=body, headers=headers)
 
         assert resp1.headers["etag"] != resp2.headers["etag"]
 
@@ -471,7 +471,7 @@ class TestDescribeCacheHeaders:
         """Request without If-None-Match must always return 200 with full body."""
         client, _ = _mock_describe
         resp = await client.post(
-            "/api/describe",
+            "/api/v1/describe",
             json={"thumbnail": "dGVzdA==", "coordinates": [126.978, 37.566]},
             headers={"X-API-Key": os.environ["API_KEY"]},
         )
@@ -491,7 +491,7 @@ async def test_health_degraded_when_supabase_fails(client_with_cache, monkeypatc
 
     monkeypatch.setattr(supabase_mod, "ping", _supabase_fail)
     # cache.ping is already ok since it's a real cache
-    resp = await client_with_cache.get("/api/health")
+    resp = await client_with_cache.get("/api/v1/health")
     data = resp.json()
     assert data["status"] in ("degraded", "shutting_down")
     assert data["checks"]["supabase"] == "fail"
@@ -505,7 +505,7 @@ async def test_health_unhealthy_when_all_fail(client_with_cache, monkeypatch):
 
     monkeypatch.setattr(supabase_mod, "ping", _fail)
     monkeypatch.setattr(app.state.cache, "ping", _fail)
-    resp = await client_with_cache.get("/api/health")
+    resp = await client_with_cache.get("/api/v1/health")
     assert resp.status_code == 503
     data = resp.json()
     assert data["status"] in ("unhealthy", "shutting_down")
@@ -516,7 +516,7 @@ async def test_get_description_not_found(client_with_cache, monkeypatch):
 
     monkeypatch.setattr(db_mod, "get_description", AsyncMock(return_value=None))
     resp = await client_with_cache.get(
-        "/api/descriptions/nonexistent-id",
+        "/api/v1/descriptions/nonexistent-id",
         headers={"X-API-Key": os.environ["API_KEY"]},
     )
     assert resp.status_code == 404
@@ -531,7 +531,7 @@ async def test_get_description_found(client_with_cache, monkeypatch):
     mock_data = {"description": "test", "cog_image_id": "found-id"}
     monkeypatch.setattr(db_mod, "get_description", AsyncMock(return_value=mock_data))
     resp = await client_with_cache.get(
-        "/api/descriptions/found-id",
+        "/api/v1/descriptions/found-id",
         headers={"X-API-Key": os.environ["API_KEY"]},
     )
     assert resp.status_code == 200
@@ -544,7 +544,7 @@ async def test_list_descriptions(client_with_cache, monkeypatch):
     mock_result = {"items": [{"cog_image_id": "id-1"}], "total": 1}
     monkeypatch.setattr(db_mod, "list_descriptions", AsyncMock(return_value=mock_result))
     resp = await client_with_cache.get(
-        "/api/descriptions",
+        "/api/v1/descriptions",
         headers={"X-API-Key": os.environ["API_KEY"]},
     )
     assert resp.status_code == 200
@@ -556,7 +556,7 @@ async def test_list_descriptions(client_with_cache, monkeypatch):
 
 
 async def test_list_descriptions_no_auth(client):
-    resp = await client.get("/api/descriptions")
+    resp = await client.get("/api/v1/descriptions")
     assert resp.status_code == 401
 
 
@@ -566,7 +566,7 @@ async def test_shutdown_middleware_rejects_non_system_paths(client_with_cache, m
 
     monkeypatch.setattr(main_mod, "_shutting_down", True)
     resp = await client_with_cache.post(
-        "/api/describe",
+        "/api/v1/describe",
         json={"thumbnail": "dGVzdA==", "coordinates": [126.978, 37.566]},
         headers={"X-API-Key": os.environ["API_KEY"]},
     )
@@ -581,7 +581,7 @@ async def test_shutdown_middleware_allows_health(client_with_cache, monkeypatch)
 
     monkeypatch.setattr(main_mod, "_shutting_down", True)
     monkeypatch.setattr(supabase_mod, "ping", AsyncMock(return_value=True))
-    resp = await client_with_cache.get("/api/health")
+    resp = await client_with_cache.get("/api/v1/health")
     # Health endpoint is allowed through shutdown middleware but returns 503 with shutting_down
     assert resp.status_code in (200, 503)
     assert resp.json()["status"] == "shutting_down"
@@ -599,7 +599,7 @@ class TestRequestIdValidation:
 
         monkeypatch.setattr(supabase_mod, "ping", self._mock_ping)
         resp = await client_with_cache.get(
-            "/api/health",
+            "/api/v1/health",
             headers={"X-Request-ID": "evil\nheader\r\ninjection"},
         )
         assert resp.status_code == 200
@@ -613,7 +613,7 @@ class TestRequestIdValidation:
 
         monkeypatch.setattr(supabase_mod, "ping", self._mock_ping)
         resp = await client_with_cache.get(
-            "/api/health",
+            "/api/v1/health",
             headers={"X-Request-ID": "a" * 200},
         )
         rid = resp.headers["x-request-id"]
@@ -626,14 +626,14 @@ class TestRequestIdValidation:
         monkeypatch.setattr(supabase_mod, "ping", self._mock_ping)
         custom_id = "req-123_abc-XYZ"
         resp = await client_with_cache.get(
-            "/api/health",
+            "/api/v1/health",
             headers={"X-Request-ID": custom_id},
         )
         assert resp.headers["x-request-id"] == custom_id
 
 
 async def test_delete_description_no_auth(client):
-    resp = await client.delete("/api/descriptions/some-id")
+    resp = await client.delete("/api/v1/descriptions/some-id")
     assert resp.status_code == 401
 
 
@@ -642,7 +642,7 @@ async def test_delete_description_not_found(client_with_cache, monkeypatch):
 
     monkeypatch.setattr(db_mod, "delete_description", AsyncMock(return_value=False))
     resp = await client_with_cache.delete(
-        "/api/descriptions/nonexistent-id",
+        "/api/v1/descriptions/nonexistent-id",
         headers={"X-API-Key": os.environ["API_KEY"]},
     )
     assert resp.status_code == 404
@@ -656,7 +656,7 @@ async def test_delete_description_success(client_with_cache, monkeypatch):
 
     monkeypatch.setattr(db_mod, "delete_description", AsyncMock(return_value=True))
     resp = await client_with_cache.delete(
-        "/api/descriptions/existing-id",
+        "/api/v1/descriptions/existing-id",
         headers={"X-API-Key": os.environ["API_KEY"]},
     )
     assert resp.status_code == 204
@@ -670,7 +670,7 @@ async def test_delete_description_db_error_returns_500(client_with_cache, monkey
         db_mod, "delete_description", AsyncMock(side_effect=Exception("db error"))
     )
     resp = await client_with_cache.delete(
-        "/api/descriptions/some-id",
+        "/api/v1/descriptions/some-id",
         headers={"X-API-Key": os.environ["API_KEY"]},
     )
     assert resp.status_code == 500
@@ -684,7 +684,7 @@ class TestRFC7807ProblemDetail:
 
     async def test_validation_error_returns_problem_detail(self, client_with_cache):
         resp = await client_with_cache.post(
-            "/api/describe",
+            "/api/v1/describe",
             json={"thumbnail": "test", "coordinates": [999, 999]},
             headers={"X-API-Key": os.environ["API_KEY"]},
         )
@@ -702,7 +702,7 @@ class TestRFC7807ProblemDetail:
 
         monkeypatch.setattr(db_mod, "get_description", AsyncMock(return_value=None))
         resp = await client_with_cache.get(
-            "/api/descriptions/nonexistent",
+            "/api/v1/descriptions/nonexistent",
             headers={"X-API-Key": os.environ["API_KEY"]},
         )
         assert resp.status_code == 404
@@ -720,7 +720,7 @@ class TestRFC7807ProblemDetail:
         monkeypatch.setattr(db_mod, "get_description", AsyncMock(return_value=None))
         custom_cid = "550e8400-e29b-41d4-a716-446655440000"
         resp = await client_with_cache.get(
-            "/api/descriptions/nonexistent",
+            "/api/v1/descriptions/nonexistent",
             headers={
                 "X-API-Key": os.environ["API_KEY"],
                 "X-Correlation-ID": custom_cid,
@@ -738,7 +738,7 @@ class TestRFC7807ProblemDetail:
             db_mod, "get_description", AsyncMock(side_effect=HTTPException(status_code=400, detail="bad input"))
         )
         resp = await client_with_cache.get(
-            "/api/descriptions/some-id",
+            "/api/v1/descriptions/some-id",
             headers={"X-API-Key": os.environ["API_KEY"]},
         )
         assert resp.status_code == 400
@@ -787,7 +787,7 @@ class TestRFC7807ProblemDetail:
             ),
         )
         resp = await client_with_cache.get(
-            "/api/descriptions/bad-id",
+            "/api/v1/descriptions/bad-id",
             headers={"X-API-Key": os.environ["API_KEY"]},
         )
         assert resp.status_code == 422
@@ -803,7 +803,7 @@ class TestCORSPreflight:
     async def test_delete_preflight_allowed(self, client):
         """DELETE 메서드에 대한 CORS preflight가 허용되어야 한다."""
         resp = await client.options(
-            "/api/descriptions/some-id",
+            "/api/v1/descriptions/some-id",
             headers={
                 "Origin": "http://localhost:5173",
                 "Access-Control-Request-Method": "DELETE",
@@ -816,7 +816,7 @@ class TestCORSPreflight:
     async def test_get_preflight_allowed(self, client):
         """GET 메서드에 대한 CORS preflight가 허용되어야 한다."""
         resp = await client.options(
-            "/api/descriptions/some-id",
+            "/api/v1/descriptions/some-id",
             headers={
                 "Origin": "http://localhost:5173",
                 "Access-Control-Request-Method": "GET",
@@ -829,7 +829,7 @@ class TestCORSPreflight:
     async def test_post_preflight_allowed(self, client):
         """POST 메서드에 대한 CORS preflight가 허용되어야 한다."""
         resp = await client.options(
-            "/api/describe",
+            "/api/v1/describe",
             headers={
                 "Origin": "http://localhost:3000",
                 "Access-Control-Request-Method": "POST",
@@ -838,3 +838,27 @@ class TestCORSPreflight:
         )
         assert resp.status_code == 200
         assert "POST" in resp.headers.get("access-control-allow-methods", "")
+
+
+class TestLegacyApiRedirect:
+    """Legacy /api/* → /api/v1/* redirect tests."""
+
+    async def test_legacy_get_redirects(self, client_with_cache):
+        resp = await client_with_cache.get("/api/health")
+        assert resp.status_code == 307
+        assert resp.headers["location"] == "/api/v1/health"
+
+    async def test_legacy_post_redirects(self, client):
+        resp = await client.post("/api/describe", json={})
+        assert resp.status_code == 307
+        assert resp.headers["location"] == "/api/v1/describe"
+
+    async def test_legacy_delete_redirects(self, client):
+        resp = await client.delete("/api/descriptions/some-id")
+        assert resp.status_code == 307
+        assert resp.headers["location"] == "/api/v1/descriptions/some-id"
+
+    async def test_legacy_redirect_preserves_query_params(self, client):
+        resp = await client.get("/api/descriptions?offset=10&limit=5")
+        assert resp.status_code == 307
+        assert resp.headers["location"] == "/api/v1/descriptions?offset=10&limit=5"

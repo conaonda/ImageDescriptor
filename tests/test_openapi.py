@@ -66,37 +66,37 @@ def _get_op(openapi_schema, method: str, path: str) -> dict:
 
 
 def test_health_tag(openapi_schema):
-    op = _get_op(openapi_schema, "get", "/api/health")
+    op = _get_op(openapi_schema, "get", "/api/v1/health")
     assert "system" in op["tags"]
 
 
 def test_cache_stats_tag(openapi_schema):
-    op = _get_op(openapi_schema, "get", "/api/cache/stats")
+    op = _get_op(openapi_schema, "get", "/api/v1/cache/stats")
     assert "system" in op["tags"]
 
 
 def test_describe_tag(openapi_schema):
-    op = _get_op(openapi_schema, "post", "/api/describe")
+    op = _get_op(openapi_schema, "post", "/api/v1/describe")
     assert "analysis" in op["tags"]
 
 
 def test_geocode_tag(openapi_schema):
-    op = _get_op(openapi_schema, "post", "/api/geocode")
+    op = _get_op(openapi_schema, "post", "/api/v1/geocode")
     assert "data" in op["tags"]
 
 
 def test_landcover_tag(openapi_schema):
-    op = _get_op(openapi_schema, "post", "/api/landcover")
+    op = _get_op(openapi_schema, "post", "/api/v1/landcover")
     assert "data" in op["tags"]
 
 
 def test_context_tag(openapi_schema):
-    op = _get_op(openapi_schema, "post", "/api/context")
+    op = _get_op(openapi_schema, "post", "/api/v1/context")
     assert "data" in op["tags"]
 
 
 def test_descriptions_tag(openapi_schema):
-    op = _get_op(openapi_schema, "get", "/api/descriptions/{cog_image_id}")
+    op = _get_op(openapi_schema, "get", "/api/v1/descriptions/{cog_image_id}")
     assert "analysis" in op["tags"]
 
 
@@ -104,65 +104,65 @@ def test_descriptions_tag(openapi_schema):
 
 
 def test_health_summary(openapi_schema):
-    assert _get_op(openapi_schema, "get", "/api/health")["summary"]
+    assert _get_op(openapi_schema, "get", "/api/v1/health")["summary"]
 
 
 def test_describe_summary(openapi_schema):
-    assert _get_op(openapi_schema, "post", "/api/describe")["summary"]
+    assert _get_op(openapi_schema, "post", "/api/v1/describe")["summary"]
 
 
 def test_describe_description(openapi_schema):
-    op = _get_op(openapi_schema, "post", "/api/describe")
+    op = _get_op(openapi_schema, "post", "/api/v1/describe")
     assert "Gemini" in op.get("description", "")
 
 
 def test_geocode_summary(openapi_schema):
-    assert _get_op(openapi_schema, "post", "/api/geocode")["summary"]
+    assert _get_op(openapi_schema, "post", "/api/v1/geocode")["summary"]
 
 
 def test_landcover_summary(openapi_schema):
-    assert _get_op(openapi_schema, "post", "/api/landcover")["summary"]
+    assert _get_op(openapi_schema, "post", "/api/v1/landcover")["summary"]
 
 
 def test_context_summary(openapi_schema):
-    assert _get_op(openapi_schema, "post", "/api/context")["summary"]
+    assert _get_op(openapi_schema, "post", "/api/v1/context")["summary"]
 
 
 # ── 오류 응답 문서화 ───────────────────────────────────────────────────────────
 
 
 def test_describe_has_422_response(openapi_schema):
-    responses = _get_op(openapi_schema, "post", "/api/describe")["responses"]
+    responses = _get_op(openapi_schema, "post", "/api/v1/describe")["responses"]
     assert "422" in responses
 
 
 def test_describe_has_429_response(openapi_schema):
-    responses = _get_op(openapi_schema, "post", "/api/describe")["responses"]
+    responses = _get_op(openapi_schema, "post", "/api/v1/describe")["responses"]
     assert "429" in responses
 
 
 def test_descriptions_has_404_response(openapi_schema):
-    responses = _get_op(openapi_schema, "get", "/api/descriptions/{cog_image_id}")["responses"]
+    responses = _get_op(openapi_schema, "get", "/api/v1/descriptions/{cog_image_id}")["responses"]
     assert "404" in responses
 
 
 def test_geocode_has_422_response(openapi_schema):
-    responses = _get_op(openapi_schema, "post", "/api/geocode")["responses"]
+    responses = _get_op(openapi_schema, "post", "/api/v1/geocode")["responses"]
     assert "422" in responses
 
 
 def test_geocode_has_429_response(openapi_schema):
-    responses = _get_op(openapi_schema, "post", "/api/geocode")["responses"]
+    responses = _get_op(openapi_schema, "post", "/api/v1/geocode")["responses"]
     assert "429" in responses
 
 
 def test_landcover_has_422_response(openapi_schema):
-    responses = _get_op(openapi_schema, "post", "/api/landcover")["responses"]
+    responses = _get_op(openapi_schema, "post", "/api/v1/landcover")["responses"]
     assert "422" in responses
 
 
 def test_context_has_422_response(openapi_schema):
-    responses = _get_op(openapi_schema, "post", "/api/context")["responses"]
+    responses = _get_op(openapi_schema, "post", "/api/v1/context")["responses"]
     assert "422" in responses
 
 

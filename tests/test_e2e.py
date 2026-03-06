@@ -13,7 +13,7 @@ import pytest
 async def test_describe_full(authenticated_client):
     """실제 Supabase 썸네일 URL로 /api/describe E2E 테스트."""
     resp = await authenticated_client.post(
-        "/api/describe",
+        "/api/v1/describe",
         json={
             "thumbnail": (
                 "https://nfbvxuwimdjgnegkvzwo.supabase.co/storage/v1/object/public"
@@ -63,7 +63,7 @@ async def test_describe_full(authenticated_client):
 @pytest.mark.e2e
 async def test_geocode_endpoint(authenticated_client):
     resp = await authenticated_client.post(
-        "/api/geocode",
+        "/api/v1/geocode",
         json={
             "thumbnail": "",
             "coordinates": [126.978, 37.566],
@@ -79,7 +79,7 @@ async def test_geocode_endpoint(authenticated_client):
 @pytest.mark.e2e
 async def test_landcover_endpoint(authenticated_client):
     resp = await authenticated_client.post(
-        "/api/landcover",
+        "/api/v1/landcover",
         json={
             "thumbnail": "",
             "coordinates": [126.978, 37.566],

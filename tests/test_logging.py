@@ -63,33 +63,33 @@ class TestGenerateRequestId:
 
 class TestRequestIdMiddleware:
     async def test_response_includes_request_id(self, client):
-        resp = await client.get("/api/health")
+        resp = await client.get("/api/v1/health")
         assert "x-request-id" in resp.headers
         assert len(resp.headers["x-request-id"]) == 16
 
     async def test_custom_request_id_passthrough(self, client):
         custom_id = "my-custom-req-id"
-        resp = await client.get("/api/health", headers={"X-Request-ID": custom_id})
+        resp = await client.get("/api/v1/health", headers={"X-Request-ID": custom_id})
         assert resp.headers["x-request-id"] == custom_id
 
     async def test_generated_id_is_hex(self, client):
-        resp = await client.get("/api/health")
+        resp = await client.get("/api/v1/health")
         rid = resp.headers["x-request-id"]
         int(rid, 16)  # should not raise
 
     async def test_different_requests_get_different_ids(self, client):
-        resp1 = await client.get("/api/health")
-        resp2 = await client.get("/api/health")
+        resp1 = await client.get("/api/v1/health")
+        resp2 = await client.get("/api/v1/health")
         assert resp1.headers["x-request-id"] != resp2.headers["x-request-id"]
 
     async def test_security_headers_present(self, client):
-        resp = await client.get("/api/health")
+        resp = await client.get("/api/v1/health")
         assert resp.headers["x-content-type-options"] == "nosniff"
         assert resp.headers["x-frame-options"] == "DENY"
 
     async def test_invalid_request_id_ignored(self, client):
         resp = await client.get(
-            "/api/health",
+            "/api/v1/health",
             headers={"X-Request-ID": "<script>alert(1)</script>"},
         )
         rid = resp.headers["x-request-id"]
@@ -99,17 +99,17 @@ class TestRequestIdMiddleware:
 
 class TestProcessTimeHeader:
     async def test_response_includes_process_time(self, client):
-        resp = await client.get("/api/health")
+        resp = await client.get("/api/v1/health")
         assert "x-process-time" in resp.headers
         process_time = float(resp.headers["x-process-time"])
         assert process_time >= 0
 
     async def test_process_time_is_numeric(self, client):
-        resp = await client.get("/api/health")
+        resp = await client.get("/api/v1/health")
         float(resp.headers["x-process-time"])  # should not raise
 
     async def test_process_time_has_six_decimal_places(self, client):
-        resp = await client.get("/api/health")
+        resp = await client.get("/api/v1/health")
         value = resp.headers["x-process-time"]
         # f"{process_time:.6f}" 형식: 소수점 이하 정확히 6자리
         assert "." in value
@@ -150,7 +150,7 @@ class TestSanitizeCorrelationId:
 
 class TestCorrelationIdMiddleware:
     async def test_response_includes_correlation_id(self, client):
-        resp = await client.get("/api/health")
+        resp = await client.get("/api/v1/health")
         assert "x-correlation-id" in resp.headers
         import uuid
 
@@ -158,12 +158,12 @@ class TestCorrelationIdMiddleware:
 
     async def test_custom_correlation_id_passthrough(self, client):
         custom_id = "550e8400-e29b-41d4-a716-446655440000"
-        resp = await client.get("/api/health", headers={"X-Correlation-ID": custom_id})
+        resp = await client.get("/api/v1/health", headers={"X-Correlation-ID": custom_id})
         assert resp.headers["x-correlation-id"] == custom_id
 
     async def test_invalid_correlation_id_replaced(self, client):
         resp = await client.get(
-            "/api/health",
+            "/api/v1/health",
             headers={"X-Correlation-ID": "not-a-valid-uuid"},
         )
         cid = resp.headers["x-correlation-id"]
@@ -173,8 +173,8 @@ class TestCorrelationIdMiddleware:
         uuid.UUID(cid)  # should be a valid UUID
 
     async def test_different_requests_get_different_ids(self, client):
-        resp1 = await client.get("/api/health")
-        resp2 = await client.get("/api/health")
+        resp1 = await client.get("/api/v1/health")
+        resp2 = await client.get("/api/v1/health")
         assert resp1.headers["x-correlation-id"] != resp2.headers["x-correlation-id"]
 
 

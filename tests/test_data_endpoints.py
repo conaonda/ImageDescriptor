@@ -37,7 +37,7 @@ async def test_geocode_endpoint(auth_client):
     }
     with patch("app.modules.geocoder.geocode", new_callable=AsyncMock, return_value=mock_result):
         resp = await auth_client.post(
-            "/api/geocode",
+            "/api/v1/geocode",
             json={"coordinates": [127.0, 37.5], "thumbnail": "http://example.com/img.png"},
         )
     assert resp.status_code == 200
@@ -56,7 +56,7 @@ async def test_landcover_endpoint(auth_client):
         return_value=mock_result,
     ):
         resp = await auth_client.post(
-            "/api/landcover",
+            "/api/v1/landcover",
             json={"coordinates": [127.0, 37.5], "thumbnail": "http://example.com/img.png"},
         )
     assert resp.status_code == 200
@@ -82,7 +82,7 @@ async def test_context_endpoint(auth_client):
         return_value=mock_result,
     ):
         resp = await auth_client.post(
-            "/api/context",
+            "/api/v1/context",
             json={
                 "coordinates": [127.0, 37.5],
                 "thumbnail": "http://example.com/img.png",

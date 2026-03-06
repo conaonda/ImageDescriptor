@@ -4,10 +4,10 @@ from contextlib import asynccontextmanager
 from importlib.metadata import PackageNotFoundError, version
 
 import structlog
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -208,6 +208,17 @@ async def security_headers_middleware(request, call_next):
     return response
 
 
-app.include_router(router, prefix="/api")
+app.include_router(router, prefix="/api/v1")
+
+
+@app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"], include_in_schema=False)
+async def legacy_api_redirect(request: Request, path: str):
+    """Redirect legacy /api/* requests to /api/v1/* for backward compatibility."""
+    query_string = request.url.query
+    new_url = f"/api/v1/{path}"
+    if query_string:
+        new_url = f"{new_url}?{query_string}"
+    return RedirectResponse(url=new_url, status_code=307)
+
 
 Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)

@@ -67,7 +67,7 @@ async def test_batch_concurrency_limited(batch_client, monkeypatch):
 
     items = [{"coordinates": [127.0 + i * 0.01, 37.0], "thumbnail": "dGVzdA=="} for i in range(6)]
 
-    resp = await batch_client.post("/api/describe/batch", json={"items": items})
+    resp = await batch_client.post("/api/v1/describe/batch", json={"items": items})
     assert resp.status_code == 200
     data = resp.json()
     assert data["total"] == 6
@@ -99,7 +99,7 @@ async def test_batch_all_items_processed(batch_client, monkeypatch):
 
     items = [{"coordinates": [127.0, 37.0], "thumbnail": "dGVzdA=="} for _ in range(10)]
 
-    resp = await batch_client.post("/api/describe/batch", json={"items": items})
+    resp = await batch_client.post("/api/v1/describe/batch", json={"items": items})
     assert resp.status_code == 200
     data = resp.json()
     assert data["total"] == 10
@@ -136,7 +136,7 @@ async def test_individual_failure_does_not_affect_others(batch_client, monkeypat
 
     items = [{"coordinates": [127.0, 37.0], "thumbnail": "dGVzdA=="} for _ in range(5)]
 
-    resp = await batch_client.post("/api/describe/batch", json={"items": items})
+    resp = await batch_client.post("/api/v1/describe/batch", json={"items": items})
     assert resp.status_code == 200
     data = resp.json()
     assert data["total"] == 5

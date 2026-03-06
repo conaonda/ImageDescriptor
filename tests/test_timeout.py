@@ -36,7 +36,7 @@ async def test_timeout_returns_504(timeout_client, monkeypatch):
     monkeypatch.setattr(routes_mod, "compose_description", _slow_compose)
 
     resp = await timeout_client.post(
-        "/api/describe",
+        "/api/v1/describe",
         json={
             "coordinates": [127.0, 37.0],
             "thumbnail": "dGVzdA==",
@@ -48,7 +48,7 @@ async def test_timeout_returns_504(timeout_client, monkeypatch):
 
 
 async def test_system_endpoints_skip_timeout(timeout_client):
-    resp = await timeout_client.get("/api/health")
+    resp = await timeout_client.get("/api/v1/health")
     assert resp.status_code == 200
 
 
@@ -60,5 +60,5 @@ async def test_normal_request_not_affected(timeout_client, monkeypatch):
 
     monkeypatch.setattr(supabase_mod, "ping", _ok)
 
-    resp = await timeout_client.get("/api/health")
+    resp = await timeout_client.get("/api/v1/health")
     assert resp.status_code == 200

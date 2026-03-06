@@ -23,6 +23,8 @@ _SKIP_LOG_PATHS = frozenset(
     {
         "/health",
         "/metrics",
+        "/api/v1/health",
+        "/api/v1/cache/stats",
         "/api/health",
         "/api/cache/stats",
     }

@@ -28,7 +28,7 @@ async def health_client(tmp_path, monkeypatch):
 
 
 async def test_health_all_ok(health_client):
-    resp = await health_client.get("/api/health")
+    resp = await health_client.get("/api/v1/health")
     assert resp.status_code == 200
     data = resp.json()
     assert data["status"] == "ok"
@@ -51,7 +51,7 @@ async def test_health_supabase_fail(tmp_path, monkeypatch):
         transport=ASGITransport(app=app),
         base_url="http://test",
     ) as c:
-        resp = await c.get("/api/health")
+        resp = await c.get("/api/v1/health")
     await cache.close()
 
     assert resp.status_code == 200
@@ -76,7 +76,7 @@ async def test_health_cache_fail(tmp_path, monkeypatch):
         transport=ASGITransport(app=app),
         base_url="http://test",
     ) as c:
-        resp = await c.get("/api/health")
+        resp = await c.get("/api/v1/health")
 
     assert resp.status_code == 200
     data = resp.json()
@@ -100,7 +100,7 @@ async def test_health_all_fail(tmp_path, monkeypatch):
         transport=ASGITransport(app=app),
         base_url="http://test",
     ) as c:
-        resp = await c.get("/api/health")
+        resp = await c.get("/api/v1/health")
 
     assert resp.status_code == 503
     data = resp.json()
