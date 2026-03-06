@@ -72,12 +72,11 @@ def _safe_query_params(query_string: str) -> str:
     """Return query string with api_key values redacted."""
     if not query_string:
         return ""
-    import re as _re
-    return _re.sub(
-        r"(api[_-]?key|token|secret)=([^&]*)",
+    return re.sub(
+        r"(api[_-]?key|access[_-]?token|auth[_-]?token|token|secret|password)=([^&]*)",
         r"\1=[REDACTED]",
         query_string,
-        flags=_re.IGNORECASE,
+        flags=re.IGNORECASE,
     )
 
 
