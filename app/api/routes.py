@@ -1,9 +1,10 @@
 import asyncio
 import hashlib
+from datetime import datetime
 from importlib.metadata import PackageNotFoundError, version
 
 import structlog
-from fastapi import APIRouter, Depends, Header, Request
+from fastapi import APIRouter, Depends, Header, Query, Request
 from fastapi.responses import JSONResponse, Response
 from slowapi import Limiter
 
@@ -17,6 +18,7 @@ from app.api.schemas import (
     Context,
     DescribeRequest,
     DescribeResponse,
+    DescriptionListResponse,
     ErrorResponse,
     HealthResponse,
     LandCover,
@@ -293,6 +295,45 @@ async def context_endpoint(
     cache = request.app.state.cache
     place_name = f"{lat}, {lon}"
     return await research_context(place_name, body.captured_at, cache)
+
+
+@router.get(
+    "/descriptions",
+    response_model=DescriptionListResponse,
+    tags=["analysis"],
+    summary="설명 이력 목록 조회",
+    description="저장된 설명 목록을 페이지네이션으로 조회합니다.",
+    responses={
+        429: {"description": "요청 횟수 초과"},
+    },
+)
+@limiter.limit("30/minute")
+async def list_descriptions(
+    request: Request,
+    offset: int = Query(default=0, ge=0, description="시작 위치"),
+    limit: int = Query(default=20, ge=1, le=100, description="페이지 크기"),
+    created_after: datetime | None = Query(
+        default=None,
+        description="이 시각 이후 항목만 조회 (ISO 8601)",
+    ),
+    created_before: datetime | None = Query(
+        default=None,
+        description="이 시각 이전 항목만 조회 (ISO 8601)",
+    ),
+    _auth: dict = Depends(authenticate),
+):
+    result = await db.list_descriptions(
+        offset=offset,
+        limit=limit,
+        created_after=created_after.isoformat() if created_after else None,
+        created_before=created_before.isoformat() if created_before else None,
+    )
+    return DescriptionListResponse(
+        items=result["items"],
+        total=result["total"],
+        offset=offset,
+        limit=limit,
+    )
 
 
 @router.get(

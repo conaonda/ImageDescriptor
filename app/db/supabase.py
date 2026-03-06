@@ -77,6 +77,27 @@ async def ping() -> bool:
         return False
 
 
+async def list_descriptions(
+    offset: int = 0,
+    limit: int = 20,
+    created_after: str | None = None,
+    created_before: str | None = None,
+) -> dict:
+    try:
+        client = await get_client()
+        query = client.table("image_descriptions").select("*", count="exact")
+        if created_after:
+            query = query.gte("created_at", created_after)
+        if created_before:
+            query = query.lte("created_at", created_before)
+        query = query.order("created_at", desc=True).range(offset, offset + limit - 1)
+        result = await query.execute()
+        return {"items": result.data, "total": result.count or 0}
+    except Exception as e:
+        logger.error("supabase list failed", error=str(e))
+        return {"items": [], "total": 0}
+
+
 async def get_description(cog_image_id: str) -> dict | None:
     try:
         client = await get_client()

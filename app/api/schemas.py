@@ -447,6 +447,34 @@ class HealthResponse(BaseModel):
     }
 
 
+class DescriptionItem(BaseModel):
+    cog_image_id: str = Field(description="COG 이미지 ID")
+    description: str | None = Field(default=None, description="생성된 설명")
+    created_at: str | None = Field(default=None, description="생성 일시")
+
+    model_config = {"extra": "allow"}
+
+
+class DescriptionListResponse(BaseModel):
+    items: list[DescriptionItem] = Field(description="설명 목록")
+    total: int = Field(description="전체 항목 수")
+    offset: int = Field(description="현재 오프셋")
+    limit: int = Field(description="페이지 크기")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "items": [{"cog_image_id": "abc-123", "description": "위성영상 설명..."}],
+                    "total": 1,
+                    "offset": 0,
+                    "limit": 20,
+                }
+            ]
+        }
+    }
+
+
 class ErrorResponse(BaseModel):
     """API 에러 응답 모델"""
 

@@ -537,6 +537,28 @@ async def test_get_description_found(client_with_cache, monkeypatch):
     assert resp.json()["description"] == "test"
 
 
+async def test_list_descriptions(client_with_cache, monkeypatch):
+    import app.db.supabase as db_mod
+
+    mock_result = {"items": [{"cog_image_id": "id-1"}], "total": 1}
+    monkeypatch.setattr(db_mod, "list_descriptions", AsyncMock(return_value=mock_result))
+    resp = await client_with_cache.get(
+        "/api/descriptions",
+        headers={"X-API-Key": os.environ["API_KEY"]},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total"] == 1
+    assert len(data["items"]) == 1
+    assert data["offset"] == 0
+    assert data["limit"] == 20
+
+
+async def test_list_descriptions_no_auth(client):
+    resp = await client.get("/api/descriptions")
+    assert resp.status_code == 401
+
+
 async def test_shutdown_middleware_rejects_non_system_paths(client_with_cache, monkeypatch):
     """During shutdown, non-system paths should return 503."""
     import app.main as main_mod
