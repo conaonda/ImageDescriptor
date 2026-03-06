@@ -795,3 +795,46 @@ class TestRFC7807ProblemDetail:
         assert "validation-error" in data["type"]
         assert data["errors"] == extra
         assert resp.headers["content-type"] == "application/problem+json"
+
+
+class TestCORSPreflight:
+    """CORS preflight 요청 검증."""
+
+    async def test_delete_preflight_allowed(self, client):
+        """DELETE 메서드에 대한 CORS preflight가 허용되어야 한다."""
+        resp = await client.options(
+            "/api/descriptions/some-id",
+            headers={
+                "Origin": "http://localhost:5173",
+                "Access-Control-Request-Method": "DELETE",
+                "Access-Control-Request-Headers": "X-API-Key",
+            },
+        )
+        assert resp.status_code == 200
+        assert "DELETE" in resp.headers.get("access-control-allow-methods", "")
+
+    async def test_get_preflight_allowed(self, client):
+        """GET 메서드에 대한 CORS preflight가 허용되어야 한다."""
+        resp = await client.options(
+            "/api/descriptions/some-id",
+            headers={
+                "Origin": "http://localhost:5173",
+                "Access-Control-Request-Method": "GET",
+                "Access-Control-Request-Headers": "Authorization",
+            },
+        )
+        assert resp.status_code == 200
+        assert "GET" in resp.headers.get("access-control-allow-methods", "")
+
+    async def test_post_preflight_allowed(self, client):
+        """POST 메서드에 대한 CORS preflight가 허용되어야 한다."""
+        resp = await client.options(
+            "/api/describe",
+            headers={
+                "Origin": "http://localhost:3000",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "Content-Type",
+            },
+        )
+        assert resp.status_code == 200
+        assert "POST" in resp.headers.get("access-control-allow-methods", "")
