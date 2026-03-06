@@ -98,6 +98,17 @@ async def list_descriptions(
         return {"items": [], "total": 0}
 
 
+async def delete_description(cog_image_id: str) -> bool:
+    client = await get_client()
+    result = await client.table("image_descriptions").delete().eq(
+        "cog_image_id", cog_image_id
+    ).execute()
+    if not result.data:
+        return False
+    logger.info("deleted description from supabase", cog_image_id=cog_image_id)
+    return True
+
+
 async def get_description(cog_image_id: str) -> dict | None:
     try:
         client = await get_client()

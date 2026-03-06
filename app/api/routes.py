@@ -361,3 +361,39 @@ async def get_description(
             message=f"Description not found for cog_image_id: {cog_image_id}",
         )
     return result
+
+
+@router.delete(
+    "/descriptions/{cog_image_id}",
+    status_code=204,
+    tags=["analysis"],
+    summary="설명 삭제",
+    description="cog_image_id로 저장된 분석 결과를 삭제합니다.",
+    responses={
+        404: {"model": ErrorResponse, "description": "해당 ID의 설명을 찾을 수 없음"},
+        429: {"description": "요청 횟수 초과"},
+    },
+)
+@limiter.limit("30/minute")
+async def delete_description(
+    cog_image_id: str,
+    request: Request,
+    _auth: dict = Depends(authenticate),
+):
+    try:
+        deleted = await db.delete_description(cog_image_id)
+    except Exception as e:
+        logger.error("delete_description_error", cog_image_id=cog_image_id, error=str(e))
+        raise DescriptorError(
+            status_code=500,
+            code="INTERNAL_ERROR",
+            message="Failed to delete description due to a database error",
+        )
+    if not deleted:
+        logger.info("description_not_found", cog_image_id=cog_image_id)
+        raise DescriptorError(
+            status_code=404,
+            code="NOT_FOUND",
+            message=f"Description not found for cog_image_id: {cog_image_id}",
+        )
+    return Response(status_code=204)

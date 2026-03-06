@@ -629,3 +629,48 @@ class TestRequestIdValidation:
             headers={"X-Request-ID": custom_id},
         )
         assert resp.headers["x-request-id"] == custom_id
+
+
+async def test_delete_description_no_auth(client):
+    resp = await client.delete("/api/descriptions/some-id")
+    assert resp.status_code == 401
+
+
+async def test_delete_description_not_found(client_with_cache, monkeypatch):
+    import app.db.supabase as db_mod
+
+    monkeypatch.setattr(db_mod, "delete_description", AsyncMock(return_value=False))
+    resp = await client_with_cache.delete(
+        "/api/descriptions/nonexistent-id",
+        headers={"X-API-Key": os.environ["API_KEY"]},
+    )
+    assert resp.status_code == 404
+    data = resp.json()
+    assert data["error"]["code"] == "NOT_FOUND"
+
+
+async def test_delete_description_success(client_with_cache, monkeypatch):
+    import app.db.supabase as db_mod
+
+    monkeypatch.setattr(db_mod, "delete_description", AsyncMock(return_value=True))
+    resp = await client_with_cache.delete(
+        "/api/descriptions/existing-id",
+        headers={"X-API-Key": os.environ["API_KEY"]},
+    )
+    assert resp.status_code == 204
+    assert resp.content == b""
+
+
+async def test_delete_description_db_error_returns_500(client_with_cache, monkeypatch):
+    import app.db.supabase as db_mod
+
+    monkeypatch.setattr(
+        db_mod, "delete_description", AsyncMock(side_effect=Exception("db error"))
+    )
+    resp = await client_with_cache.delete(
+        "/api/descriptions/some-id",
+        headers={"X-API-Key": os.environ["API_KEY"]},
+    )
+    assert resp.status_code == 500
+    data = resp.json()
+    assert data["error"]["code"] == "INTERNAL_ERROR"
