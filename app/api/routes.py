@@ -14,6 +14,7 @@ from app.api.schemas import (
     BatchItemResult,
     CacheStatsResponse,
     CircuitBreakerResponse,
+    DescriptionListResponse,
     Context,
     DescribeRequest,
     DescribeResponse,
@@ -293,6 +294,43 @@ async def context_endpoint(
     cache = request.app.state.cache
     place_name = f"{lat}, {lon}"
     return await research_context(place_name, body.captured_at, cache)
+
+
+@router.get(
+    "/descriptions",
+    response_model=DescriptionListResponse,
+    tags=["analysis"],
+    summary="설명 이력 목록 조회",
+    description="저장된 설명 목록을 페이지네이션으로 조회합니다.",
+    responses={
+        429: {"description": "요청 횟수 초과"},
+    },
+)
+@limiter.limit("30/minute")
+async def list_descriptions(
+    request: Request,
+    offset: int = 0,
+    limit: int = 20,
+    created_after: str | None = None,
+    created_before: str | None = None,
+    _auth: dict = Depends(authenticate),
+):
+    if limit > 100:
+        limit = 100
+    if offset < 0:
+        offset = 0
+    result = await db.list_descriptions(
+        offset=offset,
+        limit=limit,
+        created_after=created_after,
+        created_before=created_before,
+    )
+    return DescriptionListResponse(
+        items=result["items"],
+        total=result["total"],
+        offset=offset,
+        limit=limit,
+    )
 
 
 @router.get(

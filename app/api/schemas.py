@@ -447,6 +447,26 @@ class HealthResponse(BaseModel):
     }
 
 
+class DescriptionListResponse(BaseModel):
+    items: list[dict] = Field(description="설명 목록")
+    total: int = Field(description="전체 항목 수")
+    offset: int = Field(description="현재 오프셋")
+    limit: int = Field(description="페이지 크기")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "items": [{"cog_image_id": "abc-123", "description": "위성영상 설명..."}],
+                    "total": 1,
+                    "offset": 0,
+                    "limit": 20,
+                }
+            ]
+        }
+    }
+
+
 class ErrorResponse(BaseModel):
     """API 에러 응답 모델"""
 

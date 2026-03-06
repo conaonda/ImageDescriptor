@@ -184,3 +184,50 @@ class TestGetDescription:
         ):
             row = await db_module.get_description("img-1")
             assert row is None
+
+
+@pytest.mark.asyncio
+class TestListDescriptions:
+    async def test_list_returns_items(self):
+        mock_client = MagicMock()
+        result = MagicMock()
+        result.data = [{"cog_image_id": "img-1"}, {"cog_image_id": "img-2"}]
+        result.count = 2
+        query = mock_client.table.return_value.select.return_value
+        query.order.return_value.range.return_value.execute = AsyncMock(return_value=result)
+        with patch.object(
+            db_module, "get_client", new_callable=AsyncMock, return_value=mock_client
+        ):
+            res = await db_module.list_descriptions(offset=0, limit=20)
+            assert res["total"] == 2
+            assert len(res["items"]) == 2
+
+    async def test_list_with_date_filters(self):
+        mock_client = MagicMock()
+        result = MagicMock()
+        result.data = [{"cog_image_id": "img-1"}]
+        result.count = 1
+        query = mock_client.table.return_value.select.return_value
+        query.gte.return_value.lte.return_value.order.return_value.range.return_value.execute = (
+            AsyncMock(return_value=result)
+        )
+        with patch.object(
+            db_module, "get_client", new_callable=AsyncMock, return_value=mock_client
+        ):
+            res = await db_module.list_descriptions(
+                created_after="2025-01-01", created_before="2025-12-31"
+            )
+            assert res["total"] == 1
+
+    async def test_list_returns_empty_on_error(self):
+        mock_client = MagicMock()
+        query = mock_client.table.return_value.select.return_value
+        query.order.return_value.range.return_value.execute = AsyncMock(
+            side_effect=Exception("network error")
+        )
+        with patch.object(
+            db_module, "get_client", new_callable=AsyncMock, return_value=mock_client
+        ):
+            res = await db_module.list_descriptions()
+            assert res["items"] == []
+            assert res["total"] == 0
