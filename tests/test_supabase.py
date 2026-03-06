@@ -154,9 +154,7 @@ class TestGetDescription:
         result = MagicMock()
         result.data = [{"cog_image_id": "img-1", "description": "test"}]
         query_chain = mock_client.table.return_value.select.return_value
-        query_chain.eq.return_value.limit.return_value.execute = AsyncMock(
-            return_value=result
-        )
+        query_chain.eq.return_value.limit.return_value.execute = AsyncMock(return_value=result)
         with patch.object(
             db_module, "get_client", new_callable=AsyncMock, return_value=mock_client
         ):
@@ -168,9 +166,7 @@ class TestGetDescription:
         result = MagicMock()
         result.data = []
         query_chain = mock_client.table.return_value.select.return_value
-        query_chain.eq.return_value.limit.return_value.execute = AsyncMock(
-            return_value=result
-        )
+        query_chain.eq.return_value.limit.return_value.execute = AsyncMock(return_value=result)
         with patch.object(
             db_module, "get_client", new_callable=AsyncMock, return_value=mock_client
         ):

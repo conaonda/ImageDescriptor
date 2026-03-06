@@ -3,9 +3,9 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+import app.db.supabase as supabase_mod
 from app.cache.store import CacheStore
 from app.main import app
-import app.db.supabase as supabase_mod
 
 
 @pytest.fixture

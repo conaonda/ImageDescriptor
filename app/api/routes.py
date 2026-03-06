@@ -158,7 +158,10 @@ async def describe_batch(
     results = await asyncio.gather(*[_process_one(i, item) for i, item in enumerate(body.items)])
     succeeded = sum(1 for r in results if r.result is not None)
     logger.info(
-        "batch_complete", total=len(body.items), succeeded=succeeded, failed=len(body.items) - succeeded
+        "batch_complete",
+        total=len(body.items),
+        succeeded=succeeded,
+        failed=len(body.items) - succeeded,
     )
     return BatchDescribeResponse(
         results=list(results),
