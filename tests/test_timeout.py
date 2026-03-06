@@ -43,7 +43,8 @@ async def test_timeout_returns_504(timeout_client, monkeypatch):
         },
     )
     assert resp.status_code == 504
-    assert resp.json()["detail"] == "Gateway Timeout"
+    assert resp.json()["title"] == "Gateway Timeout"
+    assert resp.json()["status"] == 504
 
 
 async def test_system_endpoints_skip_timeout(timeout_client):
