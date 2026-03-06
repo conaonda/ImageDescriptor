@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- RFC 7807 Problem Details 에러 응답 표준화: `ProblemDetail` 모델(`type`, `title`, `status`, `detail`, `instance`) 도입. `ValidationError`(422), `HTTPException`, 내부 오류(500), 타임아웃(504) 모두 통일된 형식으로 반환
+- 에러 응답 `Content-Type`: `application/problem+json` 적용
+- 에러 응답 `instance` 필드에 `X-Correlation-ID` 자동 포함 → 요청 추적 연계
+- OpenAPI 스키마 개선: `DescriptionItem` 스키마에 예제 데이터 추가, data 엔드포인트에 422 응답 문서화, 삭제 엔드포인트에 500 응답 문서화
+
 ## [0.22.0] - 2026-03-07
 
 ### Added

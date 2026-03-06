@@ -73,16 +73,50 @@ curl -X POST https://cognito-descriptor-gdno3pyjba-an.a.run.app/api/describe \
 }
 ```
 
+## 에러 응답 형식
+
+모든 에러 응답은 [RFC 7807 Problem Details](https://datatracker.ietf.org/doc/html/rfc7807) 표준을 따르며 `Content-Type: application/problem+json`으로 반환됩니다.
+
+```json
+{
+  "type": "about:blank",
+  "title": "Not Found",
+  "status": 404,
+  "detail": "Description not found for image: abc-123",
+  "instance": "urn:request:550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+- `type`: 에러 유형 URI
+- `title`: HTTP 상태에 대응하는 짧은 제목
+- `status`: HTTP 상태 코드
+- `detail`: 사람이 읽기 쉬운 에러 설명
+- `instance`: 요청 식별자 (`X-Correlation-ID` 연계)
+
+`422 Validation Error`의 경우 `errors` 필드가 추가로 포함됩니다:
+
+```json
+{
+  "type": "about:blank",
+  "title": "Unprocessable Entity",
+  "status": 422,
+  "detail": "Request validation failed",
+  "instance": "urn:request:...",
+  "errors": [{"loc": ["body", "coordinates"], "msg": "field required", "type": "missing"}]
+}
+```
+
 ## 에러 코드
 
-| HTTP | code | 설명 |
-|------|------|------|
-| 400 | INVALID_COORDINATES | 좌표 범위 초과 |
-| 401 | UNAUTHORIZED | 인증 실패 |
-| 404 | NOT_FOUND | 설명 데이터 없음 |
-| 422 | THUMBNAIL_TOO_LARGE | 썸네일 5MB 초과 |
-| 429 | - | Rate limit 초과 |
-| 500 | INTERNAL_ERROR | 서버 내부 오류 |
+| HTTP | 설명 |
+|------|------|
+| 400 | 좌표 범위 초과 등 잘못된 요청 |
+| 401 | 인증 실패 |
+| 404 | 설명 데이터 없음 |
+| 422 | 요청 유효성 검증 실패 (body 형식 오류 등) |
+| 429 | Rate limit 초과 |
+| 500 | 서버 내부 오류 |
+| 504 | 요청 처리 타임아웃 |
 
 ## Rate Limit
 
