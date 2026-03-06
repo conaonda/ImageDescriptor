@@ -1,4 +1,4 @@
-"""Graceful shutdown tests for #108."""
+"""Graceful shutdown tests for #108 / #156."""
 
 import asyncio
 
@@ -7,6 +7,7 @@ from httpx import ASGITransport, AsyncClient
 
 import app.main as main_mod
 from app.cache.store import CacheStore
+from app.config import Settings
 from app.main import app
 
 
@@ -63,3 +64,46 @@ async def test_normal_requests_pass_when_not_shutting_down(shutdown_client):
     assert resp.status_code == 200
     data = resp.json()
     assert data["status"] == "ok"
+
+
+async def test_in_flight_counter_tracks_requests(shutdown_client):
+    """In-flight counter increments and decrements around requests."""
+    assert main_mod._in_flight == 0
+    resp = await shutdown_client.get("/api/health")
+    assert resp.status_code == 200
+    assert main_mod._in_flight == 0
+
+
+async def test_drain_event_set_when_no_requests(shutdown_client):
+    """Drain event is set when no requests are in flight."""
+    assert main_mod._drain_event.is_set()
+
+
+async def test_is_shutting_down_helper():
+    """is_shutting_down() reflects the global flag."""
+    original = main_mod._shutting_down
+    try:
+        main_mod._shutting_down = False
+        assert main_mod.is_shutting_down() is False
+        main_mod._shutting_down = True
+        assert main_mod.is_shutting_down() is True
+    finally:
+        main_mod._shutting_down = original
+
+
+def test_shutdown_timeout_configurable():
+    """shutdown_timeout is configurable via Settings."""
+    s = Settings(
+        google_ai_api_key="k", supabase_url="https://x.supabase.co",
+        supabase_service_key="k", api_key="k", shutdown_timeout=60,
+    )
+    assert s.shutdown_timeout == 60
+
+
+def test_shutdown_timeout_default():
+    """shutdown_timeout defaults to 30 seconds."""
+    s = Settings(
+        google_ai_api_key="k", supabase_url="https://x.supabase.co",
+        supabase_service_key="k", api_key="k",
+    )
+    assert s.shutdown_timeout == 30
