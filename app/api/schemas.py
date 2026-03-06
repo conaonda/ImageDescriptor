@@ -93,6 +93,12 @@ class LandCoverClass(BaseModel):
     label: str
     percentage: float | None = None
 
+    model_config = {
+        "json_schema_extra": {
+            "examples": [{"type": "residential", "label": "주거지역", "percentage": 45.0}]
+        }
+    }
+
 
 class LandCover(BaseModel):
     classes: list[LandCoverClass]
@@ -120,10 +126,41 @@ class Event(BaseModel):
     source_url: str
     relevance: str = "medium"
 
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "title": "서울 도심 재개발 사업 착공",
+                    "date": "2025-01-10",
+                    "source_url": "https://example.com/news/1",
+                    "relevance": "high",
+                }
+            ]
+        }
+    }
+
 
 class Context(BaseModel):
     events: list[Event]
     summary: str
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "events": [
+                        {
+                            "title": "서울 도심 재개발 사업 착공",
+                            "date": "2025-01-10",
+                            "source_url": "https://example.com/news/1",
+                            "relevance": "high",
+                        }
+                    ],
+                    "summary": "촬영 시점 주변에 도심 재개발 관련 이벤트가 확인되었습니다.",
+                }
+            ]
+        }
+    }
 
 
 class Mission(BaseModel):
@@ -135,10 +172,32 @@ class Mission(BaseModel):
     gsd: float | None = None
     spectral_bands: int | None = None
 
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "platform": "Sentinel-2",
+                    "instrument": "MSI",
+                    "constellation": "Copernicus",
+                    "processing_level": "L2A",
+                    "cloud_cover": 5.2,
+                    "gsd": 10.0,
+                    "spectral_bands": 13,
+                }
+            ]
+        }
+    }
+
 
 class Warning(BaseModel):
     module: str
     error: str
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [{"module": "geocoder", "error": "Nominatim timeout after 5s"}]
+        }
+    }
 
 
 class DescribeResponse(BaseModel):
@@ -197,6 +256,19 @@ class BatchDescribeItem(BaseModel):
     cog_image_id: str | None = Field(None, description="Optional cog_images UUID for DB linking")
     stac_id: str | None = Field(None, description="STAC item ID for satellite mission metadata")
 
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "thumbnail": "https://example.com/satellite-image.jpg",
+                    "coordinates": [126.978, 37.566],
+                    "bbox": [126.9, 37.5, 127.1, 37.6],
+                    "captured_at": "2025-01-15",
+                }
+            ]
+        }
+    }
+
 
 class BatchDescribeRequest(BaseModel):
     items: list[BatchDescribeItem] = Field(
@@ -205,11 +277,47 @@ class BatchDescribeRequest(BaseModel):
         max_length=MAX_BATCH_SIZE,
     )
 
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "items": [
+                        {
+                            "thumbnail": "https://example.com/image1.jpg",
+                            "coordinates": [126.978, 37.566],
+                            "captured_at": "2025-01-15",
+                        },
+                        {
+                            "thumbnail": "https://example.com/image2.jpg",
+                            "coordinates": [129.075, 35.179],
+                        },
+                    ]
+                }
+            ]
+        }
+    }
+
 
 class BatchItemResult(BaseModel):
     index: int
     result: DescribeResponse | None = None
     error: str | None = None
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "index": 0,
+                    "result": {
+                        "description": "서울 도심부의 위성영상입니다.",
+                        "cached": False,
+                        "warnings": [],
+                    },
+                    "error": None,
+                }
+            ]
+        }
+    }
 
 
 class BatchDescribeResponse(BaseModel):
@@ -217,6 +325,30 @@ class BatchDescribeResponse(BaseModel):
     total: int
     succeeded: int
     failed: int
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "results": [
+                        {
+                            "index": 0,
+                            "result": {
+                                "description": "서울 도심부의 위성영상입니다.",
+                                "cached": False,
+                                "warnings": [],
+                            },
+                            "error": None,
+                        },
+                        {"index": 1, "result": None, "error": "Timeout exceeded"},
+                    ],
+                    "total": 2,
+                    "succeeded": 1,
+                    "failed": 1,
+                }
+            ]
+        }
+    }
 
 
 class CircuitBreakerStatus(BaseModel):
@@ -265,6 +397,10 @@ class ModuleStats(BaseModel):
     misses: int = Field(description="캐시 미스 횟수")
     hit_rate: float = Field(description="히트율 (0.0 ~ 1.0)")
 
+    model_config = {
+        "json_schema_extra": {"examples": [{"hits": 10, "misses": 3, "hit_rate": 0.7692}]}
+    }
+
 
 class CacheStatsResponse(BaseModel):
     entry_count: int = Field(description="캐시 항목 수")
@@ -289,6 +425,8 @@ class CacheStatsResponse(BaseModel):
 class DependencyCheck(BaseModel):
     supabase: str = Field(description="Supabase 연결 상태")
     cache: str = Field(description="캐시 연결 상태")
+
+    model_config = {"json_schema_extra": {"examples": [{"supabase": "ok", "cache": "ok"}]}}
 
 
 class HealthResponse(BaseModel):

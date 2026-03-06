@@ -162,6 +162,39 @@ def test_describe_request_schema_has_examples(openapi_schema):
     assert examples, "DescribeRequest 스키마에 예시 데이터가 없습니다"
 
 
+SCHEMAS_WITH_EXAMPLES = [
+    "DescribeRequest",
+    "DescribeResponse",
+    "Location",
+    "LandCover",
+    "LandCoverClass",
+    "Event",
+    "Context",
+    "Mission",
+    "Warning",
+    "BatchDescribeItem",
+    "BatchDescribeRequest",
+    "BatchDescribeResponse",
+    "BatchItemResult",
+    "CircuitBreakerStatus",
+    "CircuitBreakerResponse",
+    "CacheStatsResponse",
+    "ModuleStats",
+    "DependencyCheck",
+    "HealthResponse",
+    "ErrorResponse",
+]
+
+
+@pytest.mark.parametrize("schema_name", SCHEMAS_WITH_EXAMPLES)
+def test_schema_has_examples(openapi_schema, schema_name):
+    schemas = openapi_schema.get("components", {}).get("schemas", {})
+    assert schema_name in schemas, f"{schema_name} 스키마가 OpenAPI spec에 없습니다"
+    schema = schemas[schema_name]
+    has_examples = schema.get("examples") or schema.get("example")
+    assert has_examples, f"{schema_name} 스키마에 예시 데이터가 없습니다"
+
+
 # ── OpenAPI JSON 엔드포인트 접근 가능 여부 ────────────────────────────────────
 
 
