@@ -12,11 +12,13 @@ from app.api.schemas import (
     BatchDescribeRequest,
     BatchDescribeResponse,
     BatchItemResult,
+    CacheStatsResponse,
     CircuitBreakerResponse,
     Context,
     DescribeRequest,
     DescribeResponse,
     ErrorResponse,
+    HealthResponse,
     LandCover,
     Location,
     Warning,
@@ -57,6 +59,7 @@ async def _describe_and_save(item: DescribeRequest, cache) -> DescribeResponse:
 
 @router.get(
     "/cache/stats",
+    response_model=CacheStatsResponse,
     tags=["system"],
     summary="캐시 통계 조회",
     description="SQLite 캐시의 히트/미스 통계 및 항목 수를 반환합니다.",
@@ -79,9 +82,16 @@ async def circuit_breaker_status():
 
 @router.get(
     "/health",
+    response_model=HealthResponse,
     tags=["system"],
     summary="헬스체크",
     description="서비스 상태와 버전 정보, 의존성 상태를 반환합니다.",
+    responses={
+        503: {
+            "model": HealthResponse,
+            "description": "서비스 비정상 (unhealthy 또는 shutting_down)",
+        },
+    },
 )
 async def health(request: Request):
     try:
