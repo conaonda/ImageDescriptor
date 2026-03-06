@@ -5,13 +5,15 @@ services:
       - "8080:8080"
     env_file:
       - .env
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL:-https://your-project.supabase.co}
+      - SUPABASE_KEY=${SUPABASE_KEY:-your-anon-key}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-your-api-key}
+      - CACHE_DB_PATH=/tmp/cache/cache.db
     volumes:
       - cache-data:/tmp/cache
-    depends_on:
-      redis:
-        condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/api/health')"]
       interval: 30s
       timeout: 5s
       start_period: 10s
@@ -19,23 +21,8 @@ services:
     networks:
       - internal
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-    volumes:
-      - redis-data:/data
-    networks:
-      - internal
-
 volumes:
   cache-data:
-  redis-data:
 
 networks:
   internal:
