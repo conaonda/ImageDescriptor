@@ -32,6 +32,16 @@ class CircuitBreaker:
         self._open_until = 0.0
         circuit_breaker_state.labels(name=self.name).set(0)
 
+    def get_status(self) -> dict:
+        is_open = self.is_open
+        cooldown_remaining = max(0.0, self._open_until - time.time()) if is_open else 0.0
+        return {
+            "name": self.name,
+            "state": "open" if is_open else "closed",
+            "failure_count": self._failure_count,
+            "cooldown_remaining": round(cooldown_remaining, 1),
+        }
+
     def record_failure(self):
         self._failure_count += 1
         if self._failure_count >= self.failure_threshold:

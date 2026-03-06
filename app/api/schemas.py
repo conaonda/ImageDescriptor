@@ -219,6 +219,47 @@ class BatchDescribeResponse(BaseModel):
     failed: int
 
 
+class CircuitBreakerStatus(BaseModel):
+    name: str = Field(description="서비스 이름")
+    state: str = Field(description="Circuit breaker 상태 (closed/open)")
+    failure_count: int = Field(description="현재 연속 실패 횟수")
+    cooldown_remaining: float = Field(description="Open 상태 시 남은 cooldown 시간(초)")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "name": "geocoder",
+                    "state": "closed",
+                    "failure_count": 0,
+                    "cooldown_remaining": 0.0,
+                }
+            ]
+        }
+    }
+
+
+class CircuitBreakerResponse(BaseModel):
+    breakers: list[CircuitBreakerStatus]
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "breakers": [
+                        {
+                            "name": "geocoder",
+                            "state": "closed",
+                            "failure_count": 0,
+                            "cooldown_remaining": 0.0,
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+
+
 class ErrorResponse(BaseModel):
     """API 에러 응답 모델"""
 
