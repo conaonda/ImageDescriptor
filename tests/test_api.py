@@ -728,3 +728,70 @@ class TestRFC7807ProblemDetail:
         )
         data = resp.json()
         assert data["instance"] == custom_cid
+
+    async def test_http_exception_handler_returns_problem_detail(self, client_with_cache, monkeypatch):
+        """일반 HTTPException이 application/problem+json 형식으로 반환되는지 확인."""
+        from fastapi import HTTPException
+        import app.db.supabase as db_mod
+
+        monkeypatch.setattr(
+            db_mod, "get_description", AsyncMock(side_effect=HTTPException(status_code=400, detail="bad input"))
+        )
+        resp = await client_with_cache.get(
+            "/api/descriptions/some-id",
+            headers={"X-API-Key": os.environ["API_KEY"]},
+        )
+        assert resp.status_code == 400
+        data = resp.json()
+        assert data["type"] == "about:blank"
+        assert data["title"] == "Bad Request"
+        assert data["status"] == 400
+        assert data["detail"] == "bad input"
+        assert resp.headers["content-type"] == "application/problem+json"
+
+    async def test_internal_error_handler_returns_problem_detail(self):
+        """internal_error_handler가 500 application/problem+json 형식으로 반환되는지 단위 확인."""
+        import json
+        from unittest.mock import MagicMock
+
+        from app.utils.errors import internal_error_handler
+
+        request = MagicMock()
+        request.state.correlation_id = "test-corr-id"
+
+        resp = await internal_error_handler(request, RuntimeError("unexpected crash"))
+
+        assert resp.status_code == 500
+        data = json.loads(resp.body)
+        assert "internal-error" in data["type"]
+        assert data["title"] == "Internal Server Error"
+        assert data["status"] == 500
+        assert resp.media_type == "application/problem+json"
+
+    async def test_descriptor_error_with_details_includes_errors_field(self, client_with_cache, monkeypatch):
+        """DescriptorError의 details 필드가 errors 키로 응답에 포함되는지 확인."""
+        from app.utils.errors import DescriptorError
+        import app.db.supabase as db_mod
+
+        extra = {"field": "cog_image_id", "reason": "invalid format"}
+        monkeypatch.setattr(
+            db_mod,
+            "get_description",
+            AsyncMock(
+                side_effect=DescriptorError(
+                    status_code=422,
+                    code="VALIDATION_ERROR",
+                    message="잘못된 ID 형식",
+                    details=extra,
+                )
+            ),
+        )
+        resp = await client_with_cache.get(
+            "/api/descriptions/bad-id",
+            headers={"X-API-Key": os.environ["API_KEY"]},
+        )
+        assert resp.status_code == 422
+        data = resp.json()
+        assert "validation-error" in data["type"]
+        assert data["errors"] == extra
+        assert resp.headers["content-type"] == "application/problem+json"
