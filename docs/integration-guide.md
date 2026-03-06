@@ -58,7 +58,9 @@ curl -X POST https://cognito-descriptor-gdno3pyjba-an.a.run.app/api/describe \
 | POST | `/api/geocode` | 10/min | 좌표 → 주소 변환 |
 | POST | `/api/landcover` | 10/min | 토지피복 분류 조회 |
 | POST | `/api/context` | 10/min | 주변 맥락 정보 조회 |
+| GET | `/api/descriptions` | 30/min | 설명 이력 목록 조회 |
 | GET | `/api/descriptions/{cog_image_id}` | 30/min | 저장된 설명 조회 |
+| DELETE | `/api/descriptions/{cog_image_id}` | 30/min | 저장된 설명 삭제 |
 
 ## 요청 형식
 
@@ -85,6 +87,6 @@ curl -X POST https://cognito-descriptor-gdno3pyjba-an.a.run.app/api/describe \
 ## Rate Limit
 
 - POST 엔드포인트: 10 requests/minute (IP 기준)
-- GET /descriptions: 30 requests/minute (IP 기준)
+- GET /descriptions, DELETE /descriptions/{id}: 30 requests/minute (IP 기준)
 - 초과 시 `429 Too Many Requests` 응답
 - Cloud Run 환경에서는 `X-Forwarded-For` 헤더의 첫 번째 IP를 사용

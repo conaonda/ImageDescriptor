@@ -224,13 +224,34 @@ curl -H "X-API-Key: your-api-key" http://localhost:8000/api/cache/stats
 }
 ```
 
-### `GET /api/descriptions/{cog_image_id}`
+### `GET /api/descriptions`
 
-저장된 설명을 조회한다. 인증 불필요.
+저장된 설명 이력 목록을 조회한다.
 
 ```bash
-curl http://localhost:8000/api/descriptions/some-uuid
+curl -H "X-API-Key: your-api-key" http://localhost:8000/api/descriptions
 ```
+
+### `GET /api/descriptions/{cog_image_id}`
+
+저장된 설명을 조회한다.
+
+```bash
+curl -H "X-API-Key: your-api-key" http://localhost:8000/api/descriptions/some-uuid
+```
+
+### `DELETE /api/descriptions/{cog_image_id}`
+
+저장된 분석 결과를 삭제한다. 성공 시 `204 No Content` 반환.
+
+```bash
+curl -X DELETE -H "X-API-Key: your-api-key" http://localhost:8000/api/descriptions/some-uuid
+```
+
+**응답:**
+- `204 No Content` — 삭제 성공
+- `404 Not Found` — 해당 ID의 설명 없음
+- `500 Internal Server Error` — DB 오류
 
 ## 에러 코드
 
