@@ -57,6 +57,10 @@ def generate_request_id() -> str:
     return uuid.uuid4().hex[:16]
 
 
+def generate_correlation_id() -> str:
+    return str(uuid.uuid4())
+
+
 def _sanitize_request_id(value: str | None) -> str | None:
     """Validate and sanitize a client-provided request ID."""
     if value and _VALID_REQUEST_ID.match(value):
@@ -81,13 +85,28 @@ def _safe_query_params(query_string: str) -> str:
     )
 
 
+def _sanitize_correlation_id(value: str | None) -> str | None:
+    """Validate a client-provided correlation ID (UUID format)."""
+    if not value:
+        return None
+    try:
+        return str(uuid.UUID(value))
+    except (ValueError, AttributeError):
+        return None
+
+
 async def request_id_middleware(request: Request, call_next):
-    """Middleware that binds a unique request_id to each request's log context."""
+    """Middleware that binds a unique request_id and correlation_id to each request's log context."""
     request_id = _sanitize_request_id(request.headers.get("x-request-id")) or generate_request_id()
+    correlation_id = (
+        _sanitize_correlation_id(request.headers.get("x-correlation-id"))
+        or generate_correlation_id()
+    )
     request.state.request_id = request_id
+    request.state.correlation_id = correlation_id
 
     structlog.contextvars.clear_contextvars()
-    structlog.contextvars.bind_contextvars(request_id=request_id)
+    structlog.contextvars.bind_contextvars(request_id=request_id, correlation_id=correlation_id)
 
     path = request.url.path
     skip_log = path in _SKIP_LOG_PATHS
@@ -108,6 +127,7 @@ async def request_id_middleware(request: Request, call_next):
 
     latency_ms = round((time.monotonic() - start_time) * 1000, 2)
     response.headers["X-Request-ID"] = request_id
+    response.headers["X-Correlation-ID"] = correlation_id
 
     if not skip_log:
         log_method = logger.awarning if response.status_code >= 400 else logger.ainfo
