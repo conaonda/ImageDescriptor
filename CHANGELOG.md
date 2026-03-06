@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0] - 2026-03-07
+
+### Added
+
+- API 요청/응답 로깅 미들웨어 개선: latency 측정(ms), 민감 정보 필터링, 시스템 경로 로그 스킵, 4xx/5xx warning 로깅
+- 테스트 커버리지 97.61% 달성 (목표 95%): lifespan 테스트 6개, 데이터 엔드포인트 테스트 3개 추가
+
 ## [0.17.0] - 2026-03-06
 
 ### Added
