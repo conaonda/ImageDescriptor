@@ -199,6 +199,7 @@ SCHEMAS_WITH_EXAMPLES = [
     "HealthResponse",
     "ErrorResponse",
     "DescriptionItem",
+    "ProblemDetail",
 ]
 
 
