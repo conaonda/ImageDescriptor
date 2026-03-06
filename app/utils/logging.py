@@ -10,19 +10,23 @@ from app.config import settings
 
 _VALID_REQUEST_ID = re.compile(r"^[\w\-]{1,128}$")
 
-_SENSITIVE_HEADERS = frozenset({
-    "authorization",
-    "x-api-key",
-    "cookie",
-    "set-cookie",
-})
+_SENSITIVE_HEADERS = frozenset(
+    {
+        "authorization",
+        "x-api-key",
+        "cookie",
+        "set-cookie",
+    }
+)
 
-_SKIP_LOG_PATHS = frozenset({
-    "/health",
-    "/metrics",
-    "/api/health",
-    "/api/cache/stats",
-})
+_SKIP_LOG_PATHS = frozenset(
+    {
+        "/health",
+        "/metrics",
+        "/api/health",
+        "/api/cache/stats",
+    }
+)
 
 
 def setup_logging() -> None:
@@ -62,10 +66,7 @@ def _sanitize_request_id(value: str | None) -> str | None:
 
 def _safe_headers(headers) -> dict[str, str]:
     """Return headers with sensitive values redacted."""
-    return {
-        k: "[REDACTED]" if k.lower() in _SENSITIVE_HEADERS else v
-        for k, v in headers.items()
-    }
+    return {k: "[REDACTED]" if k.lower() in _SENSITIVE_HEADERS else v for k, v in headers.items()}
 
 
 def _safe_query_params(query_string: str) -> str:
