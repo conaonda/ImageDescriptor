@@ -440,3 +440,25 @@ async def test_compose_timing_logs_emitted(mock_geo, mock_lc, mock_desc, mock_ct
     assert isinstance(compose_log["total_duration_ms"], int)
     assert compose_log["total_duration_ms"] >= 0
     assert compose_log["warning_count"] == 0
+
+
+@patch("app.services.composer.context")
+@patch("app.services.composer.describer")
+@patch("app.services.composer.landcover")
+@patch("app.services.composer.geocoder")
+async def test_safe_call_logs_external_call_failed_event(
+    mock_geo, mock_lc, mock_desc, mock_ctx, cache
+):
+    """서비스 예외 발생 시 external_call_failed 이벤트와 service= key-value가 로깅되는지 검증."""
+    mock_geo.geocode = AsyncMock(side_effect=Exception("network error"))
+    mock_lc.get_land_cover = AsyncMock(return_value=None)
+    mock_desc.describe_image = AsyncMock(return_value=("desc", False))
+    mock_ctx.research_context = AsyncMock(return_value=Context(events=[], summary="없음"))
+
+    with structlog.testing.capture_logs() as logs:
+        await compose_description(_make_request(), cache)
+
+    error_logs = [log for log in logs if log.get("event") == "external_call_failed"]
+    assert len(error_logs) == 1
+    assert error_logs[0]["service"] == "geocoder"
+    assert "network error" in error_logs[0]["error"]
