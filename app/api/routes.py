@@ -74,7 +74,8 @@ async def cache_stats(request: Request):
     response_model=CircuitBreakerResponse,
     tags=["system"],
     summary="Circuit breaker 상태 조회",
-    description="각 외부 서비스의 circuit breaker 상태(open/closed, 실패 횟수, cooldown 잔여 시간)를 반환합니다.",
+    description="각 외부 서비스의 circuit breaker 상태"
+    "(open/closed, 실패 횟수, cooldown 잔여 시간)를 반환합니다.",
 )
 async def circuit_breaker_status():
     return CircuitBreakerResponse(breakers=get_breaker_statuses())
