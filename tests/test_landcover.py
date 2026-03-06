@@ -1,3 +1,5 @@
+from unittest.mock import AsyncMock, patch
+
 import pytest
 
 from app.cache.store import CacheStore
@@ -37,3 +39,22 @@ async def test_land_cover_empty(cache, httpx_mock):
     result = await get_land_cover(0.0, 0.0, cache)
     assert len(result.classes) == 0
     assert result.summary == "정보 없음"
+
+
+async def test_landcover_uses_settings_cache_ttl(cache, httpx_mock):
+    """settings.cache_ttl_seconds가 landcover의 cache.set()에 사용되어야 한다."""
+    httpx_mock.add_response(json={"elements": [{"tags": {"landuse": "residential"}}]})
+
+    from app.config import settings
+
+    mock_set = AsyncMock()
+    with patch.object(cache, "set", mock_set):
+        await get_land_cover(126.978, 37.566, cache)
+
+    mock_set.assert_called_once()
+    _, kwargs = mock_set.call_args
+    assert "ttl_seconds" in kwargs, "cache.set()은 ttl_days 대신 ttl_seconds를 사용해야 합니다"
+    assert kwargs["ttl_seconds"] == settings.cache_ttl_seconds, (
+        f"cache_ttl_seconds({settings.cache_ttl_seconds})가 사용되어야 하지만 "
+        f"ttl_seconds={kwargs.get('ttl_seconds')}가 전달되었습니다"
+    )

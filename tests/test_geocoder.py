@@ -1,3 +1,5 @@
+from unittest.mock import AsyncMock, patch
+
 import pytest
 
 from app.cache.store import CacheStore
@@ -51,3 +53,27 @@ async def test_geocode_cache_hit(cache, httpx_mock):
     result = await geocode(126.978, 37.566, cache)
     assert result.country == "Test"
     assert len(httpx_mock.get_requests()) == 1
+
+
+async def test_geocode_uses_settings_cache_ttl(cache, httpx_mock):
+    """settings.cache_ttl_seconds가 geocoder의 cache.set()에 사용되어야 한다."""
+    httpx_mock.add_response(
+        json={
+            "display_name": "서울",
+            "address": {"country": "대한민국", "country_code": "kr", "state": "서울특별시"},
+        }
+    )
+
+    from app.config import settings
+
+    mock_set = AsyncMock()
+    with patch.object(cache, "set", mock_set):
+        await geocode(126.978, 37.566, cache)
+
+    mock_set.assert_called_once()
+    _, kwargs = mock_set.call_args
+    assert "ttl_seconds" in kwargs, "cache.set()은 ttl_days 대신 ttl_seconds를 사용해야 합니다"
+    assert kwargs["ttl_seconds"] == settings.cache_ttl_seconds, (
+        f"cache_ttl_seconds({settings.cache_ttl_seconds})가 사용되어야 하지만 "
+        f"ttl_seconds={kwargs.get('ttl_seconds')}가 전달되었습니다"
+    )
