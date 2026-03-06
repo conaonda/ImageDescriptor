@@ -31,10 +31,14 @@ uv run uvicorn app.main:app --reload
 | `SHUTDOWN_TIMEOUT` | - | `30` | Graceful shutdown 대기 시간(초) |
 | `REQUEST_TIMEOUT` | - | `30` | 개별 요청 타임아웃(초) |
 | `BATCH_CONCURRENCY` | - | `3` | 배치 동시 처리 수 |
+| `RATE_LIMIT_DESCRIBE` | - | `20/minute` | `/describe` 엔드포인트 rate limit |
+| `RATE_LIMIT_BATCH` | - | `10/minute` | `/batch/describe` 엔드포인트 rate limit |
+| `RATE_LIMIT_DATA` | - | `30/minute` | geocode/landcover/context 엔드포인트 rate limit |
+| `RATE_LIMIT_READ` | - | `60/minute` | 조회(read) 엔드포인트 rate limit |
 
 ## 인증
 
-모든 API 요청(`/api/health` 제외)에 `X-API-Key` 헤더가 필요하다.
+모든 API 요청(`/api/v1/health` 제외)에 `X-API-Key` 헤더가 필요하다.
 
 ```
 X-API-Key: your-api-key
@@ -50,17 +54,19 @@ X-API-Key: your-api-key
 ```bash
 curl -H "X-API-Key: your-api-key" \
      -H "X-Correlation-ID: 550e8400-e29b-41d4-a716-446655440000" \
-     http://localhost:8000/api/health
+     http://localhost:8000/api/v1/health
 ```
 
 ## API 레퍼런스
 
-### `GET /api/health`
+> **API 버전**: 모든 엔드포인트는 `/api/v1/` prefix를 사용한다. 레거시 `/api/*` 경로는 `/api/v1/*`으로 307 리다이렉트된다.
+
+### `GET /api/v1/health`
 
 헬스 체크. 인증 불필요.
 
 ```bash
-curl http://localhost:8000/api/health
+curl http://localhost:8000/api/v1/health
 ```
 
 ```json
@@ -71,12 +77,12 @@ curl http://localhost:8000/api/health
 }
 ```
 
-### `POST /api/describe`
+### `POST /api/v1/describe`
 
 메인 엔드포인트. 좌표와 썸네일로 종합 설명을 생성한다.
 
 ```bash
-curl -X POST http://localhost:8000/api/describe \
+curl -X POST http://localhost:8000/api/v1/describe \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your-api-key" \
   -d '{
@@ -134,12 +140,12 @@ curl -X POST http://localhost:8000/api/describe \
 }
 ```
 
-### `POST /api/geocode`
+### `POST /api/v1/geocode`
 
 좌표를 주소로 변환한다.
 
 ```bash
-curl -X POST http://localhost:8000/api/geocode \
+curl -X POST http://localhost:8000/api/v1/geocode \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your-api-key" \
   -d '{"thumbnail": "", "coordinates": [126.978, 37.566], "captured_at": "2025-01-15"}'
@@ -147,12 +153,12 @@ curl -X POST http://localhost:8000/api/geocode \
 
 **응답:** `Location` 객체
 
-### `POST /api/landcover`
+### `POST /api/v1/landcover`
 
 좌표 주변 토지피복 정보를 조회한다.
 
 ```bash
-curl -X POST http://localhost:8000/api/landcover \
+curl -X POST http://localhost:8000/api/v1/landcover \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your-api-key" \
   -d '{"thumbnail": "", "coordinates": [126.978, 37.566], "captured_at": "2025-01-15"}'
@@ -160,12 +166,12 @@ curl -X POST http://localhost:8000/api/landcover \
 
 **응답:** `LandCover` 객체
 
-### `POST /api/context`
+### `POST /api/v1/context`
 
 좌표 주변 뉴스/이벤트 맥락을 조회한다.
 
 ```bash
-curl -X POST http://localhost:8000/api/context \
+curl -X POST http://localhost:8000/api/v1/context \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your-api-key" \
   -d '{"thumbnail": "", "coordinates": [126.978, 37.566], "captured_at": "2025-01-15"}'
@@ -173,12 +179,12 @@ curl -X POST http://localhost:8000/api/context \
 
 **응답:** `Context` 객체
 
-### `POST /api/batch/describe`
+### `POST /api/v1/batch/describe`
 
 여러 이미지를 한 번에 분석한다. 최대 10건.
 
 ```bash
-curl -X POST http://localhost:8000/api/batch/describe \
+curl -X POST http://localhost:8000/api/v1/batch/describe \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your-api-key" \
   -d '{
@@ -203,12 +209,12 @@ curl -X POST http://localhost:8000/api/batch/describe \
 }
 ```
 
-### `GET /api/circuits`
+### `GET /api/v1/circuits`
 
 Circuit breaker 상태를 조회한다.
 
 ```bash
-curl -H "X-API-Key: your-api-key" http://localhost:8000/api/circuits
+curl -H "X-API-Key: your-api-key" http://localhost:8000/api/v1/circuits
 ```
 
 ```json
@@ -219,12 +225,12 @@ curl -H "X-API-Key: your-api-key" http://localhost:8000/api/circuits
 }
 ```
 
-### `GET /api/cache/stats`
+### `GET /api/v1/cache/stats`
 
 캐시 통계를 조회한다.
 
 ```bash
-curl -H "X-API-Key: your-api-key" http://localhost:8000/api/cache/stats
+curl -H "X-API-Key: your-api-key" http://localhost:8000/api/v1/cache/stats
 ```
 
 ```json
@@ -237,28 +243,28 @@ curl -H "X-API-Key: your-api-key" http://localhost:8000/api/cache/stats
 }
 ```
 
-### `GET /api/descriptions`
+### `GET /api/v1/descriptions`
 
 저장된 설명 이력 목록을 조회한다.
 
 ```bash
-curl -H "X-API-Key: your-api-key" http://localhost:8000/api/descriptions
+curl -H "X-API-Key: your-api-key" http://localhost:8000/api/v1/descriptions
 ```
 
-### `GET /api/descriptions/{cog_image_id}`
+### `GET /api/v1/descriptions/{cog_image_id}`
 
 저장된 설명을 조회한다.
 
 ```bash
-curl -H "X-API-Key: your-api-key" http://localhost:8000/api/descriptions/some-uuid
+curl -H "X-API-Key: your-api-key" http://localhost:8000/api/v1/descriptions/some-uuid
 ```
 
-### `DELETE /api/descriptions/{cog_image_id}`
+### `DELETE /api/v1/descriptions/{cog_image_id}`
 
 저장된 분석 결과를 삭제한다. 성공 시 `204 No Content` 반환.
 
 ```bash
-curl -X DELETE -H "X-API-Key: your-api-key" http://localhost:8000/api/descriptions/some-uuid
+curl -X DELETE -H "X-API-Key: your-api-key" http://localhost:8000/api/v1/descriptions/some-uuid
 ```
 
 **응답:**
@@ -283,7 +289,14 @@ curl -X DELETE -H "X-API-Key: your-api-key" http://localhost:8000/api/descriptio
 
 ## Rate Limiting
 
-인증 필요 엔드포인트: **10 req/min per IP**
+엔드포인트별로 IP당 rate limit이 적용된다. 초과 시 `429 Too Many Requests`와 `Retry-After` 헤더(초 단위)를 반환한다.
+
+| 엔드포인트 | 기본 제한 | 환경변수 |
+|-----------|----------|---------|
+| `POST /api/v1/describe` | 20 req/min | `RATE_LIMIT_DESCRIBE` |
+| `POST /api/v1/batch/describe` | 10 req/min | `RATE_LIMIT_BATCH` |
+| `POST /api/v1/geocode`, `/landcover`, `/context` | 30 req/min | `RATE_LIMIT_DATA` |
+| `GET /api/v1/descriptions*`, `/circuits`, `/cache/stats` | 60 req/min | `RATE_LIMIT_READ` |
 
 ## 테스트
 
