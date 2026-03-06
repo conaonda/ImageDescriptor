@@ -439,7 +439,7 @@ class TestDescribeCacheHeaders:
 
         resp2 = await client.post("/api/describe", json=body, headers=headers)
         assert resp2.status_code == 304
-        assert resp2.content == b"null"
+        assert resp2.content == b""
 
     async def test_different_content_produces_different_etag(
         self, client_with_cache, monkeypatch

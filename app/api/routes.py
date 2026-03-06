@@ -4,7 +4,7 @@ from importlib.metadata import PackageNotFoundError, version
 
 import structlog
 from fastapi import APIRouter, Depends, Header, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from slowapi import Limiter
 
 from app.api.schemas import (
@@ -136,7 +136,7 @@ async def describe(
     etag = _generate_etag(body_bytes)
 
     if if_none_match and if_none_match == etag:
-        return JSONResponse(status_code=304, content=None, headers={"ETag": etag})
+        return Response(status_code=304, headers={"ETag": etag})
 
     cache_control = "private, max-age=3600" if result.cached else "no-cache"
     return JSONResponse(
