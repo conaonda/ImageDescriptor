@@ -1,4 +1,5 @@
 import os
+from unittest.mock import AsyncMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -477,6 +478,91 @@ class TestDescribeCacheHeaders:
         assert resp.status_code == 200
         data = resp.json()
         assert "description" in data
+
+
+async def test_health_degraded_when_supabase_fails(client_with_cache, monkeypatch):
+    import app.db.supabase as supabase_mod
+
+    async def _supabase_fail():
+        return False
+
+    async def _cache_ok():
+        return True
+
+    monkeypatch.setattr(supabase_mod, "ping", _supabase_fail)
+    # cache.ping is already ok since it's a real cache
+    resp = await client_with_cache.get("/api/health")
+    data = resp.json()
+    assert data["status"] in ("degraded", "shutting_down")
+    assert data["checks"]["supabase"] == "fail"
+
+
+async def test_health_unhealthy_when_all_fail(client_with_cache, monkeypatch):
+    import app.db.supabase as supabase_mod
+
+    async def _fail():
+        return False
+
+    monkeypatch.setattr(supabase_mod, "ping", _fail)
+    monkeypatch.setattr(app.state.cache, "ping", _fail)
+    resp = await client_with_cache.get("/api/health")
+    assert resp.status_code == 503
+    data = resp.json()
+    assert data["status"] in ("unhealthy", "shutting_down")
+
+
+async def test_get_description_not_found(client_with_cache, monkeypatch):
+    import app.db.supabase as db_mod
+
+    monkeypatch.setattr(db_mod, "get_description", AsyncMock(return_value=None))
+    resp = await client_with_cache.get(
+        "/api/descriptions/nonexistent-id",
+        headers={"X-API-Key": os.environ["API_KEY"]},
+    )
+    assert resp.status_code == 404
+    data = resp.json()
+    assert "NOT_FOUND" in str(data)
+
+
+async def test_get_description_found(client_with_cache, monkeypatch):
+    import app.db.supabase as db_mod
+
+    mock_data = {"description": "test", "cog_image_id": "found-id"}
+    monkeypatch.setattr(db_mod, "get_description", AsyncMock(return_value=mock_data))
+    resp = await client_with_cache.get(
+        "/api/descriptions/found-id",
+        headers={"X-API-Key": os.environ["API_KEY"]},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["description"] == "test"
+
+
+async def test_shutdown_middleware_rejects_non_system_paths(client_with_cache, monkeypatch):
+    """During shutdown, non-system paths should return 503."""
+    import app.main as main_mod
+
+    monkeypatch.setattr(main_mod, "_shutting_down", True)
+    resp = await client_with_cache.post(
+        "/api/describe",
+        json={"thumbnail": "dGVzdA==", "coordinates": [126.978, 37.566]},
+        headers={"X-API-Key": os.environ["API_KEY"]},
+    )
+    assert resp.status_code == 503
+    monkeypatch.setattr(main_mod, "_shutting_down", False)
+
+
+async def test_shutdown_middleware_allows_health(client_with_cache, monkeypatch):
+    """During shutdown, health endpoint should still work."""
+    import app.db.supabase as supabase_mod
+    import app.main as main_mod
+
+    monkeypatch.setattr(main_mod, "_shutting_down", True)
+    monkeypatch.setattr(supabase_mod, "ping", AsyncMock(return_value=True))
+    resp = await client_with_cache.get("/api/health")
+    # Health endpoint is allowed through shutdown middleware but returns 503 with shutting_down
+    assert resp.status_code in (200, 503)
+    assert resp.json()["status"] == "shutting_down"
+    monkeypatch.setattr(main_mod, "_shutting_down", False)
 
 
 class TestRequestIdValidation:
