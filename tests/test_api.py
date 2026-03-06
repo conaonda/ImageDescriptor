@@ -191,7 +191,7 @@ async def test_rate_limit_returns_429(tmp_path):
 
     limiter.reset()
     try:
-        with patch("app.config.settings.rate_limit", "1/minute"):
+        with patch("app.config.settings.rate_limit_describe", "1/minute"):
             async with AsyncClient(
                 transport=ASGITransport(app=app),
                 base_url="http://test",

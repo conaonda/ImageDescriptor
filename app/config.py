@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     thumbnail_max_pixels: int = 768
     rate_limit: str = "30/minute"
+    rate_limit_describe: str = "20/minute"
+    rate_limit_batch: str = "10/minute"
+    rate_limit_data: str = "30/minute"
+    rate_limit_read: str = "60/minute"
     shutdown_timeout: int = 30
     request_timeout: int = 30
     batch_concurrency: int = 3
