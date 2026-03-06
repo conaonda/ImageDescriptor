@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- API 버전 관리 도입: 모든 엔드포인트가 `/api/v1/` prefix를 사용. 레거시 `/api/*` 경로는 `/api/v1/*`으로 307 영구 리다이렉트하여 하위 호환성 유지
+- 엔드포인트별 Rate Limiting 세분화: describe(20/min), batch(10/min), data(30/min), read(60/min). 환경변수(`RATE_LIMIT_DESCRIBE`, `RATE_LIMIT_BATCH`, `RATE_LIMIT_DATA`, `RATE_LIMIT_READ`)로 외부 설정 가능
+- Rate Limit 초과 시 RFC 7807 형식 에러 응답 + RFC 7231 준수 `Retry-After` 헤더(초 단위 정수) 반환
+
 ## [0.24.0] - 2026-03-07
 
 ### Added
