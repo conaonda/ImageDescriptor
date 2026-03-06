@@ -58,6 +58,7 @@ def generate_request_id() -> str:
 
 
 def generate_correlation_id() -> str:
+    """Generate a new UUID v4-based correlation ID."""
     return str(uuid.uuid4())
 
 

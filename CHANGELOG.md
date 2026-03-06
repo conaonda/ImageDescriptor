@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `DELETE /api/descriptions/{cog_image_id}`: 저장된 분석 결과 삭제 API (204 성공, 404 미존재, 500 DB 오류)
 - `GET /api/descriptions`: 설명 이력 목록 조회 API
+- Correlation ID 지원: 모든 요청에 `X-Correlation-ID` 헤더를 통해 요청 추적 가능. 클라이언트가 헤더를 제공하면 UUID 검증 후 통과, 없으면 서버에서 자동 생성. 응답 헤더에 항상 포함됨.
 
 ## [0.18.0] - 2026-03-07
 
