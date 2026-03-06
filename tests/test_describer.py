@@ -50,7 +50,9 @@ async def test_describe_image(mock_genai, _mock_resize, cache):
     thumbnail = base64.b64encode(b"fake-image-data").decode()
     result = await describe_image(thumbnail, "서울특별시", "2025-06-15", "주거지역 50%", cache)
 
-    assert result == "서울 도심의 위성영상입니다."
+    description, cached = result
+    assert description == "서울 도심의 위성영상입니다."
+    assert cached is False
     mock_client.models.generate_content.assert_called_once()
 
 
@@ -63,7 +65,9 @@ async def test_describe_image_cache_hit(mock_genai, cache):
         "dGVzdA==", "서울", "2025-06-15", "summary", cache, cog_image_id="test-id"
     )
 
-    assert result == "cached description"
+    description, cached = result
+    assert description == "cached description"
+    assert cached is True
     mock_genai.Client.assert_not_called()
 
 

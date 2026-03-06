@@ -46,7 +46,7 @@ async def test_compose_all_success(mock_geo, mock_lc, mock_desc, mock_ctx, cache
             summary="주거지역 60%",
         )
     )
-    mock_desc.describe_image = AsyncMock(return_value="위성영상 설명입니다.")
+    mock_desc.describe_image = AsyncMock(return_value=("위성영상 설명입니다.", False))
     mock_ctx.research_context = AsyncMock(
         return_value=Context(
             events=[
@@ -83,7 +83,7 @@ async def test_compose_partial_failure(mock_geo, mock_lc, mock_desc, mock_ctx, c
             summary="정보 없음",
         )
     )
-    mock_desc.describe_image = AsyncMock(return_value="설명 텍스트")
+    mock_desc.describe_image = AsyncMock(return_value=("설명 텍스트", False))
     mock_ctx.research_context = AsyncMock(return_value=Context(events=[], summary="없음"))
 
     result = await compose_description(_make_request(), cache)
@@ -158,7 +158,7 @@ async def test_compose_landcover_fail_geocoder_ok(mock_geo, mock_lc, mock_desc, 
         )
     )
     mock_lc.get_land_cover = AsyncMock(side_effect=Exception("LandCover API error"))
-    mock_desc.describe_image = AsyncMock(return_value="설명 텍스트")
+    mock_desc.describe_image = AsyncMock(return_value=("설명 텍스트", False))
     mock_ctx.research_context = AsyncMock(return_value=Context(events=[], summary="없음"))
 
     result = await compose_description(_make_request(), cache)
@@ -181,7 +181,7 @@ async def test_compose_phase1_both_fail_phase2_uses_fallback(
     """Phase 1 양쪽 실패 시 Phase 2가 fallback 값으로 동작하는지 검증."""
     mock_geo.geocode = AsyncMock(side_effect=Exception("fail"))
     mock_lc.get_land_cover = AsyncMock(side_effect=Exception("fail"))
-    mock_desc.describe_image = AsyncMock(return_value="fallback 설명")
+    mock_desc.describe_image = AsyncMock(return_value=("fallback 설명", False))
     mock_ctx.research_context = AsyncMock(return_value=Context(events=[], summary="없음"))
 
     result = await compose_description(_make_request(), cache)
@@ -255,7 +255,7 @@ async def test_compose_without_captured_at(mock_geo, mock_lc, mock_desc, mock_ct
         )
     )
     mock_lc.get_land_cover = AsyncMock(return_value=LandCover(classes=[], summary="정보 없음"))
-    mock_desc.describe_image = AsyncMock(return_value="설명")
+    mock_desc.describe_image = AsyncMock(return_value=("설명", False))
     mock_ctx.research_context = AsyncMock(return_value=Context(events=[], summary="없음"))
 
     result = await compose_description(request, cache)
@@ -290,7 +290,7 @@ async def test_compose_without_bbox(mock_geo, mock_lc, mock_desc, mock_ctx, cach
         )
     )
     mock_lc.get_land_cover = AsyncMock(return_value=LandCover(classes=[], summary="정보 없음"))
-    mock_desc.describe_image = AsyncMock(return_value="설명")
+    mock_desc.describe_image = AsyncMock(return_value=("설명", False))
     mock_ctx.research_context = AsyncMock(return_value=Context(events=[], summary="없음"))
 
     result = await compose_description(request, cache)
@@ -323,7 +323,7 @@ async def test_compose_polar_coordinates(mock_geo, mock_lc, mock_desc, mock_ctx,
         )
     )
     mock_lc.get_land_cover = AsyncMock(return_value=LandCover(classes=[], summary="빙하"))
-    mock_desc.describe_image = AsyncMock(return_value="극지 설명")
+    mock_desc.describe_image = AsyncMock(return_value=("극지 설명", False))
     mock_ctx.research_context = AsyncMock(return_value=Context(events=[], summary="없음"))
 
     result = await compose_description(request, cache)
@@ -355,7 +355,7 @@ async def test_compose_dateline_coordinates(mock_geo, mock_lc, mock_desc, mock_c
         )
     )
     mock_lc.get_land_cover = AsyncMock(return_value=LandCover(classes=[], summary="해양"))
-    mock_desc.describe_image = AsyncMock(return_value="태평양 설명")
+    mock_desc.describe_image = AsyncMock(return_value=("태평양 설명", False))
     mock_ctx.research_context = AsyncMock(return_value=Context(events=[], summary="없음"))
 
     result = await compose_description(request, cache)
@@ -424,7 +424,7 @@ async def test_compose_timing_logs_emitted(mock_geo, mock_lc, mock_desc, mock_ct
         )
     )
     mock_lc.get_land_cover = AsyncMock(return_value=LandCover(classes=[], summary="정보 없음"))
-    mock_desc.describe_image = AsyncMock(return_value="설명")
+    mock_desc.describe_image = AsyncMock(return_value=("설명", False))
     mock_ctx.research_context = AsyncMock(return_value=Context(events=[], summary="없음"))
 
     with structlog.testing.capture_logs() as logs:

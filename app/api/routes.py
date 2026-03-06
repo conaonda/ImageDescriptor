@@ -1,8 +1,9 @@
 import asyncio
+import hashlib
 from importlib.metadata import PackageNotFoundError, version
 
 import structlog
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Header, Request
 from fastapi.responses import JSONResponse
 from slowapi import Limiter
 
@@ -99,6 +100,10 @@ async def health(request: Request):
     return JSONResponse(content=body, status_code=status_code)
 
 
+def _generate_etag(body_bytes: bytes) -> str:
+    return f'"{hashlib.md5(body_bytes).hexdigest()}"'  # noqa: S324
+
+
 @router.post(
     "/describe",
     response_model=DescribeResponse,
@@ -109,6 +114,7 @@ async def health(request: Request):
         "Gemini AI 영상 설명, 맥락 정보를 통합 생성합니다."
     ),
     responses={
+        304: {"description": "캐시 유효 (Not Modified)"},
         422: {
             "model": ErrorResponse,
             "description": "유효하지 않은 요청 (좌표 범위 초과, 썸네일 과대 등)",
@@ -121,9 +127,22 @@ async def describe(
     body: DescribeRequest,
     request: Request,
     _auth: dict = Depends(authenticate),
+    if_none_match: str | None = Header(None),
 ):
     cache = request.app.state.cache
-    return await _describe_and_save(body, cache)
+    result = await _describe_and_save(body, cache)
+
+    body_bytes = result.model_dump_json().encode()
+    etag = _generate_etag(body_bytes)
+
+    if if_none_match and if_none_match == etag:
+        return JSONResponse(status_code=304, content=None, headers={"ETag": etag})
+
+    cache_control = "private, max-age=3600" if result.cached else "no-cache"
+    return JSONResponse(
+        content=result.model_dump(mode="json"),
+        headers={"ETag": etag, "Cache-Control": cache_control},
+    )
 
 
 @router.post(

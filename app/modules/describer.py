@@ -137,13 +137,13 @@ async def describe_image(
     cache: CacheStore,
     cog_image_id: str | None = None,
     bbox: list[float] | None = None,
-) -> str:
+) -> tuple[str, bool]:
     if cog_image_id:
         cache_key = f"describe:{cog_image_id}"
         cached = await cache.get(cache_key)
         if cached:
             logger.debug("describer cache hit", cog_image_id=cog_image_id)
-            return cached["description"]
+            return cached["description"], True
 
     # 썸네일 데이터 준비
     if thumbnail.startswith("data:image"):
@@ -168,4 +168,4 @@ async def describe_image(
         await cache.set(f"describe:{cog_image_id}", {"description": description})
 
     logger.info("describer result", description_length=len(description))
-    return description
+    return description, False

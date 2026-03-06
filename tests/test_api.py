@@ -323,3 +323,71 @@ class TestDescribeAndSave:
 
         mock_save.assert_not_awaited()
         assert result.saved is None
+
+
+class TestDescribeCacheHeaders:
+    @pytest.fixture
+    async def _mock_describe(self, client_with_cache, monkeypatch):
+        from unittest.mock import AsyncMock
+
+        from app.api.schemas import DescribeResponse
+
+        mock_result = DescribeResponse(description="test desc", cached=False)
+        monkeypatch.setattr(
+            "app.api.routes._describe_and_save",
+            AsyncMock(return_value=mock_result),
+        )
+        return client_with_cache, mock_result
+
+    async def test_describe_returns_etag_header(self, _mock_describe):
+        client, _ = _mock_describe
+        resp = await client.post(
+            "/api/describe",
+            json={"thumbnail": "dGVzdA==", "coordinates": [126.978, 37.566]},
+            headers={"X-API-Key": os.environ["API_KEY"]},
+        )
+        assert resp.status_code == 200
+        assert "etag" in resp.headers
+        assert resp.headers["cache-control"] == "no-cache"
+
+    async def test_describe_cached_returns_max_age(self, client_with_cache, monkeypatch):
+        from unittest.mock import AsyncMock
+
+        from app.api.schemas import DescribeResponse
+
+        mock_result = DescribeResponse(description="cached desc", cached=True)
+        monkeypatch.setattr(
+            "app.api.routes._describe_and_save",
+            AsyncMock(return_value=mock_result),
+        )
+        resp = await client_with_cache.post(
+            "/api/describe",
+            json={"thumbnail": "dGVzdA==", "coordinates": [126.978, 37.566]},
+            headers={"X-API-Key": os.environ["API_KEY"]},
+        )
+        assert resp.status_code == 200
+        assert resp.headers["cache-control"] == "private, max-age=3600"
+
+    async def test_describe_304_with_matching_etag(self, _mock_describe):
+        client, _ = _mock_describe
+        body = {"thumbnail": "dGVzdA==", "coordinates": [126.978, 37.566]}
+        headers = {"X-API-Key": os.environ["API_KEY"]}
+
+        resp1 = await client.post("/api/describe", json=body, headers=headers)
+        etag = resp1.headers["etag"]
+
+        headers["If-None-Match"] = etag
+        resp2 = await client.post("/api/describe", json=body, headers=headers)
+        assert resp2.status_code == 304
+
+    async def test_describe_200_with_mismatched_etag(self, _mock_describe):
+        client, _ = _mock_describe
+        resp = await client.post(
+            "/api/describe",
+            json={"thumbnail": "dGVzdA==", "coordinates": [126.978, 37.566]},
+            headers={
+                "X-API-Key": os.environ["API_KEY"],
+                "If-None-Match": '"wrong-etag"',
+            },
+        )
+        assert resp.status_code == 200

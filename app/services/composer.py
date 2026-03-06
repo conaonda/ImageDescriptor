@@ -97,8 +97,13 @@ async def compose_description(request: DescribeRequest, cache: CacheStore) -> De
             warnings,
         )
     )
-    description, context_result = await asyncio.gather(desc_task, ctx_task)
+    desc_result, context_result = await asyncio.gather(desc_task, ctx_task)
     logger.info("phase2_complete", duration_ms=round((time.monotonic() - t_phase2) * 1000))
+
+    if desc_result is not None:
+        description, cached = desc_result
+    else:
+        description, cached = None, False
 
     total_ms = round((time.monotonic() - t_start) * 1000)
     logger.info("compose_complete", total_duration_ms=total_ms, warning_count=len(warnings))
@@ -110,5 +115,5 @@ async def compose_description(request: DescribeRequest, cache: CacheStore) -> De
         context=context_result,
         mission=mission_result,
         warnings=warnings,
-        cached=False,
+        cached=cached,
     )
