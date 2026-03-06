@@ -108,6 +108,6 @@ out tags;
     summary = ", ".join(summary_parts) if summary_parts else "정보 없음"
 
     result = LandCover(classes=classes, summary=summary)
-    await cache.set(cache_key, result.model_dump(), ttl_days=90)
+    await cache.set(cache_key, result.model_dump(), ttl_seconds=settings.cache_ttl_seconds)
     logger.info("landcover result", classes_count=len(classes), summary=summary)
     return result

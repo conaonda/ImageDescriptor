@@ -126,8 +126,8 @@ async def request_id_middleware(request: Request, call_next):
 
     response = await call_next(request)
 
-    latency_ms = round((time.monotonic() - start_time) * 1000, 2)
     process_time = time.monotonic() - start_time
+    latency_ms = round(process_time * 1000, 2)
     response.headers["X-Request-ID"] = request_id
     response.headers["X-Correlation-ID"] = correlation_id
     response.headers["X-Process-Time"] = f"{process_time:.6f}"

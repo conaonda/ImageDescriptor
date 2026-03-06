@@ -73,6 +73,6 @@ async def geocode(lon: float, lat: float, cache: CacheStore) -> Location:
         lon=lon,
     )
 
-    await cache.set(cache_key, location.model_dump(), ttl_days=30)
+    await cache.set(cache_key, location.model_dump(), ttl_seconds=settings.cache_ttl_seconds)
     logger.info("geocoder result", country=location.country, region=location.region)
     return location
