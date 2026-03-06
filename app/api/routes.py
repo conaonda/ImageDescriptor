@@ -313,10 +313,12 @@ async def list_descriptions(
     offset: int = Query(default=0, ge=0, description="시작 위치"),
     limit: int = Query(default=20, ge=1, le=100, description="페이지 크기"),
     created_after: datetime | None = Query(
-        default=None, description="이 시각 이후 항목만 조회 (ISO 8601)",
+        default=None,
+        description="이 시각 이후 항목만 조회 (ISO 8601)",
     ),
     created_before: datetime | None = Query(
-        default=None, description="이 시각 이전 항목만 조회 (ISO 8601)",
+        default=None,
+        description="이 시각 이전 항목만 조회 (ISO 8601)",
     ),
     _auth: dict = Depends(authenticate),
 ):
