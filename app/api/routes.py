@@ -19,13 +19,14 @@ from app.api.schemas import (
     DescribeRequest,
     DescribeResponse,
     DescriptionListResponse,
-    ErrorResponse,
+    ErrorResponse,  # kept for backward compat
     HealthResponse,
     LandCover,
     Location,
     Warning,
 )
 from app.auth import authenticate
+from app.utils.errors import ProblemDetail
 from app.config import settings
 from app.db import supabase as db
 from app.services.composer import compose_description, get_breaker_statuses
@@ -147,7 +148,7 @@ def _generate_etag(body_bytes: bytes) -> str:
     responses={
         304: {"description": "캐시 유효 (Not Modified)"},
         422: {
-            "model": ErrorResponse,
+            "model": ProblemDetail,
             "description": "유효하지 않은 요청 (좌표 범위 초과, 썸네일 과대 등)",
         },
         429: {"description": "요청 횟수 초과 (Rate Limit Exceeded)"},
@@ -185,7 +186,7 @@ async def describe(
         "최대 10건의 분석 요청을 병렬 처리합니다. 개별 실패 시 해당 항목만 에러를 반환합니다."
     ),
     responses={
-        422: {"model": ErrorResponse, "description": "유효하지 않은 요청"},
+        422: {"model": ProblemDetail, "description": "유효하지 않은 요청"},
         429: {"description": "요청 횟수 초과"},
     },
 )
@@ -342,7 +343,7 @@ async def list_descriptions(
     summary="저장된 설명 조회",
     description="cog_image_id로 Supabase에 저장된 분석 결과를 조회합니다.",
     responses={
-        404: {"model": ErrorResponse, "description": "해당 ID의 설명을 찾을 수 없음"},
+        404: {"model": ProblemDetail, "description": "해당 ID의 설명을 찾을 수 없음"},
         429: {"description": "요청 횟수 초과"},
     },
 )
@@ -370,7 +371,7 @@ async def get_description(
     summary="설명 삭제",
     description="cog_image_id로 저장된 분석 결과를 삭제합니다.",
     responses={
-        404: {"model": ErrorResponse, "description": "해당 ID의 설명을 찾을 수 없음"},
+        404: {"model": ProblemDetail, "description": "해당 ID의 설명을 찾을 수 없음"},
         429: {"description": "요청 횟수 초과"},
     },
 )

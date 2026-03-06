@@ -48,6 +48,7 @@ async def test_shutdown_rejects_new_requests(shutdown_client, monkeypatch):
     resp = await shutdown_client.post("/api/describe", json={})
     assert resp.status_code == 503
     assert resp.json()["detail"] == "Server is shutting down"
+    assert resp.json()["status"] == 503
 
 
 async def test_health_shows_shutting_down_status(shutdown_client, monkeypatch):

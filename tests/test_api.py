@@ -521,7 +521,8 @@ async def test_get_description_not_found(client_with_cache, monkeypatch):
     )
     assert resp.status_code == 404
     data = resp.json()
-    assert "NOT_FOUND" in str(data)
+    assert data["status"] == 404
+    assert "not-found" in data["type"]
 
 
 async def test_get_description_found(client_with_cache, monkeypatch):
@@ -646,7 +647,8 @@ async def test_delete_description_not_found(client_with_cache, monkeypatch):
     )
     assert resp.status_code == 404
     data = resp.json()
-    assert data["error"]["code"] == "NOT_FOUND"
+    assert data["status"] == 404
+    assert "not-found" in data["type"]
 
 
 async def test_delete_description_success(client_with_cache, monkeypatch):
@@ -673,4 +675,56 @@ async def test_delete_description_db_error_returns_500(client_with_cache, monkey
     )
     assert resp.status_code == 500
     data = resp.json()
-    assert data["error"]["code"] == "INTERNAL_ERROR"
+    assert data["status"] == 500
+    assert "internal-error" in data["type"]
+
+
+class TestRFC7807ProblemDetail:
+    """RFC 7807 에러 응답 형식 검증."""
+
+    async def test_validation_error_returns_problem_detail(self, client_with_cache):
+        resp = await client_with_cache.post(
+            "/api/describe",
+            json={"thumbnail": "test", "coordinates": [999, 999]},
+            headers={"X-API-Key": os.environ["API_KEY"]},
+        )
+        assert resp.status_code == 422
+        data = resp.json()
+        assert data["type"] == "https://problems.cognito-descriptor.io/validation-error"
+        assert data["title"] == "Unprocessable Entity"
+        assert data["status"] == 422
+        assert "errors" in data
+        assert isinstance(data["errors"], list)
+        assert resp.headers["content-type"] == "application/problem+json"
+
+    async def test_not_found_returns_problem_detail(self, client_with_cache, monkeypatch):
+        import app.db.supabase as db_mod
+
+        monkeypatch.setattr(db_mod, "get_description", AsyncMock(return_value=None))
+        resp = await client_with_cache.get(
+            "/api/descriptions/nonexistent",
+            headers={"X-API-Key": os.environ["API_KEY"]},
+        )
+        assert resp.status_code == 404
+        data = resp.json()
+        assert "not-found" in data["type"]
+        assert data["title"] == "Not Found"
+        assert data["status"] == 404
+        assert data["detail"] is not None
+        assert data["instance"] is not None
+        assert resp.headers["content-type"] == "application/problem+json"
+
+    async def test_problem_detail_includes_correlation_id(self, client_with_cache, monkeypatch):
+        import app.db.supabase as db_mod
+
+        monkeypatch.setattr(db_mod, "get_description", AsyncMock(return_value=None))
+        custom_cid = "550e8400-e29b-41d4-a716-446655440000"
+        resp = await client_with_cache.get(
+            "/api/descriptions/nonexistent",
+            headers={
+                "X-API-Key": os.environ["API_KEY"],
+                "X-Correlation-ID": custom_cid,
+            },
+        )
+        data = resp.json()
+        assert data["instance"] == custom_cid

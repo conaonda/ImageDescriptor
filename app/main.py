@@ -5,16 +5,24 @@ from importlib.metadata import PackageNotFoundError, version
 
 import structlog
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.routes import router
 from app.cache.store import CacheStore
 from app.config import settings
-from app.utils.errors import DescriptorError, descriptor_error_handler
+from app.utils.errors import (
+    DescriptorError,
+    descriptor_error_handler,
+    http_exception_handler,
+    internal_error_handler,
+    validation_error_handler,
+)
 from app.utils.logging import _SKIP_LOG_PATHS, request_id_middleware, setup_logging
 from app.utils.rate_limit import get_real_ip
 
@@ -117,11 +125,26 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_exception_handler(DescriptorError, descriptor_error_handler)
+app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_error_handler)
+app.add_exception_handler(Exception, internal_error_handler)
 
 
 async def _timeout_error_handler(request, exc):
+    from app.utils.errors import _get_correlation_id
+
     logger.warning("request_timeout", path=request.url.path, timeout=settings.request_timeout)
-    return JSONResponse(status_code=504, content={"detail": "Gateway Timeout"})
+    return JSONResponse(
+        status_code=504,
+        content={
+            "type": "https://problems.cognito-descriptor.io/gateway-timeout",
+            "title": "Gateway Timeout",
+            "status": 504,
+            "detail": "요청 처리 시간이 초과되었습니다",
+            "instance": _get_correlation_id(request),
+        },
+        media_type="application/problem+json",
+    )
 
 
 app.add_exception_handler(asyncio.TimeoutError, _timeout_error_handler)
@@ -154,7 +177,13 @@ async def shutdown_middleware(request, call_next):
     if _shutting_down and request.url.path not in _SYSTEM_PATHS:
         return JSONResponse(
             status_code=503,
-            content={"detail": "Server is shutting down"},
+            content={
+                "type": "https://problems.cognito-descriptor.io/service-unavailable",
+                "title": "Service Unavailable",
+                "status": 503,
+                "detail": "Server is shutting down",
+            },
+            media_type="application/problem+json",
         )
     async with _in_flight_lock:
         _in_flight += 1
