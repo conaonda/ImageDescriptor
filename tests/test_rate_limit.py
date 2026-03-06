@@ -84,7 +84,7 @@ class TestRateLimitMiddleware:
             "coordinates": [126.978, 37.566],
             "captured_at": "2025-06-15T00:00:00Z",
         }
-        with patch("app.config.settings.rate_limit", "1/minute"):
+        with patch("app.config.settings.rate_limit_describe", "1/minute"):
             await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
             resp = await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
             assert resp.status_code == 429
@@ -97,12 +97,17 @@ class TestRateLimitMiddleware:
             "coordinates": [126.978, 37.566],
             "captured_at": "2025-06-15T00:00:00Z",
         }
-        with patch("app.config.settings.rate_limit", "1/minute"):
+        with patch("app.config.settings.rate_limit_describe", "1/minute"):
             await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
             resp = await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
             assert resp.status_code == 429
             data = resp.json()
-            assert "error" in data or "detail" in data
+            assert data["type"] == "https://problems.cognito-descriptor.io/rate-limit-exceeded"
+            assert data["status"] == 429
+            assert "detail" in data
+            assert resp.headers.get("content-type") == "application/problem+json"
+            assert "Retry-After" in resp.headers
+            assert int(resp.headers["Retry-After"]) > 0
 
     async def test_health_endpoint_not_rate_limited(self, rate_limit_client):
         for _ in range(10):
@@ -118,11 +123,32 @@ class TestRateLimitMiddleware:
             "coordinates": [126.978, 37.566],
             "captured_at": "2025-06-15T00:00:00Z",
         }
-        with patch("app.config.settings.rate_limit", "1/minute"):
+        with patch("app.config.settings.rate_limit_describe", "1/minute"):
             # Exhaust describe limit
             await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
             resp = await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
             assert resp.status_code == 429
-            # cache/stats should still work (no rate limit)
+            # cache/stats should still work (no rate limit on system endpoints)
             resp = await rate_limit_client.get("/api/v1/cache/stats")
+            assert resp.status_code == 200
+
+    async def test_describe_and_data_have_independent_limits(self, rate_limit_client):
+        """describe and data endpoints have separate rate limit pools."""
+        api_key = os.environ["API_KEY"]
+        headers = {"X-API-Key": api_key}
+        body = {
+            "thumbnail": "dGVzdA==",
+            "coordinates": [126.978, 37.566],
+            "captured_at": "2025-06-15T00:00:00Z",
+        }
+        with (
+            patch("app.config.settings.rate_limit_describe", "1/minute"),
+            patch("app.config.settings.rate_limit_data", "1/minute"),
+        ):
+            # Exhaust describe limit
+            await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
+            resp = await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
+            assert resp.status_code == 429
+            # Data endpoint should still accept (independent limit)
+            resp = await rate_limit_client.post("/api/v1/geocode", json=body, headers=headers)
             assert resp.status_code == 200

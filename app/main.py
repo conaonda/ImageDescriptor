@@ -9,7 +9,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from prometheus_fastapi_instrumentator import Instrumentator
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -123,7 +123,34 @@ app = FastAPI(
     ],
 )
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+async def _rate_limit_handler(request, exc):
+    from app.utils.errors import _get_correlation_id
+
+    import datetime as _dt
+
+    retry_after_raw = getattr(exc, "retry_after", 60)
+    if isinstance(retry_after_raw, _dt.datetime):
+        delta = retry_after_raw - _dt.datetime.now(tz=retry_after_raw.tzinfo)
+        retry_after = max(1, int(delta.total_seconds()))
+    else:
+        retry_after = int(retry_after_raw)
+    return JSONResponse(
+        status_code=429,
+        content={
+            "type": "https://problems.cognito-descriptor.io/rate-limit-exceeded",
+            "title": "Rate Limit Exceeded",
+            "status": 429,
+            "detail": str(exc.detail) if hasattr(exc, "detail") else "요청 횟수 제한을 초과했습니다",
+            "instance": _get_correlation_id(request),
+        },
+        headers={"Retry-After": str(retry_after)},
+        media_type="application/problem+json",
+    )
+
+
+app.add_exception_handler(RateLimitExceeded, _rate_limit_handler)
 app.add_exception_handler(DescriptorError, descriptor_error_handler)
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_error_handler)
