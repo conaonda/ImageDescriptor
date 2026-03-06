@@ -52,8 +52,13 @@ class CacheStore:
         cache_hits.labels(module=module).inc()
         return json.loads(value)
 
-    async def set(self, key: str, value: dict, ttl_days: int | None = None):
-        expires_at = time.time() + ttl_days * 86400 if ttl_days else None
+    async def set(self, key: str, value: dict, ttl_days: int | None = None, ttl_seconds: int | None = None):
+        if ttl_seconds is not None:
+            expires_at = time.time() + ttl_seconds
+        elif ttl_days is not None:
+            expires_at = time.time() + ttl_days * 86400
+        else:
+            expires_at = None
         await self._db.execute(
             "INSERT OR REPLACE INTO cache (key, value, expires_at) VALUES (?, ?, ?)",
             (key, json.dumps(value, ensure_ascii=False), expires_at),

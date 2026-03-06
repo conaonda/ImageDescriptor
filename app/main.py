@@ -20,7 +20,6 @@ from app.utils.rate_limit import get_real_ip
 
 setup_logging()
 
-CACHE_CLEANUP_INTERVAL_SECONDS = 3600
 
 limiter = Limiter(key_func=get_real_ip)
 
@@ -38,7 +37,7 @@ def is_shutting_down() -> bool:
 
 async def _cache_cleanup_loop(cache: CacheStore):
     while True:
-        await asyncio.sleep(CACHE_CLEANUP_INTERVAL_SECONDS)
+        await asyncio.sleep(settings.cache_cleanup_interval_seconds)
         try:
             await cache.cleanup_expired()
         except Exception:
@@ -133,7 +132,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST"],
     allow_headers=["Authorization", "Content-Type", "X-API-Key", "X-Request-ID"],
-    expose_headers=["X-Request-ID"],
+    expose_headers=["X-Request-ID", "X-Correlation-ID", "X-Process-Time"],
 )
 
 

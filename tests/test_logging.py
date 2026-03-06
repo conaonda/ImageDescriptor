@@ -97,6 +97,18 @@ class TestRequestIdMiddleware:
         assert len(rid) == 16
 
 
+class TestProcessTimeHeader:
+    async def test_response_includes_process_time(self, client):
+        resp = await client.get("/api/health")
+        assert "x-process-time" in resp.headers
+        process_time = float(resp.headers["x-process-time"])
+        assert process_time >= 0
+
+    async def test_process_time_is_numeric(self, client):
+        resp = await client.get("/api/health")
+        float(resp.headers["x-process-time"])  # should not raise
+
+
 class TestGenerateCorrelationId:
     def test_returns_valid_uuid(self):
         cid = generate_correlation_id()
