@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `DELETE /api/descriptions/{cog_image_id}`: 저장된 분석 결과 삭제 API (204 성공, 404 미존재, 500 DB 오류)
+- `GET /api/descriptions`: 설명 이력 목록 조회 API
+
 ## [0.18.0] - 2026-03-07
 
 ### Added
