@@ -33,8 +33,6 @@ async def test_batch_concurrency_limited(batch_client, monkeypatch):
     current = 0
     lock = asyncio.Lock()
 
-    original_compose = None
-
     async def _tracked_compose(item, cache):
         nonlocal max_concurrent, current
         async with lock:

@@ -1,6 +1,7 @@
 """Graceful shutdown tests for #108."""
 
 import asyncio
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
