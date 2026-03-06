@@ -154,7 +154,7 @@ def _generate_etag(body_bytes: bytes) -> str:
         429: {"description": "요청 횟수 초과 (Rate Limit Exceeded)"},
     },
 )
-@limiter.limit(lambda: settings.rate_limit)
+@limiter.limit(lambda: settings.rate_limit_describe)
 async def describe(
     body: DescribeRequest,
     request: Request,
@@ -190,7 +190,7 @@ async def describe(
         429: {"description": "요청 횟수 초과"},
     },
 )
-@limiter.limit(lambda: settings.rate_limit)
+@limiter.limit(lambda: settings.rate_limit_batch)
 async def describe_batch(
     body: BatchDescribeRequest,
     request: Request,
@@ -239,7 +239,7 @@ async def describe_batch(
         429: {"description": "요청 횟수 초과"},
     },
 )
-@limiter.limit(lambda: settings.rate_limit)
+@limiter.limit(lambda: settings.rate_limit_data)
 async def geocode_endpoint(
     body: DescribeRequest,
     request: Request,
@@ -263,7 +263,7 @@ async def geocode_endpoint(
         429: {"description": "요청 횟수 초과"},
     },
 )
-@limiter.limit(lambda: settings.rate_limit)
+@limiter.limit(lambda: settings.rate_limit_data)
 async def landcover_endpoint(
     body: DescribeRequest,
     request: Request,
@@ -287,7 +287,7 @@ async def landcover_endpoint(
         429: {"description": "요청 횟수 초과"},
     },
 )
-@limiter.limit(lambda: settings.rate_limit)
+@limiter.limit(lambda: settings.rate_limit_data)
 async def context_endpoint(
     body: DescribeRequest,
     request: Request,
@@ -312,7 +312,7 @@ async def context_endpoint(
         429: {"description": "요청 횟수 초과"},
     },
 )
-@limiter.limit("30/minute")
+@limiter.limit(lambda: settings.rate_limit_read)
 async def list_descriptions(
     request: Request,
     offset: int = Query(default=0, ge=0, description="시작 위치"),
@@ -351,7 +351,7 @@ async def list_descriptions(
         429: {"description": "요청 횟수 초과"},
     },
 )
-@limiter.limit("30/minute")
+@limiter.limit(lambda: settings.rate_limit_read)
 async def get_description(
     cog_image_id: str,
     request: Request,
@@ -380,7 +380,7 @@ async def get_description(
         500: {"model": ErrorResponse, "description": "데이터베이스 오류"},
     },
 )
-@limiter.limit("30/minute")
+@limiter.limit(lambda: settings.rate_limit_read)
 async def delete_description(
     cog_image_id: str,
     request: Request,
