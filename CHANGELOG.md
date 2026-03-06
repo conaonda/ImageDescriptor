@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-03-07
+
+### Added
+
+- 캐시 DB 마이그레이션 버전 관리 체계: `schema_version` 테이블 기반 경량 마이그레이션 러너 도입, 기존 cache 테이블 스키마를 v1 마이그레이션으로 변환 (#144, #157)
+- Graceful Shutdown 테스트 보강: in-flight 카운터, drain event, `is_shutting_down()`, `shutdown_timeout` 설정 외부화 검증 테스트 추가 (#156, #158)
+
 ## [0.22.0] - 2026-03-07
 
 ### Added
