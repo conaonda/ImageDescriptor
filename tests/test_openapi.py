@@ -182,7 +182,7 @@ SCHEMAS_WITH_EXAMPLES = [
     "ModuleStats",
     "DependencyCheck",
     "HealthResponse",
-    "ErrorResponse",
+    "ProblemDetail",
 ]
 
 
