@@ -1,15 +1,18 @@
 import base64
 import io
-from unittest.mock import MagicMock, patch
+import socket
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from PIL import Image
 
 from app.cache.store import CacheStore
 from app.modules.describer import (
+    _download_image,
     _is_blocked_ip,
     _make_prompt,
     _resize_for_gemini,
+    _validate_host_ips,
     _validate_thumbnail_url,
     describe_image,
 )
@@ -130,3 +133,104 @@ def test_resize_for_gemini_converts_non_rgb_to_rgb(mode):
     output = Image.open(io.BytesIO(result))
     assert output.mode == "RGB"
     assert output.format == "JPEG"
+
+
+def test_resize_for_gemini_downscales_large_image():
+    """Images larger than max_size should be resized."""
+    img = Image.new("RGB", (2000, 1500))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    result = _resize_for_gemini(buf.getvalue(), 500)
+    output = Image.open(io.BytesIO(result))
+    assert max(output.size) <= 500
+
+
+@patch("app.modules.describer.socket.getaddrinfo", side_effect=socket.gaierror("DNS failed"))
+def test_validate_host_ips_dns_failure(mock_dns):
+    with pytest.raises(ValueError, match="DNS resolution failed"):
+        _validate_host_ips("nonexistent.example.com")
+
+
+def test_validate_thumbnail_url_no_hostname():
+    with pytest.raises(ValueError, match="no hostname"):
+        _validate_thumbnail_url("not-a-url")
+
+
+@patch("app.modules.describer._resize_for_gemini", return_value=b"resized")
+@patch("app.modules.describer.genai")
+async def test_describe_image_data_uri(mock_genai, _mock_resize, cache):
+    """data:image/... URI should be handled."""
+    mock_response = MagicMock()
+    mock_response.text = "  설명 텍스트  "
+    mock_client = MagicMock()
+    mock_client.models.generate_content.return_value = mock_response
+    mock_genai.Client.return_value = mock_client
+
+    img = Image.new("RGB", (10, 10))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    b64 = base64.b64encode(buf.getvalue()).decode()
+    data_uri = f"data:image/png;base64,{b64}"
+
+    desc, cached = await describe_image(data_uri, "서울", "2025-01-01", "summary", cache)
+    assert desc == "설명 텍스트"
+    assert cached is False
+
+
+@patch("app.modules.describer._resize_for_gemini", return_value=b"resized")
+@patch("app.modules.describer._download_image", new_callable=AsyncMock, return_value=b"image-data")
+@patch("app.modules.describer._validate_thumbnail_url")
+@patch("app.modules.describer.genai")
+async def test_describe_image_url_thumbnail(mock_genai, _mock_validate, _mock_download, _mock_resize, cache):
+    """HTTP URL thumbnails should be downloaded and described."""
+    mock_response = MagicMock()
+    mock_response.text = "  URL 영상 설명  "
+    mock_client = MagicMock()
+    mock_client.models.generate_content.return_value = mock_response
+    mock_genai.Client.return_value = mock_client
+
+    desc, cached = await describe_image(
+        "https://example.com/image.jpg", "서울", "2025-01-01", "summary", cache
+    )
+    assert desc == "URL 영상 설명"
+    _mock_validate.assert_called_once_with("https://example.com/image.jpg")
+    _mock_download.assert_awaited_once()
+
+
+@patch("app.modules.describer._resize_for_gemini", return_value=b"resized")
+@patch("app.modules.describer.genai")
+async def test_describe_image_caches_result(mock_genai, _mock_resize, cache):
+    """Result should be cached when cog_image_id is provided."""
+    mock_response = MagicMock()
+    mock_response.text = "  캐시 테스트  "
+    mock_client = MagicMock()
+    mock_client.models.generate_content.return_value = mock_response
+    mock_genai.Client.return_value = mock_client
+
+    desc, cached = await describe_image(
+        "dGVzdA==", "서울", "2025-01-01", "summary", cache, cog_image_id="cache-test-id"
+    )
+    assert cached is False
+
+    # Verify it was cached
+    stored = await cache.get("describe:cache-test-id")
+    assert stored is not None
+    assert stored["description"] == "캐시 테스트"
+
+
+async def test_download_image_success(httpx_mock):
+    """Successful image download."""
+    httpx_mock.add_response(url="https://example.com/img.jpg", content=b"image-bytes")
+    result = await _download_image("https://example.com/img.jpg")
+    assert result == b"image-bytes"
+
+
+async def test_download_image_content_length_too_large(httpx_mock):
+    """Reject images when Content-Length exceeds limit."""
+    httpx_mock.add_response(
+        url="https://example.com/big.jpg",
+        headers={"content-length": "10000000"},
+        content=b"x",
+    )
+    with pytest.raises(ValueError, match="Image too large"):
+        await _download_image("https://example.com/big.jpg")
