@@ -17,13 +17,7 @@ logger = structlog.get_logger()
 
 def _is_blocked_ip(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
     """Return True if the IP is private, loopback, link-local, reserved, or multicast."""
-    return (
-        ip.is_private
-        or ip.is_loopback
-        or ip.is_link_local
-        or ip.is_reserved
-        or ip.is_multicast
-    )
+    return ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast
 
 
 def _validate_host_ips(hostname: str) -> None:
@@ -135,9 +129,7 @@ async def _download_image(url: str) -> bytes:
                 async for chunk in resp.aiter_bytes():
                     size += len(chunk)
                     if size > max_download:
-                        raise ValueError(
-                            f"Image too large: >{max_download} bytes (max 5MB)"
-                        )
+                        raise ValueError(f"Image too large: >{max_download} bytes (max 5MB)")
                     chunks.append(chunk)
                 return b"".join(chunks)
 

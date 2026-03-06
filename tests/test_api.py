@@ -391,3 +391,133 @@ class TestDescribeCacheHeaders:
             },
         )
         assert resp.status_code == 200
+
+    async def test_etag_is_deterministic(self, _mock_describe):
+        """Same response content must produce identical ETag values."""
+        client, _ = _mock_describe
+        body = {"thumbnail": "dGVzdA==", "coordinates": [126.978, 37.566]}
+        headers = {"X-API-Key": os.environ["API_KEY"]}
+
+        resp1 = await client.post("/api/describe", json=body, headers=headers)
+        resp2 = await client.post("/api/describe", json=body, headers=headers)
+        assert resp1.headers["etag"] == resp2.headers["etag"]
+
+    async def test_etag_format_is_quoted_string(self, _mock_describe):
+        """ETag must be a quoted string per HTTP spec."""
+        client, _ = _mock_describe
+        resp = await client.post(
+            "/api/describe",
+            json={"thumbnail": "dGVzdA==", "coordinates": [126.978, 37.566]},
+            headers={"X-API-Key": os.environ["API_KEY"]},
+        )
+        etag = resp.headers["etag"]
+        assert etag.startswith('"') and etag.endswith('"')
+        assert len(etag) == 34  # 32 hex chars + 2 quotes
+
+    async def test_304_includes_etag_header(self, _mock_describe):
+        """304 Not Modified response must still include the ETag header."""
+        client, _ = _mock_describe
+        body = {"thumbnail": "dGVzdA==", "coordinates": [126.978, 37.566]}
+        headers = {"X-API-Key": os.environ["API_KEY"]}
+
+        resp1 = await client.post("/api/describe", json=body, headers=headers)
+        etag = resp1.headers["etag"]
+
+        headers["If-None-Match"] = etag
+        resp2 = await client.post("/api/describe", json=body, headers=headers)
+        assert resp2.status_code == 304
+        assert resp2.headers["etag"] == etag
+
+    async def test_304_has_empty_body(self, _mock_describe):
+        """304 response must have no content body."""
+        client, _ = _mock_describe
+        body = {"thumbnail": "dGVzdA==", "coordinates": [126.978, 37.566]}
+        headers = {"X-API-Key": os.environ["API_KEY"]}
+
+        resp1 = await client.post("/api/describe", json=body, headers=headers)
+        headers["If-None-Match"] = resp1.headers["etag"]
+
+        resp2 = await client.post("/api/describe", json=body, headers=headers)
+        assert resp2.status_code == 304
+        assert resp2.content == b""
+
+    async def test_different_content_produces_different_etag(self, client_with_cache, monkeypatch):
+        """Different response bodies must produce different ETags."""
+        from unittest.mock import AsyncMock
+
+        from app.api.schemas import DescribeResponse
+
+        headers = {"X-API-Key": os.environ["API_KEY"]}
+        body = {"thumbnail": "dGVzdA==", "coordinates": [126.978, 37.566]}
+
+        mock1 = DescribeResponse(description="first description", cached=False)
+        monkeypatch.setattr(
+            "app.api.routes._describe_and_save",
+            AsyncMock(return_value=mock1),
+        )
+        resp1 = await client_with_cache.post("/api/describe", json=body, headers=headers)
+
+        mock2 = DescribeResponse(description="second description", cached=False)
+        monkeypatch.setattr(
+            "app.api.routes._describe_and_save",
+            AsyncMock(return_value=mock2),
+        )
+        resp2 = await client_with_cache.post("/api/describe", json=body, headers=headers)
+
+        assert resp1.headers["etag"] != resp2.headers["etag"]
+
+    async def test_200_without_if_none_match_always_returns_body(self, _mock_describe):
+        """Request without If-None-Match must always return 200 with full body."""
+        client, _ = _mock_describe
+        resp = await client.post(
+            "/api/describe",
+            json={"thumbnail": "dGVzdA==", "coordinates": [126.978, 37.566]},
+            headers={"X-API-Key": os.environ["API_KEY"]},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "description" in data
+
+
+class TestRequestIdValidation:
+    @staticmethod
+    async def _mock_ping():
+        return True
+
+    async def test_invalid_request_id_ignored(self, client_with_cache, monkeypatch):
+        """Client-provided X-Request-ID with invalid chars is replaced."""
+        import app.db.supabase as supabase_mod
+
+        monkeypatch.setattr(supabase_mod, "ping", self._mock_ping)
+        resp = await client_with_cache.get(
+            "/api/health",
+            headers={"X-Request-ID": "evil\nheader\r\ninjection"},
+        )
+        assert resp.status_code == 200
+        rid = resp.headers["x-request-id"]
+        assert rid != "evil\nheader\r\ninjection"
+        assert len(rid) == 16
+
+    async def test_overlong_request_id_ignored(self, client_with_cache, monkeypatch):
+        """X-Request-ID longer than 128 chars is replaced with a generated one."""
+        import app.db.supabase as supabase_mod
+
+        monkeypatch.setattr(supabase_mod, "ping", self._mock_ping)
+        resp = await client_with_cache.get(
+            "/api/health",
+            headers={"X-Request-ID": "a" * 200},
+        )
+        rid = resp.headers["x-request-id"]
+        assert len(rid) == 16
+
+    async def test_valid_custom_request_id_with_hyphens(self, client_with_cache, monkeypatch):
+        """X-Request-ID with hyphens and underscores is accepted."""
+        import app.db.supabase as supabase_mod
+
+        monkeypatch.setattr(supabase_mod, "ping", self._mock_ping)
+        custom_id = "req-123_abc-XYZ"
+        resp = await client_with_cache.get(
+            "/api/health",
+            headers={"X-Request-ID": custom_id},
+        )
+        assert resp.headers["x-request-id"] == custom_id

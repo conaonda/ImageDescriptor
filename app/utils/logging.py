@@ -1,10 +1,13 @@
 import logging
+import re
 import uuid
 
 import structlog
 from starlette.requests import Request
 
 from app.config import settings
+
+_VALID_REQUEST_ID = re.compile(r"^[\w\-]{1,128}$")
 
 
 def setup_logging() -> None:
@@ -35,9 +38,16 @@ def generate_request_id() -> str:
     return uuid.uuid4().hex[:16]
 
 
+def _sanitize_request_id(value: str | None) -> str | None:
+    """Validate and sanitize a client-provided request ID."""
+    if value and _VALID_REQUEST_ID.match(value):
+        return value
+    return None
+
+
 async def request_id_middleware(request: Request, call_next):
     """Middleware that binds a unique request_id to each request's log context."""
-    request_id = request.headers.get("x-request-id") or generate_request_id()
+    request_id = _sanitize_request_id(request.headers.get("x-request-id")) or generate_request_id()
     request.state.request_id = request_id
 
     structlog.contextvars.clear_contextvars()
