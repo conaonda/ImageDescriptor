@@ -40,6 +40,19 @@ uv run uvicorn app.main:app --reload
 X-API-Key: your-api-key
 ```
 
+## 요청 추적 헤더
+
+| 헤더 | 방향 | 설명 |
+|------|------|------|
+| `X-Request-ID` | 요청/응답 | 단일 요청 식별자 (클라이언트 제공 또는 서버 자동 생성) |
+| `X-Correlation-ID` | 요청/응답 | 연관 요청 추적 ID (UUID 형식). 클라이언트 제공 시 그대로 반환, 없으면 서버에서 UUID 자동 생성 |
+
+```bash
+curl -H "X-API-Key: your-api-key" \
+     -H "X-Correlation-ID: 550e8400-e29b-41d4-a716-446655440000" \
+     http://localhost:8000/api/health
+```
+
 ## API 레퍼런스
 
 ### `GET /api/health`
