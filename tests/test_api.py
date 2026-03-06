@@ -441,9 +441,7 @@ class TestDescribeCacheHeaders:
         assert resp2.status_code == 304
         assert resp2.content == b""
 
-    async def test_different_content_produces_different_etag(
-        self, client_with_cache, monkeypatch
-    ):
+    async def test_different_content_produces_different_etag(self, client_with_cache, monkeypatch):
         """Different response bodies must produce different ETags."""
         from unittest.mock import AsyncMock
 
