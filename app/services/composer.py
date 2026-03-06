@@ -42,7 +42,7 @@ async def _safe_call(name: str, coro: Awaitable, warnings: list[Warning]):
         cb.record_failure()
         external_api_requests.labels(service=name, status="error").inc()
         external_api_duration.labels(service=name).observe(time.monotonic() - t0)
-        logger.error(f"{name} failed", error=str(e))
+        logger.error("external_call_failed", service=name, error=str(e))
         warnings.append(Warning(module=name, error=str(e)))
         return None
 
