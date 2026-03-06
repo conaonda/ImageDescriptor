@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-03-07
+
+### Added
+
+- 캐시 TTL 설정 외부화: `CACHE_TTL_SECONDS`, `CACHE_CLEANUP_INTERVAL_SECONDS` 환경변수로 캐시 만료 정책 설정 가능
+- `X-Process-Time` 응답 헤더: API 요청 처리 시간을 초 단위(소수점 6자리)로 반환
+
 ## [0.21.0] - 2026-03-07
 
 ### Added
