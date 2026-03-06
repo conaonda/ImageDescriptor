@@ -7,6 +7,7 @@ from PIL import Image
 
 from app.cache.store import CacheStore
 from app.modules.describer import (
+    _is_blocked_ip,
     _make_prompt,
     _resize_for_gemini,
     _validate_thumbnail_url,
@@ -85,6 +86,34 @@ def test_validate_thumbnail_url_blocks_private_ip(mock_dns):
 def test_validate_thumbnail_url_allows_public_ip(mock_dns):
     mock_dns.return_value = [(2, 1, 6, "", ("142.250.196.110", 0))]
     _validate_thumbnail_url("https://example.com/image.png")
+
+
+@patch("app.modules.describer.socket.getaddrinfo")
+def test_validate_thumbnail_url_blocks_ipv6_loopback(mock_dns):
+    mock_dns.return_value = [(10, 1, 6, "", ("::1", 0, 0, 0))]
+    with pytest.raises(ValueError, match="blocked IP"):
+        _validate_thumbnail_url("http://evil.com/image.png")
+
+
+@patch("app.modules.describer.socket.getaddrinfo")
+def test_validate_thumbnail_url_blocks_multicast(mock_dns):
+    mock_dns.return_value = [(2, 1, 6, "", ("224.0.0.1", 0))]
+    with pytest.raises(ValueError, match="blocked IP"):
+        _validate_thumbnail_url("http://multicast.example.com/image.png")
+
+
+def test_is_blocked_ip_multicast():
+    import ipaddress
+
+    assert _is_blocked_ip(ipaddress.ip_address("224.0.0.1")) is True
+    assert _is_blocked_ip(ipaddress.ip_address("ff02::1")) is True
+
+
+def test_is_blocked_ip_allows_public():
+    import ipaddress
+
+    assert _is_blocked_ip(ipaddress.ip_address("8.8.8.8")) is False
+    assert _is_blocked_ip(ipaddress.ip_address("2607:f8b0:4004:800::200e")) is False
 
 
 @pytest.mark.parametrize("mode", ["RGBA", "P", "LA"])

@@ -15,23 +15,38 @@ from app.utils.retry import retry_gemini, retry_http
 logger = structlog.get_logger()
 
 
-def _validate_thumbnail_url(url: str) -> None:
-    """Block SSRF: reject private/link-local IPs and validate after DNS resolution."""
-    parsed = urlparse(url)
-    hostname = parsed.hostname
-    if not hostname:
-        raise ValueError("Invalid URL: no hostname")
+def _is_blocked_ip(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    """Return True if the IP is private, loopback, link-local, reserved, or multicast."""
+    return (
+        ip.is_private
+        or ip.is_loopback
+        or ip.is_link_local
+        or ip.is_reserved
+        or ip.is_multicast
+    )
 
-    # Resolve DNS and check all resulting IPs
+
+def _validate_host_ips(hostname: str) -> None:
+    """Resolve hostname via DNS and reject if any resulting IP is blocked."""
     try:
         addrinfos = socket.getaddrinfo(hostname, None)
     except socket.gaierror as e:
         raise ValueError(f"DNS resolution failed for {hostname}") from e
 
-    for family, _, _, _, sockaddr in addrinfos:
+    for _family, _, _, _, sockaddr in addrinfos:
         ip = ipaddress.ip_address(sockaddr[0])
-        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+        if _is_blocked_ip(ip):
             raise ValueError(f"URL resolves to blocked IP: {ip}")
+
+
+def _validate_thumbnail_url(url: str) -> None:
+    """Block SSRF: reject private/link-local/multicast IPs and validate after DNS resolution."""
+    parsed = urlparse(url)
+    hostname = parsed.hostname
+    if not hostname:
+        raise ValueError("Invalid URL: no hostname")
+
+    _validate_host_ips(hostname)
 
 
 def _resize_for_gemini(image_bytes: bytes, max_size: int) -> bytes:
@@ -94,22 +109,39 @@ async def _download_image(url: str) -> bytes:
     import httpx
 
     max_download = 5 * 1024 * 1024
-    async with httpx.AsyncClient() as http_client:
-        async with http_client.stream("GET", url, timeout=10.0) as resp:
-            resp.raise_for_status()
-            content_length = resp.headers.get("content-length")
-            if content_length and int(content_length) > max_download:
-                raise ValueError(
-                    f"Image too large: {int(content_length)} bytes (max {max_download})"
-                )
-            chunks = []
-            size = 0
-            async for chunk in resp.aiter_bytes():
-                size += len(chunk)
-                if size > max_download:
-                    raise ValueError(f"Image too large: >{max_download} bytes (max 5MB)")
-                chunks.append(chunk)
-            return b"".join(chunks)
+    max_redirects = 5
+
+    current_url = url
+    for _ in range(max_redirects + 1):
+        async with httpx.AsyncClient(follow_redirects=False) as http_client:
+            async with http_client.stream("GET", current_url, timeout=10.0) as resp:
+                if resp.is_redirect:
+                    redirect_url = str(resp.next_request.url)
+                    parsed = urlparse(redirect_url)
+                    if not parsed.hostname:
+                        raise ValueError("Redirect to invalid URL: no hostname")
+                    _validate_host_ips(parsed.hostname)
+                    current_url = redirect_url
+                    continue
+
+                resp.raise_for_status()
+                content_length = resp.headers.get("content-length")
+                if content_length and int(content_length) > max_download:
+                    raise ValueError(
+                        f"Image too large: {int(content_length)} bytes (max {max_download})"
+                    )
+                chunks = []
+                size = 0
+                async for chunk in resp.aiter_bytes():
+                    size += len(chunk)
+                    if size > max_download:
+                        raise ValueError(
+                            f"Image too large: >{max_download} bytes (max 5MB)"
+                        )
+                    chunks.append(chunk)
+                return b"".join(chunks)
+
+    raise ValueError(f"Too many redirects (max {max_redirects})")
 
 
 @retry_gemini
