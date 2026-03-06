@@ -1,9 +1,7 @@
 """Tests for app.main lifespan and cache_cleanup_loop."""
 
 import asyncio
-from unittest.mock import AsyncMock, patch
-
-import pytest
+from unittest.mock import AsyncMock
 
 import app.main as main_mod
 from app.cache.store import CacheStore

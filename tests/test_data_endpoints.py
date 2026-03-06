@@ -50,7 +50,9 @@ async def test_landcover_endpoint(auth_client):
         "classes": [{"type": "forest", "label": "산림", "percentage": 100}],
         "summary": "산림 100%",
     }
-    with patch("app.modules.landcover.get_land_cover", new_callable=AsyncMock, return_value=mock_result):
+    with patch(
+        "app.modules.landcover.get_land_cover", new_callable=AsyncMock, return_value=mock_result,
+    ):
         resp = await auth_client.post(
             "/api/landcover",
             json={"coordinates": [127.0, 37.5], "thumbnail": "http://example.com/img.png"},
@@ -72,7 +74,9 @@ async def test_context_endpoint(auth_client):
         ],
         "summary": "test context",
     }
-    with patch("app.modules.context.research_context", new_callable=AsyncMock, return_value=mock_result):
+    with patch(
+        "app.modules.context.research_context", new_callable=AsyncMock, return_value=mock_result,
+    ):
         resp = await auth_client.post(
             "/api/context",
             json={
