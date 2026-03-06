@@ -5,6 +5,7 @@ from collections import defaultdict
 import aiosqlite
 import structlog
 
+from app.cache.migrator import run_migrations
 from app.utils.metrics import cache_cleanup_total, cache_hits, cache_misses
 
 logger = structlog.get_logger()
@@ -19,14 +20,7 @@ class CacheStore:
 
     async def init(self):
         self._db = await aiosqlite.connect(self._db_path)
-        await self._db.execute("""
-            CREATE TABLE IF NOT EXISTS cache (
-                key TEXT PRIMARY KEY,
-                value TEXT NOT NULL,
-                expires_at REAL
-            )
-        """)
-        await self._db.commit()
+        await run_migrations(self._db)
 
     def _module_from_key(self, key: str) -> str:
         return key.split(":")[0] if ":" in key else "unknown"
