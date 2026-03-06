@@ -5,7 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [0.21.1] - 2026-03-06
+
+### Changed
+
+
+
 ## [Unreleased]
+
+
+## [0.21.1] - 2026-03-06
+
+### Changed
+
+
 
 ## [0.21.0] - 2026-03-07
 
@@ -15,12 +29,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `GET /api/descriptions`: 설명 이력 목록 조회 API
 - Correlation ID 지원: 모든 요청에 `X-Correlation-ID` 헤더를 통해 요청 추적 가능. 클라이언트가 헤더를 제공하면 UUID 검증 후 통과, 없으면 서버에서 자동 생성. 응답 헤더에 항상 포함됨.
 
+
+## [0.21.1] - 2026-03-06
+
+### Changed
+
+
+
 ## [0.18.0] - 2026-03-07
 
 ### Added
 
 - API 요청/응답 로깅 미들웨어 개선: latency 측정(ms), 민감 정보 필터링, 시스템 경로 로그 스킵, 4xx/5xx warning 로깅
 - 테스트 커버리지 97.61% 달성 (목표 95%): lifespan 테스트 6개, 데이터 엔드포인트 테스트 3개 추가
+
+
+## [0.21.1] - 2026-03-06
+
+### Changed
+
+
 
 ## [0.17.0] - 2026-03-06
 
@@ -38,6 +66,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - CI lint 오류 수정 (ruff 규칙 위반)
 
+
+## [0.21.1] - 2026-03-06
+
+### Changed
+
+
+
 ## [0.16.0] - 2026-03-06
 
 ### Added
@@ -47,12 +82,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Batch concurrency: `asyncio.Semaphore` 기반 배치 동시성 제한 (기본 3)
 - 신규 환경변수: `SHUTDOWN_TIMEOUT`, `REQUEST_TIMEOUT`, `BATCH_CONCURRENCY`
 
+
+## [0.21.1] - 2026-03-06
+
+### Changed
+
+
+
 ## [0.15.0] - 2026-03-06
 
 ### Added
 
 - `X-Request-ID` 헤더 유효성 검증
 - 캐시 응답 헤더 및 ETag 통합 테스트
+
+
+## [0.21.1] - 2026-03-06
+
+### Changed
+
+
 
 ## [0.14.0] - 2026-03-06
 
@@ -62,11 +111,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SSRF DNS rebinding 및 리다이렉트 보호 강화
 - SQLite 캐시 만료 항목 자동 정리
 
+
+## [0.21.1] - 2026-03-06
+
+### Changed
+
+
+
 ## [0.3.1] - 2026-02-28
 
 ### Changed
 
 - `captured_at` 필드를 optional로 변경 (촬영일자 없이도 설명 생성 가능)
+
+
+## [0.21.1] - 2026-03-06
+
+### Changed
+
+
 
 ## [0.3.0] - 2026-02-20
 
@@ -76,6 +139,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Supabase 연동 (결과 저장)
 - CORS 설정
 
+
+## [0.21.1] - 2026-03-06
+
+### Changed
+
+
+
 ## [0.2.0] - 2026-02-15
 
 ### Added
@@ -83,6 +153,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Context 모듈 (DuckDuckGo 검색)
 - LandCover 모듈 (Overpass API)
 - Geocoder 모듈 (Nominatim)
+
+
+## [0.21.1] - 2026-03-06
+
+### Changed
+
+
 
 ## [0.1.0] - 2026-02-10
 
