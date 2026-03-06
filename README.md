@@ -28,6 +28,9 @@ uv run uvicorn app.main:app --reload
 | `CACHE_DB_PATH` | - | `./cache.db` | 캐시 DB 경로 |
 | `LOG_LEVEL` | - | `INFO` | 로그 레벨 |
 | `THUMBNAIL_MAX_PIXELS` | - | `768` | Gemini 전송 전 이미지 리사이즈 최대 픽셀 |
+| `SHUTDOWN_TIMEOUT` | - | `30` | Graceful shutdown 대기 시간(초) |
+| `REQUEST_TIMEOUT` | - | `30` | 개별 요청 타임아웃(초) |
+| `BATCH_CONCURRENCY` | - | `3` | 배치 동시 처리 수 |
 
 ## 인증
 
@@ -48,7 +51,11 @@ curl http://localhost:8000/api/health
 ```
 
 ```json
-{"status": "ok", "version": "0.2.0"}
+{
+  "status": "ok",
+  "version": "0.17.0",
+  "checks": {"supabase": "ok", "cache": "ok"}
+}
 ```
 
 ### `POST /api/describe`
@@ -74,7 +81,7 @@ curl -X POST http://localhost:8000/api/describe \
 |------|------|------|------|
 | `thumbnail` | string | O | base64 PNG 또는 이미지 URL |
 | `coordinates` | [float, float] | O | [경도, 위도] |
-| `captured_at` | string | O | 촬영일 (ISO 8601) |
+| `captured_at` | string | - | 촬영일 (ISO 8601) |
 | `bbox` | [float, float, float, float] | - | [west, south, east, north] |
 | `cog_image_id` | string | - | DB 연동용 cog_images UUID |
 
@@ -152,6 +159,70 @@ curl -X POST http://localhost:8000/api/context \
 ```
 
 **응답:** `Context` 객체
+
+### `POST /api/batch/describe`
+
+여러 이미지를 한 번에 분석한다. 최대 10건.
+
+```bash
+curl -X POST http://localhost:8000/api/batch/describe \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key" \
+  -d '{
+    "items": [
+      {"thumbnail": "url-or-base64", "coordinates": [126.978, 37.566]},
+      {"thumbnail": "url-or-base64", "coordinates": [129.075, 35.179]}
+    ]
+  }'
+```
+
+**응답:**
+
+```json
+{
+  "results": [
+    {"index": 0, "result": {...}, "error": null},
+    {"index": 1, "result": null, "error": "오류 메시지"}
+  ],
+  "total": 2,
+  "succeeded": 1,
+  "failed": 1
+}
+```
+
+### `GET /api/circuits`
+
+Circuit breaker 상태를 조회한다.
+
+```bash
+curl -H "X-API-Key: your-api-key" http://localhost:8000/api/circuits
+```
+
+```json
+{
+  "breakers": [
+    {"name": "geocoder", "state": "closed", "failure_count": 0, "cooldown_remaining": 0.0}
+  ]
+}
+```
+
+### `GET /api/cache/stats`
+
+캐시 통계를 조회한다.
+
+```bash
+curl -H "X-API-Key: your-api-key" http://localhost:8000/api/cache/stats
+```
+
+```json
+{
+  "entry_count": 42,
+  "total_bytes": 102400,
+  "modules": {
+    "geocode": {"hits": 10, "misses": 3, "hit_rate": 0.7692}
+  }
+}
+```
 
 ### `GET /api/descriptions/{cog_image_id}`
 

@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] - 2026-03-06
+
+### Added
+
+- `GET /api/circuits`: Circuit breaker 상태 조회 엔드포인트 추가
+- `HealthResponse`, `DependencyCheck`, `CacheStatsResponse`, `ModuleStats` Pydantic 응답 스키마 추가
+- `/api/health`, `/api/cache/stats` 엔드포인트에 `response_model` 지정 (OpenAPI 문서 자동 반영)
+
+### Changed
+
+- structlog 로깅을 f-string에서 key-value 방식으로 전환
+
+### Fixed
+
+- CI lint 오류 수정 (ruff 규칙 위반)
+
+## [0.16.0] - 2026-03-06
+
+### Added
+
+- Graceful shutdown: SIGTERM 시그널 핸들러, in-flight request draining, `/health`에 `shutting_down` 상태 반영
+- Request timeout: `asyncio.wait_for` 기반 개별 요청 타임아웃 (기본 30초), 504 반환
+- Batch concurrency: `asyncio.Semaphore` 기반 배치 동시성 제한 (기본 3)
+- 신규 환경변수: `SHUTDOWN_TIMEOUT`, `REQUEST_TIMEOUT`, `BATCH_CONCURRENCY`
+
+## [0.15.0] - 2026-03-06
+
+### Added
+
+- `X-Request-ID` 헤더 유효성 검증
+- 캐시 응답 헤더 및 ETag 통합 테스트
+
+## [0.14.0] - 2026-03-06
+
+### Added
+
+- API 응답 캐시 헤더 및 ETag 지원
+- SSRF DNS rebinding 및 리다이렉트 보호 강화
+- SQLite 캐시 만료 항목 자동 정리
+
 ## [0.3.1] - 2026-02-28
 
 ### Changed
