@@ -128,7 +128,14 @@ app.state.limiter = limiter
 async def _rate_limit_handler(request, exc):
     from app.utils.errors import _get_correlation_id
 
-    retry_after = getattr(exc, "retry_after", 60)
+    import datetime as _dt
+
+    retry_after_raw = getattr(exc, "retry_after", 60)
+    if isinstance(retry_after_raw, _dt.datetime):
+        delta = retry_after_raw - _dt.datetime.now(tz=retry_after_raw.tzinfo)
+        retry_after = max(1, int(delta.total_seconds()))
+    else:
+        retry_after = int(retry_after_raw)
     return JSONResponse(
         status_code=429,
         content={
