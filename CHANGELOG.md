@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-03-07
+
 ### Added
 
 - RFC 7807 Problem Details 에러 응답 표준화: `ProblemDetail` 모델(`type`, `title`, `status`, `detail`, `instance`) 도입. `ValidationError`(422), `HTTPException`, 내부 오류(500), 타임아웃(504) 모두 통일된 형식으로 반환
