@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     thumbnail_max_pixels: int = 768
     rate_limit: str = "30/minute"
+    shutdown_timeout: int = 30
+    request_timeout: int = 30
+    batch_concurrency: int = 3
 
     @property
     def cors_origins_list(self) -> list[str]:
