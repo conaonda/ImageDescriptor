@@ -146,9 +146,24 @@ def test_descriptions_has_404_response(openapi_schema):
     assert "404" in responses
 
 
+def test_geocode_has_422_response(openapi_schema):
+    responses = _get_op(openapi_schema, "post", "/api/geocode")["responses"]
+    assert "422" in responses
+
+
 def test_geocode_has_429_response(openapi_schema):
     responses = _get_op(openapi_schema, "post", "/api/geocode")["responses"]
     assert "429" in responses
+
+
+def test_landcover_has_422_response(openapi_schema):
+    responses = _get_op(openapi_schema, "post", "/api/landcover")["responses"]
+    assert "422" in responses
+
+
+def test_context_has_422_response(openapi_schema):
+    responses = _get_op(openapi_schema, "post", "/api/context")["responses"]
+    assert "422" in responses
 
 
 # ── DescribeRequest 스키마 예시 ────────────────────────────────────────────────
@@ -182,6 +197,8 @@ SCHEMAS_WITH_EXAMPLES = [
     "ModuleStats",
     "DependencyCheck",
     "HealthResponse",
+    "ErrorResponse",
+    "DescriptionItem",
     "ProblemDetail",
 ]
 

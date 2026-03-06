@@ -452,7 +452,18 @@ class DescriptionItem(BaseModel):
     description: str | None = Field(default=None, description="생성된 설명")
     created_at: str | None = Field(default=None, description="생성 일시")
 
-    model_config = {"extra": "allow"}
+    model_config = {
+        "extra": "allow",
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "cog_image_id": "550e8400-e29b-41d4-a716-446655440000",
+                    "description": "서울 도심부의 위성영상으로, 한강이 동서로 흐르며 ...",
+                    "created_at": "2025-01-15T10:30:00Z",
+                }
+            ]
+        },
+    }
 
 
 class DescriptionListResponse(BaseModel):

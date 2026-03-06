@@ -235,6 +235,7 @@ async def describe_batch(
     summary="역지오코딩",
     description="좌표를 입력받아 Nominatim 기반 역지오코딩 결과를 반환합니다.",
     responses={
+        422: {"model": ErrorResponse, "description": "유효하지 않은 요청 (좌표 범위 초과 등)"},
         429: {"description": "요청 횟수 초과"},
     },
 )
@@ -258,6 +259,7 @@ async def geocode_endpoint(
     summary="토지피복 분류",
     description="좌표를 입력받아 Overpass API 기반 토지피복 분류 결과를 반환합니다.",
     responses={
+        422: {"model": ErrorResponse, "description": "유효하지 않은 요청 (좌표 범위 초과 등)"},
         429: {"description": "요청 횟수 초과"},
     },
 )
@@ -281,6 +283,7 @@ async def landcover_endpoint(
     summary="맥락 정보 조회",
     description="좌표와 촬영일자를 기반으로 DuckDuckGo API에서 관련 맥락 정보를 검색합니다.",
     responses={
+        422: {"model": ErrorResponse, "description": "유효하지 않은 요청 (좌표 범위 초과 등)"},
         429: {"description": "요청 횟수 초과"},
     },
 )
@@ -303,8 +306,9 @@ async def context_endpoint(
     response_model=DescriptionListResponse,
     tags=["analysis"],
     summary="설명 이력 목록 조회",
-    description="저장된 설명 목록을 페이지네이션으로 조회합니다.",
+    description="저장된 설명 목록을 페이지네이션으로 조회합니다. offset/limit으로 페이지 이동이 가능합니다.",
     responses={
+        422: {"model": ErrorResponse, "description": "유효하지 않은 쿼리 파라미터"},
         429: {"description": "요청 횟수 초과"},
     },
 )
@@ -369,10 +373,11 @@ async def get_description(
     status_code=204,
     tags=["analysis"],
     summary="설명 삭제",
-    description="cog_image_id로 저장된 분석 결과를 삭제합니다.",
+    description="cog_image_id로 저장된 분석 결과를 삭제합니다. 성공 시 204 No Content를 반환합니다.",
     responses={
         404: {"model": ProblemDetail, "description": "해당 ID의 설명을 찾을 수 없음"},
         429: {"description": "요청 횟수 초과"},
+        500: {"model": ErrorResponse, "description": "데이터베이스 오류"},
     },
 )
 @limiter.limit("30/minute")
