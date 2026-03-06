@@ -74,7 +74,8 @@ class TestCorsOrigins:
             assert s.cors_origins_list == ["http://localhost:5173", "http://localhost:3000"]
 
     def test_cors_origins_list_custom(self):
-        with patch.dict(os.environ, _make_env(CORS_ORIGINS="https://a.com https://b.com"), clear=True):
+        env = _make_env(CORS_ORIGINS="https://a.com https://b.com")
+        with patch.dict(os.environ, env, clear=True):
             s = Settings()
             assert s.cors_origins_list == ["https://a.com", "https://b.com"]
 

@@ -1,6 +1,5 @@
 """Tests for Prometheus metrics endpoint and custom metrics."""
 
-import prometheus_client
 import pytest
 
 

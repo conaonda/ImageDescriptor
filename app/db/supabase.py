@@ -53,15 +53,13 @@ async def save_description(
             row["context_json"] = context.get("events")
             row["context_summary"] = context.get("summary")
 
-        result = await asyncio.wait_for(
-            client.table("image_descriptions")
-            .upsert(row, on_conflict="cog_image_id")
-            .execute(),
+        await asyncio.wait_for(
+            client.table("image_descriptions").upsert(row, on_conflict="cog_image_id").execute(),
             timeout=SAVE_TIMEOUT_SECONDS,
         )
         logger.info("saved description to supabase", cog_image_id=cog_image_id)
         return True
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.error("supabase save timed out", cog_image_id=cog_image_id)
         return False
     except Exception as e:
