@@ -42,7 +42,7 @@ def _mock_response():
 )
 async def test_batch_success(mock_compose, client_with_cache):
     resp = await client_with_cache.post(
-        "/api/describe/batch",
+        "/api/v1/describe/batch",
         json={"items": [_make_item(), _make_item()]},
     )
     assert resp.status_code == 200
@@ -65,7 +65,7 @@ async def test_batch_partial_failure(mock_compose, client_with_cache):
         Exception("external service failed"),
     ]
     resp = await client_with_cache.post(
-        "/api/describe/batch",
+        "/api/v1/describe/batch",
         json={"items": [_make_item(), _make_item()]},
     )
     assert resp.status_code == 200
@@ -79,7 +79,7 @@ async def test_batch_partial_failure(mock_compose, client_with_cache):
 
 async def test_batch_empty_array(client_with_cache):
     resp = await client_with_cache.post(
-        "/api/describe/batch",
+        "/api/v1/describe/batch",
         json={"items": []},
     )
     assert resp.status_code == 422
@@ -87,7 +87,7 @@ async def test_batch_empty_array(client_with_cache):
 
 async def test_batch_exceeds_max(client_with_cache):
     resp = await client_with_cache.post(
-        "/api/describe/batch",
+        "/api/v1/describe/batch",
         json={"items": [_make_item() for _ in range(11)]},
     )
     assert resp.status_code == 422
@@ -99,7 +99,7 @@ async def test_batch_no_auth():
         base_url="http://test",
     ) as c:
         resp = await c.post(
-            "/api/describe/batch",
+            "/api/v1/describe/batch",
             json={"items": [_make_item()]},
         )
     assert resp.status_code == 401
@@ -116,7 +116,7 @@ async def test_batch_thumbnail_too_large(mock_compose, client_with_cache):
         "coordinates": [126.978, 37.566],
     }
     resp = await client_with_cache.post(
-        "/api/describe/batch",
+        "/api/v1/describe/batch",
         json={"items": [_make_item(), large_item]},
     )
     assert resp.status_code == 200

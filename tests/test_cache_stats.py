@@ -126,11 +126,11 @@ class TestCacheStatsEndpoint:
         await store.close()
 
     async def test_endpoint_returns_200(self, client):
-        resp = await client.get("/api/cache/stats")
+        resp = await client.get("/api/v1/cache/stats")
         assert resp.status_code == 200
 
     async def test_endpoint_json_structure(self, client):
-        resp = await client.get("/api/cache/stats")
+        resp = await client.get("/api/v1/cache/stats")
         data = resp.json()
         assert "entry_count" in data
         assert "total_bytes" in data

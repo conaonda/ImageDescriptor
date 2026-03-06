@@ -52,11 +52,11 @@ class TestCircuitsEndpoint:
         await store.close()
 
     async def test_endpoint_returns_200(self, client):
-        resp = await client.get("/api/circuits")
+        resp = await client.get("/api/v1/circuits")
         assert resp.status_code == 200
 
     async def test_response_structure(self, client):
-        resp = await client.get("/api/circuits")
+        resp = await client.get("/api/v1/circuits")
         data = resp.json()
         assert "breakers" in data
         assert len(data["breakers"]) == 5
@@ -67,6 +67,6 @@ class TestCircuitsEndpoint:
             assert "cooldown_remaining" in breaker
 
     async def test_all_services_present(self, client):
-        resp = await client.get("/api/circuits")
+        resp = await client.get("/api/v1/circuits")
         names = {b["name"] for b in resp.json()["breakers"]}
         assert names == {"geocoder", "landcover", "describer", "context", "mission"}

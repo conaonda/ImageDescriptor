@@ -85,8 +85,8 @@ class TestRateLimitMiddleware:
             "captured_at": "2025-06-15T00:00:00Z",
         }
         with patch("app.config.settings.rate_limit", "1/minute"):
-            await rate_limit_client.post("/api/describe", json=body, headers=headers)
-            resp = await rate_limit_client.post("/api/describe", json=body, headers=headers)
+            await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
+            resp = await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
             assert resp.status_code == 429
 
     async def test_429_response_body(self, rate_limit_client):
@@ -98,15 +98,15 @@ class TestRateLimitMiddleware:
             "captured_at": "2025-06-15T00:00:00Z",
         }
         with patch("app.config.settings.rate_limit", "1/minute"):
-            await rate_limit_client.post("/api/describe", json=body, headers=headers)
-            resp = await rate_limit_client.post("/api/describe", json=body, headers=headers)
+            await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
+            resp = await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
             assert resp.status_code == 429
             data = resp.json()
             assert "error" in data or "detail" in data
 
     async def test_health_endpoint_not_rate_limited(self, rate_limit_client):
         for _ in range(10):
-            resp = await rate_limit_client.get("/api/health")
+            resp = await rate_limit_client.get("/api/v1/health")
             assert resp.status_code == 200
 
     async def test_rate_limit_per_endpoint(self, rate_limit_client):
@@ -120,9 +120,9 @@ class TestRateLimitMiddleware:
         }
         with patch("app.config.settings.rate_limit", "1/minute"):
             # Exhaust describe limit
-            await rate_limit_client.post("/api/describe", json=body, headers=headers)
-            resp = await rate_limit_client.post("/api/describe", json=body, headers=headers)
+            await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
+            resp = await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
             assert resp.status_code == 429
             # cache/stats should still work (no rate limit)
-            resp = await rate_limit_client.get("/api/cache/stats")
+            resp = await rate_limit_client.get("/api/v1/cache/stats")
             assert resp.status_code == 200

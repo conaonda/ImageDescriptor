@@ -45,7 +45,7 @@ async def shutdown_client(tmp_path, monkeypatch):
 async def test_shutdown_rejects_new_requests(shutdown_client, monkeypatch):
     """Non-system endpoints return 503 during shutdown."""
     monkeypatch.setattr(main_mod, "_shutting_down", True)
-    resp = await shutdown_client.post("/api/describe", json={})
+    resp = await shutdown_client.post("/api/v1/describe", json={})
     assert resp.status_code == 503
     assert resp.json()["detail"] == "Server is shutting down"
     assert resp.json()["status"] == 503
@@ -54,14 +54,14 @@ async def test_shutdown_rejects_new_requests(shutdown_client, monkeypatch):
 async def test_health_shows_shutting_down_status(shutdown_client, monkeypatch):
     """Health endpoint remains accessible and shows shutting_down status during shutdown."""
     monkeypatch.setattr(main_mod, "_shutting_down", True)
-    resp = await shutdown_client.get("/api/health")
+    resp = await shutdown_client.get("/api/v1/health")
     assert resp.status_code == 503
     body = resp.json()
     assert body["status"] == "shutting_down"
 
 
 async def test_normal_requests_pass_when_not_shutting_down(shutdown_client):
-    resp = await shutdown_client.get("/api/health")
+    resp = await shutdown_client.get("/api/v1/health")
     assert resp.status_code == 200
     data = resp.json()
     assert data["status"] == "ok"
@@ -70,7 +70,7 @@ async def test_normal_requests_pass_when_not_shutting_down(shutdown_client):
 async def test_in_flight_counter_tracks_requests(shutdown_client):
     """In-flight counter increments and decrements around requests."""
     assert main_mod._in_flight == 0
-    resp = await shutdown_client.get("/api/health")
+    resp = await shutdown_client.get("/api/v1/health")
     assert resp.status_code == 200
     assert main_mod._in_flight == 0
 
