@@ -3,7 +3,9 @@ import hashlib
 from importlib.metadata import PackageNotFoundError, version
 
 import structlog
-from fastapi import APIRouter, Depends, Header, Request
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, Header, Query, Request
 from fastapi.responses import JSONResponse, Response
 from slowapi import Limiter
 
@@ -309,21 +311,17 @@ async def context_endpoint(
 @limiter.limit("30/minute")
 async def list_descriptions(
     request: Request,
-    offset: int = 0,
-    limit: int = 20,
-    created_after: str | None = None,
-    created_before: str | None = None,
+    offset: int = Query(default=0, ge=0, description="시작 위치"),
+    limit: int = Query(default=20, ge=1, le=100, description="페이지 크기"),
+    created_after: datetime | None = Query(default=None, description="이 시각 이후 항목만 조회 (ISO 8601)"),
+    created_before: datetime | None = Query(default=None, description="이 시각 이전 항목만 조회 (ISO 8601)"),
     _auth: dict = Depends(authenticate),
 ):
-    if limit > 100:
-        limit = 100
-    if offset < 0:
-        offset = 0
     result = await db.list_descriptions(
         offset=offset,
         limit=limit,
-        created_after=created_after,
-        created_before=created_before,
+        created_after=created_after.isoformat() if created_after else None,
+        created_before=created_before.isoformat() if created_before else None,
     )
     return DescriptionListResponse(
         items=result["items"],
