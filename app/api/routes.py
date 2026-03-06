@@ -1,10 +1,9 @@
 import asyncio
 import hashlib
+from datetime import datetime
 from importlib.metadata import PackageNotFoundError, version
 
 import structlog
-from datetime import datetime
-
 from fastapi import APIRouter, Depends, Header, Query, Request
 from fastapi.responses import JSONResponse, Response
 from slowapi import Limiter
@@ -16,10 +15,10 @@ from app.api.schemas import (
     BatchItemResult,
     CacheStatsResponse,
     CircuitBreakerResponse,
-    DescriptionListResponse,
     Context,
     DescribeRequest,
     DescribeResponse,
+    DescriptionListResponse,
     ErrorResponse,
     HealthResponse,
     LandCover,
@@ -313,8 +312,12 @@ async def list_descriptions(
     request: Request,
     offset: int = Query(default=0, ge=0, description="시작 위치"),
     limit: int = Query(default=20, ge=1, le=100, description="페이지 크기"),
-    created_after: datetime | None = Query(default=None, description="이 시각 이후 항목만 조회 (ISO 8601)"),
-    created_before: datetime | None = Query(default=None, description="이 시각 이전 항목만 조회 (ISO 8601)"),
+    created_after: datetime | None = Query(
+        default=None, description="이 시각 이후 항목만 조회 (ISO 8601)",
+    ),
+    created_before: datetime | None = Query(
+        default=None, description="이 시각 이전 항목만 조회 (ISO 8601)",
+    ),
     _auth: dict = Depends(authenticate),
 ):
     result = await db.list_descriptions(
