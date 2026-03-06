@@ -28,9 +28,8 @@ logger = structlog.get_logger()
 
 _shutting_down = False
 _in_flight = 0
-_in_flight_lock = asyncio.Lock()
-_drain_event = asyncio.Event()
-_drain_event.set()
+_in_flight_lock: asyncio.Lock | None = None
+_drain_event: asyncio.Event | None = None
 
 
 def is_shutting_down() -> bool:
@@ -48,9 +47,11 @@ async def _cache_cleanup_loop(cache: CacheStore):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _shutting_down, _in_flight
+    global _shutting_down, _in_flight, _in_flight_lock, _drain_event
     _shutting_down = False
     _in_flight = 0
+    _in_flight_lock = asyncio.Lock()
+    _drain_event = asyncio.Event()
     _drain_event.set()
 
     app.state.cache = CacheStore(settings.cache_db_path)
@@ -144,11 +145,14 @@ async def logging_middleware(request, call_next):
     return await request_id_middleware(request, call_next)
 
 
-
 @app.middleware("http")
 async def shutdown_middleware(request, call_next):
-    global _in_flight
-    if _shutting_down:
+    global _in_flight, _in_flight_lock, _drain_event
+    if _in_flight_lock is None:
+        _in_flight_lock = asyncio.Lock()
+        _drain_event = asyncio.Event()
+        _drain_event.set()
+    if _shutting_down and request.url.path not in _SYSTEM_PATHS:
         return JSONResponse(
             status_code=503,
             content={"detail": "Server is shutting down"},
