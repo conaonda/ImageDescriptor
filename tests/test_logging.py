@@ -9,7 +9,9 @@ from app.main import app
 from app.utils.logging import (
     _safe_headers,
     _safe_query_params,
+    _sanitize_correlation_id,
     _sanitize_request_id,
+    generate_correlation_id,
     generate_request_id,
     setup_logging,
 )
@@ -93,6 +95,67 @@ class TestRequestIdMiddleware:
         rid = resp.headers["x-request-id"]
         assert rid != "<script>alert(1)</script>"
         assert len(rid) == 16
+
+
+class TestGenerateCorrelationId:
+    def test_returns_valid_uuid(self):
+        cid = generate_correlation_id()
+        import uuid
+
+        parsed = uuid.UUID(cid)
+        assert str(parsed) == cid
+
+    def test_unique_ids(self):
+        ids = {generate_correlation_id() for _ in range(100)}
+        assert len(ids) == 100
+
+
+class TestSanitizeCorrelationId:
+    def test_valid_uuid(self):
+        valid = "550e8400-e29b-41d4-a716-446655440000"
+        assert _sanitize_correlation_id(valid) == valid
+
+    def test_rejects_invalid(self):
+        assert _sanitize_correlation_id("not-a-uuid") is None
+
+    def test_rejects_script_injection(self):
+        assert _sanitize_correlation_id("<script>alert(1)</script>") is None
+
+    def test_none_input(self):
+        assert _sanitize_correlation_id(None) is None
+
+    def test_empty_string(self):
+        assert _sanitize_correlation_id("") is None
+
+
+class TestCorrelationIdMiddleware:
+    async def test_response_includes_correlation_id(self, client):
+        resp = await client.get("/api/health")
+        assert "x-correlation-id" in resp.headers
+        import uuid
+
+        uuid.UUID(resp.headers["x-correlation-id"])  # should not raise
+
+    async def test_custom_correlation_id_passthrough(self, client):
+        custom_id = "550e8400-e29b-41d4-a716-446655440000"
+        resp = await client.get("/api/health", headers={"X-Correlation-ID": custom_id})
+        assert resp.headers["x-correlation-id"] == custom_id
+
+    async def test_invalid_correlation_id_replaced(self, client):
+        resp = await client.get(
+            "/api/health",
+            headers={"X-Correlation-ID": "not-a-valid-uuid"},
+        )
+        cid = resp.headers["x-correlation-id"]
+        assert cid != "not-a-valid-uuid"
+        import uuid
+
+        uuid.UUID(cid)  # should be a valid UUID
+
+    async def test_different_requests_get_different_ids(self, client):
+        resp1 = await client.get("/api/health")
+        resp2 = await client.get("/api/health")
+        assert resp1.headers["x-correlation-id"] != resp2.headers["x-correlation-id"]
 
 
 class TestSafeHeaders:
