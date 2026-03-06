@@ -260,6 +260,55 @@ class CircuitBreakerResponse(BaseModel):
     }
 
 
+class ModuleStats(BaseModel):
+    hits: int = Field(description="캐시 히트 횟수")
+    misses: int = Field(description="캐시 미스 횟수")
+    hit_rate: float = Field(description="히트율 (0.0 ~ 1.0)")
+
+
+class CacheStatsResponse(BaseModel):
+    entry_count: int = Field(description="캐시 항목 수")
+    total_bytes: int = Field(description="캐시 총 크기(바이트)")
+    modules: dict[str, ModuleStats] = Field(description="모듈별 캐시 통계")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "entry_count": 42,
+                    "total_bytes": 102400,
+                    "modules": {
+                        "geocode": {"hits": 10, "misses": 3, "hit_rate": 0.7692},
+                    },
+                }
+            ]
+        }
+    }
+
+
+class DependencyCheck(BaseModel):
+    supabase: str = Field(description="Supabase 연결 상태")
+    cache: str = Field(description="캐시 연결 상태")
+
+
+class HealthResponse(BaseModel):
+    status: str = Field(description="서비스 상태 (ok/degraded/unhealthy/shutting_down)")
+    version: str = Field(description="서비스 버전")
+    checks: DependencyCheck = Field(description="의존성 상태")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "status": "ok",
+                    "version": "0.16.0",
+                    "checks": {"supabase": "ok", "cache": "ok"},
+                }
+            ]
+        }
+    }
+
+
 class ErrorResponse(BaseModel):
     """API 에러 응답 모델"""
 
