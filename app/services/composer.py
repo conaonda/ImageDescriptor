@@ -22,6 +22,10 @@ _breakers = {
 }
 
 
+def get_breaker_statuses() -> list[dict]:
+    return [cb.get_status() for cb in _breakers.values()]
+
+
 async def _safe_call(name: str, coro: Awaitable, warnings: list[Warning]):
     cb = _breakers[name]
     if cb.is_open:

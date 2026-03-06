@@ -12,6 +12,7 @@ from app.api.schemas import (
     BatchDescribeRequest,
     BatchDescribeResponse,
     BatchItemResult,
+    CircuitBreakerResponse,
     Context,
     DescribeRequest,
     DescribeResponse,
@@ -23,7 +24,7 @@ from app.api.schemas import (
 from app.auth import authenticate
 from app.config import settings
 from app.db import supabase as db
-from app.services.composer import compose_description
+from app.services.composer import compose_description, get_breaker_statuses
 from app.utils.errors import DescriptorError
 from app.utils.rate_limit import get_real_ip
 from app.utils.timeout import apply_timeout
@@ -63,6 +64,17 @@ async def _describe_and_save(item: DescribeRequest, cache) -> DescribeResponse:
 async def cache_stats(request: Request):
     cache = request.app.state.cache
     return await cache.stats()
+
+
+@router.get(
+    "/circuits",
+    response_model=CircuitBreakerResponse,
+    tags=["system"],
+    summary="Circuit breaker 상태 조회",
+    description="각 외부 서비스의 circuit breaker 상태(open/closed, 실패 횟수, cooldown 잔여 시간)를 반환합니다.",
+)
+async def circuit_breaker_status():
+    return CircuitBreakerResponse(breakers=get_breaker_statuses())
 
 
 @router.get(
