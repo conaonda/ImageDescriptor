@@ -552,7 +552,7 @@ async def test_shutdown_middleware_rejects_non_system_paths(client_with_cache, m
 
 
 async def test_shutdown_middleware_allows_health(client_with_cache, monkeypatch):
-    """During shutdown, health endpoint should still work (may return 503 with shutting_down status)."""
+    """During shutdown, health endpoint should still work."""
     import app.db.supabase as supabase_mod
     import app.main as main_mod
 

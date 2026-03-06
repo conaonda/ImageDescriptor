@@ -181,7 +181,9 @@ async def test_describe_image_data_uri(mock_genai, _mock_resize, cache):
 @patch("app.modules.describer._download_image", new_callable=AsyncMock, return_value=b"image-data")
 @patch("app.modules.describer._validate_thumbnail_url")
 @patch("app.modules.describer.genai")
-async def test_describe_image_url_thumbnail(mock_genai, _mock_validate, _mock_download, _mock_resize, cache):
+async def test_describe_image_url_thumbnail(
+    mock_genai, _mock_validate, _mock_download, _mock_resize, cache,
+):
     """HTTP URL thumbnails should be downloaded and described."""
     mock_response = MagicMock()
     mock_response.text = "  URL 영상 설명  "
