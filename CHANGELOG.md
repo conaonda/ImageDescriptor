@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-03-07
+
 ### Added
 
 - `DELETE /api/descriptions/{cog_image_id}`: 저장된 분석 결과 삭제 API (204 성공, 404 미존재, 500 DB 오류)
