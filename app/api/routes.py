@@ -380,7 +380,15 @@ async def delete_description(
     request: Request,
     _auth: dict = Depends(authenticate),
 ):
-    deleted = await db.delete_description(cog_image_id)
+    try:
+        deleted = await db.delete_description(cog_image_id)
+    except Exception as e:
+        logger.error("delete_description_error", cog_image_id=cog_image_id, error=str(e))
+        raise DescriptorError(
+            status_code=500,
+            code="INTERNAL_ERROR",
+            message="Failed to delete description due to a database error",
+        )
     if not deleted:
         logger.info("description_not_found", cog_image_id=cog_image_id)
         raise DescriptorError(
