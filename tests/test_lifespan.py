@@ -62,7 +62,7 @@ async def test_lifespan_shutdown_drain_timeout(tmp_path, monkeypatch):
 
 async def test_cache_cleanup_loop_runs(tmp_path, monkeypatch):
     """Cache cleanup loop should call cleanup_expired."""
-    monkeypatch.setattr(main_mod, "CACHE_CLEANUP_INTERVAL_SECONDS", 0.01)
+    monkeypatch.setattr("app.config.settings.cache_cleanup_interval_seconds", 0.01)
 
     cache = CacheStore(str(tmp_path / "test.db"))
     await cache.init()
@@ -82,7 +82,7 @@ async def test_cache_cleanup_loop_runs(tmp_path, monkeypatch):
 
 async def test_cache_cleanup_loop_handles_exception(tmp_path, monkeypatch):
     """Cache cleanup loop should swallow exceptions and continue."""
-    monkeypatch.setattr(main_mod, "CACHE_CLEANUP_INTERVAL_SECONDS", 0.01)
+    monkeypatch.setattr("app.config.settings.cache_cleanup_interval_seconds", 0.01)
 
     cache = CacheStore(str(tmp_path / "test.db"))
     await cache.init()

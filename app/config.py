@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     shutdown_timeout: int = 30
     request_timeout: int = 30
     batch_concurrency: int = 3
+    cache_ttl_seconds: int = 86400 * 30  # 30 days default
+    cache_cleanup_interval_seconds: int = 3600
 
     @property
     def cors_origins_list(self) -> list[str]:

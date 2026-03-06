@@ -85,6 +85,28 @@ class TestCorsOrigins:
             assert s.cors_origins_list == ["https://only.com"]
 
 
+class TestCacheSettings:
+    def test_default_cache_ttl_seconds(self):
+        with patch.dict(os.environ, _make_env(), clear=True):
+            s = Settings()
+            assert s.cache_ttl_seconds == 86400 * 30
+
+    def test_default_cache_cleanup_interval(self):
+        with patch.dict(os.environ, _make_env(), clear=True):
+            s = Settings()
+            assert s.cache_cleanup_interval_seconds == 3600
+
+    def test_custom_cache_ttl_seconds(self):
+        with patch.dict(os.environ, _make_env(CACHE_TTL_SECONDS="7200"), clear=True):
+            s = Settings()
+            assert s.cache_ttl_seconds == 7200
+
+    def test_custom_cache_cleanup_interval(self):
+        with patch.dict(os.environ, _make_env(CACHE_CLEANUP_INTERVAL_SECONDS="1800"), clear=True):
+            s = Settings()
+            assert s.cache_cleanup_interval_seconds == 1800
+
+
 class TestOverrides:
     def test_custom_log_level(self):
         with patch.dict(os.environ, _make_env(LOG_LEVEL="DEBUG"), clear=True):

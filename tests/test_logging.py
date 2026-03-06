@@ -97,6 +97,26 @@ class TestRequestIdMiddleware:
         assert len(rid) == 16
 
 
+class TestProcessTimeHeader:
+    async def test_response_includes_process_time(self, client):
+        resp = await client.get("/api/health")
+        assert "x-process-time" in resp.headers
+        process_time = float(resp.headers["x-process-time"])
+        assert process_time >= 0
+
+    async def test_process_time_is_numeric(self, client):
+        resp = await client.get("/api/health")
+        float(resp.headers["x-process-time"])  # should not raise
+
+    async def test_process_time_has_six_decimal_places(self, client):
+        resp = await client.get("/api/health")
+        value = resp.headers["x-process-time"]
+        # f"{process_time:.6f}" 형식: 소수점 이하 정확히 6자리
+        assert "." in value
+        decimal_part = value.split(".")[1]
+        assert len(decimal_part) == 6, f"소수점 6자리여야 하지만 '{value}'가 반환되었습니다"
+
+
 class TestGenerateCorrelationId:
     def test_returns_valid_uuid(self):
         cid = generate_correlation_id()

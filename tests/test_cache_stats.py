@@ -38,6 +38,17 @@ class TestCacheStore:
         result = await cache.get("geocode:2:2")
         assert result == {"x": 2}
 
+    async def test_ttl_seconds_sets_expiration(self, cache):
+        await cache.set("geocode:4:4", {"x": 4}, ttl_seconds=3600)
+        result = await cache.get("geocode:4:4")
+        assert result == {"x": 4}
+        # Simulate expiration
+        future = time.time() + 7200
+        with patch("app.cache.store.time") as mock_time:
+            mock_time.time.return_value = future
+            result = await cache.get("geocode:4:4")
+        assert result is None
+
     async def test_overwrite_existing_key(self, cache):
         await cache.set("geocode:3:3", {"v": 1})
         await cache.set("geocode:3:3", {"v": 2})
