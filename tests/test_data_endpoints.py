@@ -51,7 +51,9 @@ async def test_landcover_endpoint(auth_client):
         "summary": "산림 100%",
     }
     with patch(
-        "app.modules.landcover.get_land_cover", new_callable=AsyncMock, return_value=mock_result,
+        "app.modules.landcover.get_land_cover",
+        new_callable=AsyncMock,
+        return_value=mock_result,
     ):
         resp = await auth_client.post(
             "/api/landcover",
@@ -75,7 +77,9 @@ async def test_context_endpoint(auth_client):
         "summary": "test context",
     }
     with patch(
-        "app.modules.context.research_context", new_callable=AsyncMock, return_value=mock_result,
+        "app.modules.context.research_context",
+        new_callable=AsyncMock,
+        return_value=mock_result,
     ):
         resp = await auth_client.post(
             "/api/context",
