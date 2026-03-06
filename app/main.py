@@ -76,7 +76,7 @@ async def lifespan(app: FastAPI):
         try:
             await asyncio.wait_for(_drain_event.wait(), timeout=settings.shutdown_timeout)
             logger.info("all_requests_drained")
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning("drain_timeout", remaining_requests=_in_flight)
 
     cleanup_task.cancel()
