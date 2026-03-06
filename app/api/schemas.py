@@ -95,9 +95,7 @@ class LandCoverClass(BaseModel):
 
     model_config = {
         "json_schema_extra": {
-            "examples": [
-                {"type": "residential", "label": "주거지역", "percentage": 45.0}
-            ]
+            "examples": [{"type": "residential", "label": "주거지역", "percentage": 45.0}]
         }
     }
 
@@ -197,9 +195,7 @@ class Warning(BaseModel):
 
     model_config = {
         "json_schema_extra": {
-            "examples": [
-                {"module": "geocoder", "error": "Nominatim timeout after 5s"}
-            ]
+            "examples": [{"module": "geocoder", "error": "Nominatim timeout after 5s"}]
         }
     }
 
@@ -402,9 +398,7 @@ class ModuleStats(BaseModel):
     hit_rate: float = Field(description="히트율 (0.0 ~ 1.0)")
 
     model_config = {
-        "json_schema_extra": {
-            "examples": [{"hits": 10, "misses": 3, "hit_rate": 0.7692}]
-        }
+        "json_schema_extra": {"examples": [{"hits": 10, "misses": 3, "hit_rate": 0.7692}]}
     }
 
 
@@ -432,11 +426,7 @@ class DependencyCheck(BaseModel):
     supabase: str = Field(description="Supabase 연결 상태")
     cache: str = Field(description="캐시 연결 상태")
 
-    model_config = {
-        "json_schema_extra": {
-            "examples": [{"supabase": "ok", "cache": "ok"}]
-        }
-    }
+    model_config = {"json_schema_extra": {"examples": [{"supabase": "ok", "cache": "ok"}]}}
 
 
 class HealthResponse(BaseModel):
