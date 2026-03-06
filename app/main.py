@@ -15,7 +15,7 @@ from app.api.routes import router
 from app.cache.store import CacheStore
 from app.config import settings
 from app.utils.errors import DescriptorError, descriptor_error_handler
-from app.utils.logging import request_id_middleware, setup_logging
+from app.utils.logging import _SKIP_LOG_PATHS, request_id_middleware, setup_logging
 from app.utils.rate_limit import get_real_ip
 
 setup_logging()
@@ -137,7 +137,7 @@ app.add_middleware(
 )
 
 
-_SYSTEM_PATHS = {"/health", "/metrics", "/api/health", "/api/cache/stats"}
+_SYSTEM_PATHS = _SKIP_LOG_PATHS
 
 
 @app.middleware("http")

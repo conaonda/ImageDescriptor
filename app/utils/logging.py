@@ -1,5 +1,6 @@
 import logging
 import re
+import time
 import uuid
 
 import structlog
@@ -8,6 +9,24 @@ from starlette.requests import Request
 from app.config import settings
 
 _VALID_REQUEST_ID = re.compile(r"^[\w\-]{1,128}$")
+
+_SENSITIVE_HEADERS = frozenset(
+    {
+        "authorization",
+        "x-api-key",
+        "cookie",
+        "set-cookie",
+    }
+)
+
+_SKIP_LOG_PATHS = frozenset(
+    {
+        "/health",
+        "/metrics",
+        "/api/health",
+        "/api/cache/stats",
+    }
+)
 
 
 def setup_logging() -> None:
@@ -45,6 +64,23 @@ def _sanitize_request_id(value: str | None) -> str | None:
     return None
 
 
+def _safe_headers(headers) -> dict[str, str]:
+    """Return headers with sensitive values redacted."""
+    return {k: "[REDACTED]" if k.lower() in _SENSITIVE_HEADERS else v for k, v in headers.items()}
+
+
+def _safe_query_params(query_string: str) -> str:
+    """Return query string with api_key values redacted."""
+    if not query_string:
+        return ""
+    return re.sub(
+        r"(api[_-]?key|access[_-]?token|auth[_-]?token|token|secret|password)=([^&]*)",
+        r"\1=[REDACTED]",
+        query_string,
+        flags=re.IGNORECASE,
+    )
+
+
 async def request_id_middleware(request: Request, call_next):
     """Middleware that binds a unique request_id to each request's log context."""
     request_id = _sanitize_request_id(request.headers.get("x-request-id")) or generate_request_id()
@@ -53,22 +89,43 @@ async def request_id_middleware(request: Request, call_next):
     structlog.contextvars.clear_contextvars()
     structlog.contextvars.bind_contextvars(request_id=request_id)
 
+    path = request.url.path
+    skip_log = path in _SKIP_LOG_PATHS
+
     logger = structlog.get_logger()
-    await logger.ainfo(
-        "request_started",
-        method=request.method,
-        path=request.url.path,
-    )
+    start_time = time.monotonic()
+
+    if not skip_log:
+        await logger.ainfo(
+            "request_started",
+            method=request.method,
+            path=path,
+            query=_safe_query_params(str(request.query_params)),
+            headers=_safe_headers(dict(request.headers)),
+        )
 
     response = await call_next(request)
 
+    latency_ms = round((time.monotonic() - start_time) * 1000, 2)
     response.headers["X-Request-ID"] = request_id
-    await logger.ainfo(
-        "request_finished",
-        method=request.method,
-        path=request.url.path,
-        status_code=response.status_code,
-    )
+
+    if not skip_log:
+        log_method = logger.awarning if response.status_code >= 400 else logger.ainfo
+        await log_method(
+            "request_finished",
+            method=request.method,
+            path=path,
+            status_code=response.status_code,
+            latency_ms=latency_ms,
+        )
+    elif response.status_code >= 400:
+        await logger.awarning(
+            "request_finished",
+            method=request.method,
+            path=path,
+            status_code=response.status_code,
+            latency_ms=latency_ms,
+        )
 
     structlog.contextvars.clear_contextvars()
     return response

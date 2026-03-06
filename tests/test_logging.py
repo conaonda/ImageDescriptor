@@ -6,7 +6,13 @@ from httpx import ASGITransport, AsyncClient
 
 from app.cache.store import CacheStore
 from app.main import app
-from app.utils.logging import generate_request_id, setup_logging
+from app.utils.logging import (
+    _safe_headers,
+    _safe_query_params,
+    _sanitize_request_id,
+    generate_request_id,
+    setup_logging,
+)
 
 
 @pytest.fixture
@@ -78,3 +84,67 @@ class TestRequestIdMiddleware:
         resp = await client.get("/api/health")
         assert resp.headers["x-content-type-options"] == "nosniff"
         assert resp.headers["x-frame-options"] == "DENY"
+
+    async def test_invalid_request_id_ignored(self, client):
+        resp = await client.get(
+            "/api/health",
+            headers={"X-Request-ID": "<script>alert(1)</script>"},
+        )
+        rid = resp.headers["x-request-id"]
+        assert rid != "<script>alert(1)</script>"
+        assert len(rid) == 16
+
+
+class TestSafeHeaders:
+    def test_redacts_sensitive_headers(self):
+        headers = {
+            "authorization": "Bearer secret-token",
+            "x-api-key": "my-key",
+            "cookie": "session=abc",
+            "content-type": "application/json",
+        }
+        safe = _safe_headers(headers)
+        assert safe["authorization"] == "[REDACTED]"
+        assert safe["x-api-key"] == "[REDACTED]"
+        assert safe["cookie"] == "[REDACTED]"
+        assert safe["content-type"] == "application/json"
+
+    def test_empty_headers(self):
+        assert _safe_headers({}) == {}
+
+
+class TestSafeQueryParams:
+    def test_redacts_api_key(self):
+        result = _safe_query_params("api_key=secret123&format=json")
+        assert "secret123" not in result
+        assert "api_key=[REDACTED]" in result
+        assert "format=json" in result
+
+    def test_redacts_token(self):
+        result = _safe_query_params("token=abc&page=1")
+        assert "abc" not in result
+        assert "token=[REDACTED]" in result
+
+    def test_empty_string(self):
+        assert _safe_query_params("") == ""
+
+    def test_no_sensitive_params(self):
+        result = _safe_query_params("page=1&limit=10")
+        assert result == "page=1&limit=10"
+
+
+class TestSanitizeRequestId:
+    def test_valid_id(self):
+        assert _sanitize_request_id("abc-123_XYZ") == "abc-123_XYZ"
+
+    def test_rejects_script_injection(self):
+        assert _sanitize_request_id("<script>") is None
+
+    def test_rejects_too_long(self):
+        assert _sanitize_request_id("a" * 200) is None
+
+    def test_none_input(self):
+        assert _sanitize_request_id(None) is None
+
+    def test_empty_string(self):
+        assert _sanitize_request_id("") is None
