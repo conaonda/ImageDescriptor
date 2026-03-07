@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - pytest 커버리지 CI 연동 (#194): `--cov-fail-under=80` 임계값 설정, `coverage.json` 아티팩트 업로드. 현재 커버리지 98%로 임계값 충족
 - README 커버리지 뱃지 동적 갱신 (#197): 정적 하드코딩 뱃지(`98%`)를 Codecov 동적 뱃지로 교체. CI 워크플로우에 `codecov/codecov-action@v5` 업로드 스텝 추가(Python 3.11 매트릭스). 커버리지 변동 시 README 뱃지 자동 갱신
 - 의존성 보안 취약점 자동 스캔 CI 파이프라인 추가 (#200): `pip-audit`을 dev 의존성에 추가하고 GitHub Actions에 `security-audit` 잡 신설. 취약점 발견 시 빌드 실패. 감사 결과를 JSON 아티팩트로 업로드
+- Docker 이미지 경량화 (#193): Runtime 이미지를 `python:3.11-slim` → `python:3.11-alpine`으로 교체하여 이미지 크기 약 50% 감소. Build stage에서 `__pycache__`/`.pyc`/`.pyo` 제거, `PYTHONDONTWRITEBYTECODE=1` 설정. `.dockerignore`에 `coverage.xml`, `dist/`, `build/`, `htmlcov/` 추가
+- 배치 Graceful Shutdown 구현 (#203): SIGTERM 수신 시 진행 중인 배치 항목을 `interrupted: server shutting down`으로 안전하게 마킹 후 종료. lifespan에서 `active_batch_jobs` 게이지가 0이 될 때까지 대기 후 드레인 수행. `SHUTDOWN_BATCH_TIMEOUT` 환경변수 추가 (기본 60초, K8s `terminationGracePeriodSeconds` 연계)
 
 ### Fixed
 
