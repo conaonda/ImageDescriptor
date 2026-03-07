@@ -7,6 +7,7 @@ import structlog
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 from slowapi import Limiter
@@ -184,6 +185,8 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type", "X-API-Key", "X-Request-ID"],
     expose_headers=["X-Request-ID", "X-Correlation-ID", "X-Process-Time"],
 )
+
+app.add_middleware(GZipMiddleware, minimum_size=settings.gzip_min_size)
 
 
 _SYSTEM_PATHS = _SKIP_LOG_PATHS
