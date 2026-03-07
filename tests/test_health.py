@@ -153,6 +153,31 @@ async def test_liveness_probe_shutting_down(health_client, monkeypatch):
 
     monkeypatch.setattr(main_mod, "_shutting_down", True)
     resp = await health_client.get("/api/v1/health/live")
+    assert resp.status_code == 200
     data = resp.json()
     assert data["status"] == "shutting_down"
     monkeypatch.setattr(main_mod, "_shutting_down", False)
+
+
+async def test_readiness_probe_all_fail(tmp_path, monkeypatch):
+    cache = CacheStore(str(tmp_path / "test.db"))
+    await cache.init()
+    await cache.close()  # close to make ping fail
+    app.state.cache = cache
+
+    async def _supabase_fail():
+        return False
+
+    monkeypatch.setattr(supabase_mod, "ping", _supabase_fail)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as c:
+        resp = await c.get("/api/v1/health/ready")
+
+    assert resp.status_code == 503
+    data = resp.json()
+    assert data["status"] == "unhealthy"
+    assert data["checks"]["supabase"] == "fail"
+    assert data["checks"]["cache"] == "fail"
