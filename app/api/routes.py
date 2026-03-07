@@ -31,7 +31,7 @@ from app.config import settings
 from app.db import supabase as db
 from app.services.composer import compose_description, get_breaker_statuses
 from app.utils.errors import DescriptorError, ProblemDetail
-from app.utils.metrics import active_batch_jobs
+from app.utils.metrics import batch_job_dec, batch_job_inc
 from app.utils.rate_limit import get_real_ip
 from app.utils.timeout import apply_timeout
 
@@ -246,7 +246,7 @@ async def describe_batch(
 
     from app.main import is_shutting_down
 
-    active_batch_jobs.inc()
+    batch_job_inc()
     try:
         results: list[BatchItemResult] = []
         for i, item in enumerate(body.items):
@@ -261,10 +261,10 @@ async def describe_batch(
                 break
             results.append(await _limited(i, item))
     finally:
-        active_batch_jobs.dec()
+        batch_job_dec()
     succeeded = sum(1 for r in results if r.result is not None)
     interrupted = sum(1 for r in results if r.error and "interrupted" in r.error)
-    failed = len(body.items) - succeeded
+    failed = len(body.items) - succeeded - interrupted
     logger.info(
         "batch_complete",
         total=len(body.items),
@@ -277,6 +277,7 @@ async def describe_batch(
         total=len(body.items),
         succeeded=succeeded,
         failed=failed,
+        interrupted=interrupted,
     )
 
 

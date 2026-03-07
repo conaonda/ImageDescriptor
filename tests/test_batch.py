@@ -174,7 +174,7 @@ async def test_batch_interrupted_on_shutdown(mock_compose, client_with_cache, mo
     new_callable=AsyncMock,
 )
 async def test_batch_failed_count_includes_interrupted(mock_compose, client_with_cache, monkeypatch):
-    """failed count in BatchDescribeResponse includes interrupted items (no separate field)."""
+    """interrupted items are separated from failed in BatchDescribeResponse."""
     call_count = 0
 
     async def _compose_with_shutdown(*args, **kwargs):
@@ -195,10 +195,10 @@ async def test_batch_failed_count_includes_interrupted(mock_compose, client_with
             json={"items": [_make_item(), _make_item(), _make_item()]},
         )
         data = resp.json()
-        # 1 succeeded, 2 interrupted — failed = total - succeeded = 2
-        assert data["failed"] == 2
-        # Response has no dedicated "interrupted" field; interrupted items counted in failed
-        assert "interrupted" not in data
+        # 1 succeeded, 2 interrupted, 0 failed
+        assert data["succeeded"] == 1
+        assert data["interrupted"] == 2
+        assert data["failed"] == 0
     finally:
         main_mod._shutting_down = False
 
@@ -210,15 +210,15 @@ async def test_batch_failed_count_includes_interrupted(mock_compose, client_with
 )
 async def test_batch_active_jobs_gauge_zeroed_after_completion(mock_compose, client_with_cache):
     """active_batch_jobs gauge returns to pre-call level after batch processing completes."""
-    from app.utils.metrics import active_batch_jobs
+    from app.utils.metrics import get_active_batch_count
 
-    before = active_batch_jobs._value.get()
+    before = get_active_batch_count()
     resp = await client_with_cache.post(
         "/api/v1/describe/batch",
         json={"items": [_make_item(), _make_item()]},
     )
     assert resp.status_code == 200
-    assert active_batch_jobs._value.get() == before
+    assert get_active_batch_count() == before
 
 
 @patch(
@@ -228,12 +228,12 @@ async def test_batch_active_jobs_gauge_zeroed_after_completion(mock_compose, cli
 )
 async def test_batch_active_jobs_gauge_zeroed_on_exception(mock_compose, client_with_cache):
     """active_batch_jobs gauge is decremented even when batch items raise exceptions."""
-    from app.utils.metrics import active_batch_jobs
+    from app.utils.metrics import get_active_batch_count
 
-    before = active_batch_jobs._value.get()
+    before = get_active_batch_count()
     resp = await client_with_cache.post(
         "/api/v1/describe/batch",
         json={"items": [_make_item()]},
     )
     assert resp.status_code == 200
-    assert active_batch_jobs._value.get() == before
+    assert get_active_batch_count() == before

@@ -83,16 +83,16 @@ async def lifespan(app: FastAPI):
     yield
 
     if _shutting_down:
-        from app.utils.metrics import active_batch_jobs
+        from app.utils.metrics import get_active_batch_count
 
         batch_timeout = settings.shutdown_batch_timeout
         poll_interval = 0.5
         elapsed = 0.0
-        while active_batch_jobs._value.get() > 0 and elapsed < batch_timeout:
+        while get_active_batch_count() > 0 and elapsed < batch_timeout:
             await asyncio.sleep(poll_interval)
             elapsed += poll_interval
-        if active_batch_jobs._value.get() > 0:
-            logger.warning("batch_drain_timeout", active_batches=active_batch_jobs._value.get())
+        if get_active_batch_count() > 0:
+            logger.warning("batch_drain_timeout", active_batches=get_active_batch_count())
         else:
             logger.info("all_batch_jobs_drained", elapsed_seconds=round(elapsed, 1))
 

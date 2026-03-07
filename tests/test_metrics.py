@@ -69,13 +69,13 @@ async def test_description_requests_total():
 
 
 async def test_active_batch_jobs():
-    from app.utils.metrics import active_batch_jobs
+    from app.utils.metrics import batch_job_dec, batch_job_inc, get_active_batch_count
 
-    before = active_batch_jobs._value.get()
-    active_batch_jobs.inc()
-    assert active_batch_jobs._value.get() == before + 1
-    active_batch_jobs.dec()
-    assert active_batch_jobs._value.get() == before
+    before = get_active_batch_count()
+    batch_job_inc()
+    assert get_active_batch_count() == before + 1
+    batch_job_dec()
+    assert get_active_batch_count() == before
 
 
 async def test_metrics_endpoint_no_auth():
