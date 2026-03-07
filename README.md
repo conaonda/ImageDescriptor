@@ -33,6 +33,7 @@ uv run uvicorn app.main:app --reload
 | `LOG_LEVEL` | - | `INFO` | 로그 레벨 |
 | `THUMBNAIL_MAX_PIXELS` | - | `768` | Gemini 전송 전 이미지 리사이즈 최대 픽셀 |
 | `SHUTDOWN_TIMEOUT` | - | `30` | Graceful shutdown 대기 시간(초) |
+| `SHUTDOWN_BATCH_TIMEOUT` | - | `60` | 배치 작업 완료 대기 최대 시간(초). K8s `terminationGracePeriodSeconds`와 연계하여 설정 |
 | `REQUEST_TIMEOUT` | - | `30` | 개별 요청 타임아웃(초) |
 | `BATCH_CONCURRENCY` | - | `3` | 배치 동시 처리 수 |
 | `RATE_LIMIT_DESCRIBE` | - | `20/minute` | `/describe` 엔드포인트 rate limit |
