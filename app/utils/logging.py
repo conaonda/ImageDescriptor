@@ -9,6 +9,9 @@ from starlette.requests import Request
 from app.config import settings
 
 _VALID_REQUEST_ID = re.compile(r"^[\w\-]{1,128}$")
+_TRACEPARENT_RE = re.compile(
+    r"^([0-9a-f]{2})-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})$"
+)
 
 _SENSITIVE_HEADERS = frozenset(
     {
@@ -45,6 +48,7 @@ def setup_logging() -> None:
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
+        _add_service_context,
     ]
 
     structlog.configure(
@@ -92,6 +96,23 @@ def _safe_query_params(query_string: str) -> str:
     )
 
 
+def parse_traceparent(value: str | None) -> dict[str, str] | None:
+    """Parse a W3C traceparent header and return trace_id and span_id."""
+    if not value:
+        return None
+    match = _TRACEPARENT_RE.match(value.strip())
+    if not match:
+        return None
+    return {"trace_id": match.group(2), "span_id": match.group(3)}
+
+
+def _add_service_context(logger, method_name, event_dict):
+    """Structlog processor that adds service_name and environment."""
+    event_dict["service_name"] = settings.service_name
+    event_dict["environment"] = settings.environment
+    return event_dict
+
+
 def _sanitize_correlation_id(value: str | None) -> str | None:
     """Validate a client-provided correlation ID (UUID format)."""
     if not value:
@@ -113,8 +134,16 @@ async def request_id_middleware(request: Request, call_next):
     request.state.correlation_id = correlation_id
 
     structlog.contextvars.clear_contextvars()
-    structlog.contextvars.bind_contextvars(request_id=request_id, correlation_id=correlation_id)
+    ctx = {"request_id": request_id, "correlation_id": correlation_id}
 
+    trace_ctx = parse_traceparent(request.headers.get("traceparent"))
+    if trace_ctx:
+        ctx["trace_id"] = trace_ctx["trace_id"]
+        ctx["span_id"] = trace_ctx["span_id"]
+
+    structlog.contextvars.bind_contextvars(**ctx)
+
+    client_ip = request.client.host if request.client else None
     path = request.url.path
     skip_log = path in _SKIP_LOG_PATHS
 
@@ -138,23 +167,21 @@ async def request_id_middleware(request: Request, call_next):
     response.headers["X-Correlation-ID"] = correlation_id
     response.headers["X-Process-Time"] = f"{process_time:.6f}"
 
+    response_size = int(response.headers.get("content-length", 0))
+    finish_kwargs = {
+        "method": request.method,
+        "path": path,
+        "status_code": response.status_code,
+        "latency_ms": latency_ms,
+        "response_size": response_size,
+        "client_ip": client_ip,
+    }
+
     if not skip_log:
         log_method = logger.awarning if response.status_code >= 400 else logger.ainfo
-        await log_method(
-            "request_finished",
-            method=request.method,
-            path=path,
-            status_code=response.status_code,
-            latency_ms=latency_ms,
-        )
+        await log_method("request_finished", **finish_kwargs)
     elif response.status_code >= 400:
-        await logger.awarning(
-            "request_finished",
-            method=request.method,
-            path=path,
-            status_code=response.status_code,
-            latency_ms=latency_ms,
-        )
+        await logger.awarning("request_finished", **finish_kwargs)
 
     structlog.contextvars.clear_contextvars()
     return response
