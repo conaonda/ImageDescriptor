@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/conaonda/ImageDescriptor/actions/workflows/ci.yml/badge.svg)](https://github.com/conaonda/ImageDescriptor/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/conaonda/ImageDescriptor/graph/badge.svg)](https://codecov.io/gh/conaonda/ImageDescriptor)
+[![Security Audit](https://github.com/conaonda/ImageDescriptor/actions/workflows/ci.yml/badge.svg?event=push&label=security)](https://github.com/conaonda/ImageDescriptor/actions/workflows/ci.yml)
 
 위성영상 좌표 기반 설명 생성 서비스. 좌표와 썸네일을 입력받아 위치 정보, 토지피복, 주변 맥락을 조합해 자연어 설명을 생성한다.
 
@@ -300,6 +301,17 @@ curl -X DELETE -H "X-API-Key: your-api-key" http://localhost:8000/api/v1/descrip
 | `POST /api/v1/batch/describe` | 10 req/min | `RATE_LIMIT_BATCH` |
 | `POST /api/v1/geocode`, `/landcover`, `/context` | 30 req/min | `RATE_LIMIT_DATA` |
 | `GET /api/v1/descriptions*`, `/circuits`, `/cache/stats` | 60 req/min | `RATE_LIMIT_READ` |
+
+## 보안 감사
+
+CI 파이프라인에서 `pip-audit`을 사용하여 의존성의 알려진 CVE 취약점을 자동 스캔한다.
+
+```bash
+# 로컬에서 직접 실행
+uv run pip-audit --desc
+```
+
+취약점이 발견되면 CI 빌드가 실패하며, 감사 결과는 JSON 아티팩트(`pip-audit-results`)로 GitHub Actions에 업로드된다.
 
 ## 테스트
 
