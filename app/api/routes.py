@@ -21,8 +21,8 @@ from app.api.schemas import (
     DescriptionListResponse,
     ErrorResponse,  # kept for backward compat
     HealthResponse,
-    LiveResponse,
     LandCover,
+    LiveResponse,
     Location,
     Warning,
 )
@@ -252,7 +252,12 @@ async def describe_batch(
         for i, item in enumerate(body.items):
             if is_shutting_down():
                 for j in range(i, len(body.items)):
-                    results.append(BatchItemResult(index=j, error="interrupted: server shutting down"))
+                    results.append(
+                        BatchItemResult(
+                            index=j,
+                            error="interrupted: server shutting down",
+                        )
+                    )
                 logger.warning(
                     "batch_interrupted_by_shutdown",
                     completed=i,
@@ -360,8 +365,7 @@ async def context_endpoint(
     tags=["analysis"],
     summary="설명 이력 목록 조회",
     description=(
-        "저장된 설명 목록을 페이지네이션으로 조회합니다. "
-        "offset/limit으로 페이지 이동이 가능합니다."
+        "저장된 설명 목록을 페이지네이션으로 조회합니다. offset/limit으로 페이지 이동이 가능합니다."
     ),
     responses={
         422: {"model": ErrorResponse, "description": "유효하지 않은 쿼리 파라미터"},
@@ -430,8 +434,7 @@ async def get_description(
     tags=["analysis"],
     summary="설명 삭제",
     description=(
-        "cog_image_id로 저장된 분석 결과를 삭제합니다. "
-        "성공 시 204 No Content를 반환합니다."
+        "cog_image_id로 저장된 분석 결과를 삭제합니다. 성공 시 204 No Content를 반환합니다."
     ),
     responses={
         404: {"model": ProblemDetail, "description": "해당 ID의 설명을 찾을 수 없음"},
