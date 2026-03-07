@@ -1,9 +1,11 @@
+import asyncio
 import os
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+import app.main as main_mod
 from app.api.schemas import DescribeResponse
 from app.cache.store import CacheStore
 from app.main import app
@@ -124,3 +126,44 @@ async def test_batch_thumbnail_too_large(mock_compose, client_with_cache):
     assert data["succeeded"] == 1
     assert data["failed"] == 1
     assert "too large" in data["results"][1]["error"].lower()
+
+
+@patch(
+    "app.api.routes.compose_description",
+    new_callable=AsyncMock,
+)
+async def test_batch_interrupted_on_shutdown(mock_compose, client_with_cache, monkeypatch):
+    """Batch marks remaining items as interrupted when shutdown begins mid-batch."""
+    call_count = 0
+
+    async def _compose_with_shutdown(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            # Simulate shutdown starting after first item completes
+            monkeypatch.setattr(main_mod, "_shutting_down", True)
+        return _mock_response()
+
+    mock_compose.side_effect = _compose_with_shutdown
+
+    # Initialize shutdown primitives
+    main_mod._in_flight_lock = asyncio.Lock()
+    main_mod._drain_event = asyncio.Event()
+    main_mod._drain_event.set()
+
+    try:
+        resp = await client_with_cache.post(
+            "/api/v1/describe/batch",
+            json={"items": [_make_item(), _make_item(), _make_item()]},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total"] == 3
+        assert data["succeeded"] == 1
+        # Remaining items should be marked as interrupted
+        assert data["results"][1]["error"] is not None
+        assert "interrupted" in data["results"][1]["error"]
+        assert data["results"][2]["error"] is not None
+        assert "interrupted" in data["results"][2]["error"]
+    finally:
+        main_mod._shutting_down = False

@@ -244,23 +244,39 @@ async def describe_batch(
         async with semaphore:
             return await _process_one(index, item)
 
+    from app.main import is_shutting_down
+
     active_batch_jobs.inc()
     try:
-        results = await asyncio.gather(*[_limited(i, item) for i, item in enumerate(body.items)])
+        results: list[BatchItemResult] = []
+        for i, item in enumerate(body.items):
+            if is_shutting_down():
+                for j in range(i, len(body.items)):
+                    results.append(BatchItemResult(index=j, error="interrupted: server shutting down"))
+                logger.warning(
+                    "batch_interrupted_by_shutdown",
+                    completed=i,
+                    interrupted=len(body.items) - i,
+                )
+                break
+            results.append(await _limited(i, item))
     finally:
         active_batch_jobs.dec()
     succeeded = sum(1 for r in results if r.result is not None)
+    interrupted = sum(1 for r in results if r.error and "interrupted" in r.error)
+    failed = len(body.items) - succeeded
     logger.info(
         "batch_complete",
         total=len(body.items),
         succeeded=succeeded,
-        failed=len(body.items) - succeeded,
+        failed=failed,
+        interrupted=interrupted,
     )
     return BatchDescribeResponse(
-        results=list(results),
+        results=results,
         total=len(body.items),
         succeeded=succeeded,
-        failed=len(body.items) - succeeded,
+        failed=failed,
     )
 
 
