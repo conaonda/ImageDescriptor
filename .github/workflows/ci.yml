@@ -10,8 +10,42 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  security-events: write
 
 jobs:
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Run pip-audit
+        run: uv run pip-audit --require-hashes=false --progress-spinner=off --desc -f json -o audit-results.json || true
+
+      - name: Check audit results
+        run: |
+          if uv run pip-audit --require-hashes=false --progress-spinner=off --desc; then
+            echo "No vulnerabilities found."
+          else
+            echo "::error::Security vulnerabilities found in dependencies!"
+            exit 1
+          fi
+
+      - name: Upload audit results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pip-audit-results
+          path: audit-results.json
+
   lint:
     runs-on: ubuntu-latest
     steps:
