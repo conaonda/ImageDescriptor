@@ -30,6 +30,7 @@ from app.config import settings
 from app.db import supabase as db
 from app.services.composer import compose_description, get_breaker_statuses
 from app.utils.errors import DescriptorError, ProblemDetail
+from app.utils.metrics import active_batch_jobs
 from app.utils.rate_limit import get_real_ip
 from app.utils.timeout import apply_timeout
 
@@ -211,7 +212,11 @@ async def describe_batch(
         async with semaphore:
             return await _process_one(index, item)
 
-    results = await asyncio.gather(*[_limited(i, item) for i, item in enumerate(body.items)])
+    active_batch_jobs.inc()
+    try:
+        results = await asyncio.gather(*[_limited(i, item) for i, item in enumerate(body.items)])
+    finally:
+        active_batch_jobs.dec()
     succeeded = sum(1 for r in results if r.result is not None)
     logger.info(
         "batch_complete",

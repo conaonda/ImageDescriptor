@@ -38,6 +38,9 @@ async def test_circuit_breaker_metrics():
     circuit_breaker_state.labels(name="test_cb").set(0)
     assert circuit_breaker_state.labels(name="test_cb")._value.get() == 0
 
+    circuit_breaker_state.labels(name="test_cb").set(2)
+    assert circuit_breaker_state.labels(name="test_cb")._value.get() == 2
+
 
 async def test_external_api_metrics():
     from app.utils.metrics import external_api_duration, external_api_requests
@@ -50,6 +53,29 @@ async def test_external_api_metrics():
     )
 
     external_api_duration.labels(service="test_svc").observe(0.5)
+
+
+async def test_description_requests_total():
+    from app.utils.metrics import description_requests_total
+
+    before_success = description_requests_total.labels(status="success")._value.get()
+    before_error = description_requests_total.labels(status="error")._value.get()
+
+    description_requests_total.labels(status="success").inc()
+    description_requests_total.labels(status="error").inc()
+
+    assert description_requests_total.labels(status="success")._value.get() == before_success + 1
+    assert description_requests_total.labels(status="error")._value.get() == before_error + 1
+
+
+async def test_active_batch_jobs():
+    from app.utils.metrics import active_batch_jobs
+
+    before = active_batch_jobs._value.get()
+    active_batch_jobs.inc()
+    assert active_batch_jobs._value.get() == before + 1
+    active_batch_jobs.dec()
+    assert active_batch_jobs._value.get() == before
 
 
 async def test_metrics_endpoint_no_auth():

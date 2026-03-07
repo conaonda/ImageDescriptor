@@ -2,6 +2,13 @@
 
 from prometheus_client import Counter, Gauge, Histogram
 
+# Description request metrics
+description_requests_total = Counter(
+    "description_requests_total",
+    "Total description generation requests",
+    ["status"],
+)
+
 # External API call metrics
 external_api_requests = Counter(
     "external_api_requests_total",
@@ -33,9 +40,15 @@ cache_cleanup_total = Counter(
     "Total expired cache entries removed",
 )
 
-# Circuit breaker metrics
+# Circuit breaker metrics (0=closed, 1=open, 2=half-open)
 circuit_breaker_state = Gauge(
-    "circuit_breaker_open",
-    "Circuit breaker state (1=open, 0=closed)",
+    "circuit_breaker_state",
+    "Circuit breaker state (0=closed, 1=open, 2=half-open)",
     ["name"],
+)
+
+# Batch job metrics
+active_batch_jobs = Gauge(
+    "active_batch_jobs",
+    "Number of currently running batch jobs",
 )

@@ -25,6 +25,7 @@ class CircuitBreaker:
             # half-open: reset and allow retry
             self._open_until = 0.0
             self._failure_count = 0
+            circuit_breaker_state.labels(name=self.name).set(2)
         return False
 
     def record_success(self):
