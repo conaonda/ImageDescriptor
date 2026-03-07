@@ -294,7 +294,16 @@ curl -X DELETE -H "X-API-Key: your-api-key" http://localhost:8000/api/v1/descrip
 
 ## Rate Limiting
 
-엔드포인트별로 IP당 rate limit이 적용된다. 초과 시 `429 Too Many Requests`와 `Retry-After` 헤더(초 단위)를 반환한다.
+엔드포인트별로 IP당 rate limit이 적용된다. 모든 rate-limited 엔드포인트 응답에 다음 헤더가 포함된다:
+
+| 헤더 | 설명 |
+|------|------|
+| `X-RateLimit-Limit` | 윈도우 내 최대 허용 요청 수 |
+| `X-RateLimit-Remaining` | 윈도우 내 남은 요청 수 |
+| `X-RateLimit-Reset` | 윈도우 리셋까지 남은 초 |
+| `Retry-After` | 429 응답 시 재시도까지 대기 시간(초) |
+
+초과 시 `429 Too Many Requests`와 RFC 7807 형식 에러 본문을 반환한다.
 
 | 엔드포인트 | 기본 제한 | 환경변수 |
 |-----------|----------|---------|

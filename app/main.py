@@ -1,5 +1,6 @@
 import asyncio
 import signal
+import time
 from contextlib import asynccontextmanager
 from importlib.metadata import PackageNotFoundError, version
 
@@ -152,6 +153,12 @@ async def _rate_limit_handler(request, exc):
         retry_after = max(1, int(delta.total_seconds()))
     else:
         retry_after = int(retry_after_raw)
+    headers = {"Retry-After": str(retry_after)}
+    if hasattr(exc, "limit") and exc.limit is not None:
+        limit_item = exc.limit.limit
+        headers["X-RateLimit-Limit"] = str(limit_item.amount)
+        headers["X-RateLimit-Remaining"] = "0"
+        headers["X-RateLimit-Reset"] = str(retry_after)
     return JSONResponse(
         status_code=429,
         content={
@@ -161,7 +168,7 @@ async def _rate_limit_handler(request, exc):
             "detail": str(exc.detail) if hasattr(exc, "detail") else "요청 횟수 제한을 초과했습니다",
             "instance": _get_correlation_id(request),
         },
-        headers={"Retry-After": str(retry_after)},
+        headers=headers,
         media_type="application/problem+json",
     )
 
@@ -198,7 +205,15 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["Authorization", "Content-Type", "X-API-Key", "X-Request-ID"],
-    expose_headers=["X-Request-ID", "X-Correlation-ID", "X-Process-Time"],
+    expose_headers=[
+        "X-Request-ID",
+        "X-Correlation-ID",
+        "X-Process-Time",
+        "X-RateLimit-Limit",
+        "X-RateLimit-Remaining",
+        "X-RateLimit-Reset",
+        "Retry-After",
+    ],
 )
 
 app.add_middleware(GZipMiddleware, minimum_size=settings.gzip_min_size)
@@ -241,6 +256,28 @@ async def shutdown_middleware(request, call_next):
             _in_flight -= 1
             if _in_flight == 0:
                 _drain_event.set()
+
+
+@app.middleware("http")
+async def rate_limit_headers_middleware(request, call_next):
+    response = await call_next(request)
+    view_rate_limit = getattr(request.state, "view_rate_limit", None)
+    if view_rate_limit is not None:
+        from app.api.routes import limiter as route_limiter  # 순환 참조 방지
+
+        limit_item, key_args = view_rate_limit
+        try:
+            window_stats = route_limiter.limiter.get_window_stats(limit_item, *key_args)
+            reset_at = window_stats[0]
+            remaining = window_stats[1]
+            # +1: 윈도우 경계 시점의 부분초를 올림(ceiling) 처리하여 클라이언트가 너무 일찍 재시도하지 않도록 함
+            reset_in = max(0, int(reset_at - time.time()) + 1)
+            response.headers["X-RateLimit-Limit"] = str(limit_item.amount)
+            response.headers["X-RateLimit-Remaining"] = str(remaining)
+            response.headers["X-RateLimit-Reset"] = str(reset_in)
+        except Exception:
+            logger.debug("rate_limit_headers_injection_failed", exc_info=True)
+    return response
 
 
 @app.middleware("http")
