@@ -132,6 +132,49 @@ class TestRateLimitMiddleware:
             resp = await rate_limit_client.get("/api/v1/cache/stats")
             assert resp.status_code == 200
 
+    async def test_success_response_includes_rate_limit_headers(self, rate_limit_client):
+        """Successful responses include X-RateLimit-* headers."""
+        api_key = os.environ["API_KEY"]
+        headers = {"X-API-Key": api_key}
+        body = {
+            "thumbnail": "dGVzdA==",
+            "coordinates": [126.978, 37.566],
+            "captured_at": "2025-06-15T00:00:00Z",
+        }
+        with patch("app.config.settings.rate_limit_describe", "5/minute"):
+            resp = await rate_limit_client.post(
+                "/api/v1/describe", json=body, headers=headers
+            )
+            assert "X-RateLimit-Limit" in resp.headers
+            assert resp.headers["X-RateLimit-Limit"] == "5"
+            assert "X-RateLimit-Remaining" in resp.headers
+            assert int(resp.headers["X-RateLimit-Remaining"]) == 4
+            assert "X-RateLimit-Reset" in resp.headers
+            reset = int(resp.headers["X-RateLimit-Reset"])
+            assert 0 < reset <= 60
+
+    async def test_429_response_includes_rate_limit_headers(self, rate_limit_client):
+        """429 responses include X-RateLimit-* headers with remaining=0."""
+        api_key = os.environ["API_KEY"]
+        headers = {"X-API-Key": api_key}
+        body = {
+            "thumbnail": "dGVzdA==",
+            "coordinates": [126.978, 37.566],
+            "captured_at": "2025-06-15T00:00:00Z",
+        }
+        with patch("app.config.settings.rate_limit_describe", "1/minute"):
+            await rate_limit_client.post(
+                "/api/v1/describe", json=body, headers=headers
+            )
+            resp = await rate_limit_client.post(
+                "/api/v1/describe", json=body, headers=headers
+            )
+            assert resp.status_code == 429
+            assert resp.headers["X-RateLimit-Limit"] == "1"
+            assert resp.headers["X-RateLimit-Remaining"] == "0"
+            assert "X-RateLimit-Reset" in resp.headers
+            assert "Retry-After" in resp.headers
+
     async def test_describe_and_data_have_independent_limits(self, rate_limit_client):
         """describe and data endpoints have separate rate limit pools."""
         api_key = os.environ["API_KEY"]
