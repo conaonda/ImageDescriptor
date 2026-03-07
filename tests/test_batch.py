@@ -6,6 +6,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 import app.main as main_mod
+from app.api.routes import limiter as routes_limiter
 from app.api.schemas import DescribeResponse
 from app.cache.store import CacheStore
 from app.main import app
@@ -16,12 +17,14 @@ async def client_with_cache(tmp_path):
     cache = CacheStore(str(tmp_path / "test.db"))
     await cache.init()
     app.state.cache = cache
+    routes_limiter.reset()
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",
         headers={"X-API-Key": os.environ["API_KEY"]},
     ) as c:
         yield c
+    routes_limiter.reset()
     await cache.close()
 
 
@@ -237,3 +240,82 @@ async def test_batch_active_jobs_gauge_zeroed_on_exception(mock_compose, client_
     )
     assert resp.status_code == 200
     assert get_active_batch_count() == before
+
+
+@patch(
+    "app.api.routes.compose_description",
+    new_callable=AsyncMock,
+    return_value=_mock_response(),
+)
+async def test_batch_success_interrupted_is_zero(mock_compose, client_with_cache):
+    """interrupted field is 0 when no shutdown occurs during batch."""
+    resp = await client_with_cache.post(
+        "/api/v1/describe/batch",
+        json={"items": [_make_item(), _make_item()]},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["interrupted"] == 0
+    assert data["failed"] == 0
+
+
+@patch(
+    "app.api.routes.compose_description",
+    new_callable=AsyncMock,
+)
+async def test_batch_partial_failure_interrupted_is_zero(mock_compose, client_with_cache):
+    """interrupted field is 0 when items fail due to exceptions (not shutdown)."""
+    mock_compose.side_effect = [
+        _mock_response(),
+        Exception("external service failed"),
+    ]
+    resp = await client_with_cache.post(
+        "/api/v1/describe/batch",
+        json={"items": [_make_item(), _make_item()]},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total"] == 2
+    assert data["succeeded"] == 1
+    assert data["failed"] == 1
+    assert data["interrupted"] == 0
+
+
+@patch(
+    "app.api.routes.compose_description",
+    new_callable=AsyncMock,
+)
+async def test_batch_mixed_failed_and_interrupted(mock_compose, client_with_cache, monkeypatch):
+    """failed and interrupted are counted separately when both occur in one batch."""
+    call_count = 0
+
+    async def _compose_with_shutdown(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            return _mock_response()
+        if call_count == 2:
+            monkeypatch.setattr(main_mod, "_shutting_down", True)
+            raise Exception("real failure")
+        return _mock_response()
+
+    mock_compose.side_effect = _compose_with_shutdown
+    main_mod._in_flight_lock = asyncio.Lock()
+    main_mod._drain_event = asyncio.Event()
+    main_mod._drain_event.set()
+
+    try:
+        resp = await client_with_cache.post(
+            "/api/v1/describe/batch",
+            # 4 items: item0=success, item1=real failure+trigger shutdown, items2-3=interrupted
+            json={"items": [_make_item(), _make_item(), _make_item(), _make_item()]},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total"] == 4
+        assert data["succeeded"] == 1
+        assert data["failed"] == 1
+        assert data["interrupted"] == 2
+        assert data["failed"] + data["succeeded"] + data["interrupted"] == data["total"]
+    finally:
+        main_mod._shutting_down = False
