@@ -13,10 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 엔드포인트별 Rate Limiting 세분화: describe(20/min), batch(10/min), data(30/min), read(60/min). 환경변수(`RATE_LIMIT_DESCRIBE`, `RATE_LIMIT_BATCH`, `RATE_LIMIT_DATA`, `RATE_LIMIT_READ`)로 외부 설정 가능
 - Rate Limit 초과 시 RFC 7807 형식 에러 응답 + RFC 7231 준수 `Retry-After` 헤더(초 단위 정수) 반환
 - GZip 응답 압축 미들웨어 추가: `Accept-Encoding: gzip` 요청 시 응답 자동 압축. `GZIP_MIN_SIZE` 환경변수로 최소 압축 크기 설정 가능 (기본값: 500 bytes)
+- K8s probe 엔드포인트 분리 (#188): `GET /api/v1/health/ready` (Readiness — DB·캐시 의존성 포함), `GET /api/v1/health/live` (Liveness — 프로세스 생존만 확인, 경량). 기존 `GET /api/v1/health`는 하위 호환성 유지
+- Prometheus 커스텀 메트릭 강화 (#187): `description_requests_total` Counter(성공/실패 추적), `active_batch_jobs` Gauge(진행 중 배치 수), `circuit_breaker_state` Gauge(0=closed, 1=open, 2=half-open 3단계) 추가
+- 설정값 시작 시 유효성 검증 (#186): `field_validator`로 양수 값·rate_limit 패턴·CORS origin URL 형식 검증. 잘못된 설정은 명확한 에러 메시지와 함께 시작 실패. 시작 시 API 키 마스킹된 설정 요약 로그 출력
 
 ### Fixed
 
 - docker-compose.yml healthcheck 경로를 `/api/health` → `/api/v1/health`로 수정하여 Dockerfile과 정합성 일치
+- Dockerfile 및 docker-compose HEALTHCHECK 대상을 `/api/v1/health` → `/api/v1/health/live`로 변경 (Liveness probe 전용 경량 엔드포인트 사용)
 
 ### Security
 
