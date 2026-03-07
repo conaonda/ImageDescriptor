@@ -64,3 +64,19 @@ async def test_gzip_min_size_config():
     """gzip_min_size 설정이 정상적으로 로드되는지 확인."""
     assert isinstance(settings.gzip_min_size, int)
     assert settings.gzip_min_size > 0
+
+
+@pytest.mark.asyncio
+async def test_gzip_actual_compression_on_large_response():
+    """500 bytes 초과 응답(OpenAPI 스키마)은 실제로 gzip 압축되어야 한다."""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as c:
+        resp = await c.get(
+            "/openapi.json",
+            headers={"Accept-Encoding": "gzip"},
+        )
+    assert resp.status_code == 200
+    # OpenAPI 스키마는 수 KB이므로 gzip 압축이 적용되어야 함
+    assert resp.headers.get("content-encoding") == "gzip"
