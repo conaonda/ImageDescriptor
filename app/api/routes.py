@@ -21,6 +21,7 @@ from app.api.schemas import (
     DescriptionListResponse,
     ErrorResponse,  # kept for backward compat
     HealthResponse,
+    LiveResponse,
     LandCover,
     Location,
     Warning,
@@ -130,6 +131,37 @@ async def health(request: Request):
     body = {"status": status, "version": ver, "checks": checks}
     status_code = 503 if all_fail or is_shutting_down() else 200
     return JSONResponse(content=body, status_code=status_code)
+
+
+@router.get(
+    "/health/ready",
+    response_model=HealthResponse,
+    tags=["system"],
+    summary="Readiness probe",
+    description="DB 연결, 캐시 등 의존성 상태를 확인합니다. K8s readinessProbe 용도.",
+    responses={
+        503: {
+            "model": HealthResponse,
+            "description": "서비스 비정상 (unhealthy 또는 shutting_down)",
+        },
+    },
+)
+async def readiness(request: Request):
+    return await health(request)
+
+
+@router.get(
+    "/health/live",
+    response_model=LiveResponse,
+    tags=["system"],
+    summary="Liveness probe",
+    description="프로세스 생존 여부만 확인합니다. K8s livenessProbe 용도.",
+)
+async def liveness():
+    from app.main import is_shutting_down
+
+    status = "shutting_down" if is_shutting_down() else "ok"
+    return JSONResponse(content={"status": status})
 
 
 def _generate_etag(body_bytes: bytes) -> str:

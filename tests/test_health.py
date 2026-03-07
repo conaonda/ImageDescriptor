@@ -1,4 +1,4 @@
-"""Health endpoint dependency check tests for #91."""
+"""Health endpoint dependency check tests for #91, #188."""
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -101,6 +101,80 @@ async def test_health_all_fail(tmp_path, monkeypatch):
         base_url="http://test",
     ) as c:
         resp = await c.get("/api/v1/health")
+
+    assert resp.status_code == 503
+    data = resp.json()
+    assert data["status"] == "unhealthy"
+    assert data["checks"]["supabase"] == "fail"
+    assert data["checks"]["cache"] == "fail"
+
+
+async def test_readiness_probe(health_client):
+    resp = await health_client.get("/api/v1/health/ready")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "ok"
+    assert data["checks"]["supabase"] == "ok"
+    assert data["checks"]["cache"] == "ok"
+    assert "version" in data
+
+
+async def test_readiness_probe_degraded(tmp_path, monkeypatch):
+    cache = CacheStore(str(tmp_path / "test.db"))
+    await cache.init()
+    app.state.cache = cache
+
+    async def _supabase_fail():
+        return False
+
+    monkeypatch.setattr(supabase_mod, "ping", _supabase_fail)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as c:
+        resp = await c.get("/api/v1/health/ready")
+    await cache.close()
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "degraded"
+
+
+async def test_liveness_probe(health_client):
+    resp = await health_client.get("/api/v1/health/live")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "ok"
+
+
+async def test_liveness_probe_shutting_down(health_client, monkeypatch):
+    import app.main as main_mod
+
+    monkeypatch.setattr(main_mod, "_shutting_down", True)
+    resp = await health_client.get("/api/v1/health/live")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "shutting_down"
+    monkeypatch.setattr(main_mod, "_shutting_down", False)
+
+
+async def test_readiness_probe_all_fail(tmp_path, monkeypatch):
+    cache = CacheStore(str(tmp_path / "test.db"))
+    await cache.init()
+    await cache.close()  # close to make ping fail
+    app.state.cache = cache
+
+    async def _supabase_fail():
+        return False
+
+    monkeypatch.setattr(supabase_mod, "ping", _supabase_fail)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as c:
+        resp = await c.get("/api/v1/health/ready")
 
     assert resp.status_code == 503
     data = resp.json()
