@@ -1,5 +1,8 @@
 # COGnito Image Descriptor
 
+[![CI](https://github.com/conaonda/ImageDescriptor/actions/workflows/ci.yml/badge.svg)](https://github.com/conaonda/ImageDescriptor/actions/workflows/ci.yml)
+![Coverage](https://img.shields.io/badge/coverage-98%25-brightgreen)
+
 위성영상 좌표 기반 설명 생성 서비스. 좌표와 썸네일을 입력받아 위치 정보, 토지피복, 주변 맥락을 조합해 자연어 설명을 생성한다.
 
 ## 빠른 시작
