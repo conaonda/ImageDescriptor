@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - K8s probe 엔드포인트 분리 (#188): `GET /api/v1/health/ready` (Readiness — DB·캐시 의존성 포함), `GET /api/v1/health/live` (Liveness — 프로세스 생존만 확인, 경량). 기존 `GET /api/v1/health`는 하위 호환성 유지
 - Prometheus 커스텀 메트릭 강화 (#187): `description_requests_total` Counter(성공/실패 추적), `active_batch_jobs` Gauge(진행 중 배치 수), `circuit_breaker_state` Gauge(0=closed, 1=open, 2=half-open 3단계) 추가
 - 설정값 시작 시 유효성 검증 (#186): `field_validator`로 양수 값·rate_limit 패턴·CORS origin URL 형식 검증. 잘못된 설정은 명확한 에러 메시지와 함께 시작 실패. 시작 시 API 키 마스킹된 설정 요약 로그 출력
+- OpenTelemetry trace context 전파 및 구조화 로깅 강화 (#189): W3C `traceparent` 헤더 파싱으로 `trace_id`·`span_id`를 structlog 컨텍스트에 바인딩. 응답 로그에 `response_size`, `client_ip` 필드 추가. structlog 프로세서로 `service_name`, `environment` 필드 자동 삽입. 기존 `X-Correlation-ID`와 완전 공존
+- pytest 커버리지 CI 연동 (#194): `--cov-fail-under=80` 임계값 설정, `coverage.json` 아티팩트 업로드. 현재 커버리지 98%로 임계값 충족
 
 ### Fixed
 
