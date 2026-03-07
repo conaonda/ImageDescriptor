@@ -73,6 +73,13 @@ jobs:
             coverage.xml
             coverage.json
 
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v5
+        if: matrix.python-version == '3.11'
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false
+
       - name: Coverage comment on PR
         uses: MishaKav/pytest-coverage-comment@v1.5.0
         if: github.event_name == 'pull_request' && matrix.python-version == '3.11'
