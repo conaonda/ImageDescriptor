@@ -447,6 +447,14 @@ class HealthResponse(BaseModel):
     }
 
 
+class LiveResponse(BaseModel):
+    status: str = Field(description="프로세스 상태 (ok/shutting_down)")
+
+    model_config = {
+        "json_schema_extra": {"examples": [{"status": "ok"}]}
+    }
+
+
 class DescriptionItem(BaseModel):
     cog_image_id: str = Field(description="COG 이미지 ID")
     description: str | None = Field(default=None, description="생성된 설명")
