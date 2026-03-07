@@ -5,6 +5,7 @@
 __pycache__/
 *.pyc
 *.py[cod]
+*.pyo
 .pytest_cache/
 .ruff_cache/
 tests/
@@ -16,3 +17,8 @@ cache.db
 *.egg-info/
 .claude/
 .bkit/
+.coverage
+coverage.xml
+htmlcov/
+dist/
+build/

@@ -1,6 +1,7 @@
-"""Graceful shutdown tests for #108 / #156."""
+"""Graceful shutdown tests for #193 / #203."""
 
 import asyncio
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -108,3 +109,67 @@ def test_shutdown_timeout_default():
         supabase_service_key="k", api_key="k",
     )
     assert s.shutdown_timeout == 30
+
+
+def test_shutdown_batch_timeout_configurable():
+    """shutdown_batch_timeout is configurable via Settings."""
+    s = Settings(
+        google_ai_api_key="k", supabase_url="https://x.supabase.co",
+        supabase_service_key="k", api_key="k", shutdown_batch_timeout=120,
+    )
+    assert s.shutdown_batch_timeout == 120
+
+
+def test_shutdown_batch_timeout_default():
+    """shutdown_batch_timeout defaults to 60 seconds."""
+    s = Settings(
+        google_ai_api_key="k", supabase_url="https://x.supabase.co",
+        supabase_service_key="k", api_key="k",
+    )
+    assert s.shutdown_batch_timeout == 60
+
+
+@patch("app.db.supabase.ping", new_callable=AsyncMock, return_value=True)
+async def test_lifespan_drain_exits_when_no_batch_jobs(mock_ping, tmp_path, monkeypatch):
+    """Lifespan shutdown drain completes immediately when no batch jobs are active."""
+    from app.main import lifespan
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "cache_db_path", str(tmp_path / "drain_test.db"))
+
+    try:
+        async with lifespan(app):
+            # Simulate SIGTERM during operation: no batch jobs are running
+            main_mod._shutting_down = True
+        # If we reach here without TimeoutError, drain exited correctly
+    finally:
+        main_mod._shutting_down = False
+
+
+@patch("app.db.supabase.ping", new_callable=AsyncMock, return_value=True)
+async def test_lifespan_drain_waits_for_batch_jobs(mock_ping, tmp_path, monkeypatch):
+    """Lifespan shutdown drain waits until active_batch_jobs drops to 0."""
+    from app.main import lifespan
+    from app.config import settings
+    from app.utils.metrics import active_batch_jobs
+
+    monkeypatch.setattr(settings, "cache_db_path", str(tmp_path / "drain_wait_test.db"))
+    monkeypatch.setattr(settings, "shutdown_batch_timeout", 2)
+
+    released = asyncio.Event()
+
+    async def _release_job():
+        await asyncio.sleep(0.3)
+        active_batch_jobs.dec()
+        released.set()
+
+    try:
+        async with lifespan(app):
+            # Simulate one active batch job during shutdown
+            active_batch_jobs.inc()
+            main_mod._shutting_down = True
+            asyncio.create_task(_release_job())
+        # Drain should have waited until the gauge dropped to 0
+        assert released.is_set()
+    finally:
+        main_mod._shutting_down = False

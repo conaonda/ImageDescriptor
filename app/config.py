@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     rate_limit_data: str = "30/minute"
     rate_limit_read: str = "60/minute"
     shutdown_timeout: int = 30
+    shutdown_batch_timeout: int = 60
     request_timeout: int = 30
     batch_concurrency: int = 3
     cache_ttl_seconds: int = 86400 * 30  # 30 days default
@@ -39,6 +40,7 @@ class Settings(BaseSettings):
         "cache_ttl_seconds",
         "cache_cleanup_interval_seconds",
         "shutdown_timeout",
+        "shutdown_batch_timeout",
         "request_timeout",
         "batch_concurrency",
         "thumbnail_max_pixels",
@@ -108,6 +110,7 @@ class Settings(BaseSettings):
             rate_limit_data=self.rate_limit_data,
             rate_limit_read=self.rate_limit_read,
             shutdown_timeout=self.shutdown_timeout,
+            shutdown_batch_timeout=self.shutdown_batch_timeout,
             request_timeout=self.request_timeout,
             batch_concurrency=self.batch_concurrency,
             gzip_min_size=self.gzip_min_size,

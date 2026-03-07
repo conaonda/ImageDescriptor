@@ -8,17 +8,24 @@ RUN pip install --no-cache-dir uv
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-cache
 
-# ── Runtime Stage ──
-FROM python:3.11-slim
+# Remove __pycache__ and .pyc from venv
+RUN find /app/.venv -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null; \
+    find /app/.venv -name "*.pyc" -delete 2>/dev/null; \
+    find /app/.venv -name "*.pyo" -delete 2>/dev/null; \
+    true
 
-RUN groupadd -r app && useradd -r -g app -d /app app
+# ── Runtime Stage ──
+FROM python:3.11-alpine
+
+RUN addgroup -S app && adduser -S -G app -h /app app
 
 WORKDIR /app
 
 COPY --from=builder /app/.venv /app/.venv
 COPY app/ app/
 
-ENV PATH="/app/.venv/bin:$PATH"
+ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONDONTWRITEBYTECODE=1
 
 # In-container cache (ephemeral on Cloud Run)
 RUN mkdir -p /tmp/cache && chown app:app /tmp/cache
