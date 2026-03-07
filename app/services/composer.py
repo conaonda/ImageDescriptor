@@ -8,7 +8,7 @@ from app.api.schemas import DescribeRequest, DescribeResponse, Warning
 from app.cache.store import CacheStore
 from app.modules import context, describer, geocoder, landcover, mission
 from app.utils.circuit_breaker import CircuitBreaker
-from app.utils.metrics import external_api_duration, external_api_requests
+from app.utils.metrics import description_requests_total, external_api_duration, external_api_requests
 
 logger = structlog.get_logger()
 
@@ -110,6 +110,8 @@ async def compose_description(request: DescribeRequest, cache: CacheStore) -> De
         description, cached = None, False
 
     total_ms = round((time.monotonic() - t_start) * 1000)
+    status = "success" if description else "error"
+    description_requests_total.labels(status=status).inc()
     logger.info("compose_complete", total_duration_ms=total_ms, warning_count=len(warnings))
 
     return DescribeResponse(
