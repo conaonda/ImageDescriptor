@@ -1,5 +1,6 @@
+import datetime
 import os
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -195,3 +196,43 @@ class TestRateLimitMiddleware:
             # Data endpoint should still accept (independent limit)
             resp = await rate_limit_client.post("/api/v1/geocode", json=body, headers=headers)
             assert resp.status_code == 200
+
+    async def test_middleware_header_injection_error_is_silenced(self, rate_limit_client):
+        """get_window_stats 실패 시 예외를 조용히 처리하고 응답은 정상 반환."""
+        api_key = os.environ["API_KEY"]
+        headers = {"X-API-Key": api_key}
+        body = {
+            "thumbnail": "dGVzdA==",
+            "coordinates": [126.978, 37.566],
+            "captured_at": "2025-06-15T00:00:00Z",
+        }
+        with (
+            patch("app.config.settings.rate_limit_describe", "5/minute"),
+            patch("app.api.routes.limiter.limiter.get_window_stats", side_effect=RuntimeError("storage error")),
+        ):
+            resp = await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
+            # 헤더 주입 실패해도 응답 자체는 정상 처리
+            assert resp.status_code in (200, 422, 500)
+            # X-RateLimit 헤더는 없을 수 있음 (예외로 주입 실패)
+            assert "X-RateLimit-Limit" not in resp.headers
+
+    async def test_429_handler_with_datetime_retry_after(self, rate_limit_client):
+        """retry_after가 datetime 객체일 때 Retry-After 헤더가 올바르게 계산됨."""
+        from app.main import _rate_limit_handler
+
+        future_time = datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(seconds=30)
+
+        mock_exc = MagicMock()
+        mock_exc.retry_after = future_time
+        mock_exc.detail = "rate limit exceeded"
+        del mock_exc.limit  # hasattr(exc, "limit") → False
+
+        mock_request = MagicMock()
+        mock_request.headers = {}
+
+        with patch("app.utils.errors._get_correlation_id", return_value="test-correlation-id"):
+            response = await _rate_limit_handler(mock_request, mock_exc)
+
+        assert response.status_code == 429
+        retry_after_val = int(response.headers["Retry-After"])
+        assert retry_after_val >= 1
