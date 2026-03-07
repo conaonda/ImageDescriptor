@@ -325,6 +325,7 @@ class BatchDescribeResponse(BaseModel):
     total: int
     succeeded: int
     failed: int
+    interrupted: int = 0
 
     model_config = {
         "json_schema_extra": {
@@ -345,6 +346,7 @@ class BatchDescribeResponse(BaseModel):
                     "total": 2,
                     "succeeded": 1,
                     "failed": 1,
+                    "interrupted": 0,
                 }
             ]
         }

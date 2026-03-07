@@ -151,7 +151,7 @@ async def test_lifespan_drain_waits_for_batch_jobs(mock_ping, tmp_path, monkeypa
     """Lifespan shutdown drain waits until active_batch_jobs drops to 0."""
     from app.main import lifespan
     from app.config import settings
-    from app.utils.metrics import active_batch_jobs
+    from app.utils.metrics import batch_job_dec, batch_job_inc
 
     monkeypatch.setattr(settings, "cache_db_path", str(tmp_path / "drain_wait_test.db"))
     monkeypatch.setattr(settings, "shutdown_batch_timeout", 2)
@@ -160,13 +160,13 @@ async def test_lifespan_drain_waits_for_batch_jobs(mock_ping, tmp_path, monkeypa
 
     async def _release_job():
         await asyncio.sleep(0.3)
-        active_batch_jobs.dec()
+        batch_job_dec()
         released.set()
 
     try:
         async with lifespan(app):
             # Simulate one active batch job during shutdown
-            active_batch_jobs.inc()
+            batch_job_inc()
             main_mod._shutting_down = True
             asyncio.create_task(_release_job())
         # Drain should have waited until the gauge dropped to 0
