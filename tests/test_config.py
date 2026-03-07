@@ -122,3 +122,75 @@ class TestOverrides:
         with patch.dict(os.environ, _make_env(THUMBNAIL_MAX_PIXELS="not_a_number"), clear=True):
             with pytest.raises(ValidationError):
                 Settings()
+
+
+class TestPositiveIntValidation:
+    @pytest.mark.parametrize(
+        "field",
+        [
+            "CACHE_TTL_SECONDS",
+            "CACHE_CLEANUP_INTERVAL_SECONDS",
+            "SHUTDOWN_TIMEOUT",
+            "REQUEST_TIMEOUT",
+            "BATCH_CONCURRENCY",
+            "THUMBNAIL_MAX_PIXELS",
+            "GZIP_MIN_SIZE",
+        ],
+    )
+    def test_zero_rejected(self, field):
+        with patch.dict(os.environ, _make_env(**{field: "0"}), clear=True):
+            with pytest.raises(ValidationError, match="must be positive"):
+                Settings()
+
+    @pytest.mark.parametrize(
+        "field",
+        [
+            "CACHE_TTL_SECONDS",
+            "SHUTDOWN_TIMEOUT",
+            "BATCH_CONCURRENCY",
+        ],
+    )
+    def test_negative_rejected(self, field):
+        with patch.dict(os.environ, _make_env(**{field: "-1"}), clear=True):
+            with pytest.raises(ValidationError, match="must be positive"):
+                Settings()
+
+
+class TestRateLimitValidation:
+    @pytest.mark.parametrize(
+        "value",
+        ["10/minute", "5/second", "100/hour", "1000/day"],
+    )
+    def test_valid_rate_limit_formats(self, value):
+        with patch.dict(os.environ, _make_env(RATE_LIMIT=value), clear=True):
+            s = Settings()
+            assert s.rate_limit == value
+
+    @pytest.mark.parametrize(
+        "value",
+        ["abc", "10/weekly", "10", "/minute", "10/"],
+    )
+    def test_invalid_rate_limit_rejected(self, value):
+        with patch.dict(os.environ, _make_env(RATE_LIMIT=value), clear=True):
+            with pytest.raises(ValidationError, match="must match"):
+                Settings()
+
+
+class TestCorsOriginsValidation:
+    def test_invalid_cors_origin_no_scheme(self):
+        with patch.dict(os.environ, _make_env(CORS_ORIGINS="example.com"), clear=True):
+            with pytest.raises(ValidationError, match="http://"):
+                Settings()
+
+    def test_valid_cors_origins(self):
+        env = _make_env(CORS_ORIGINS="https://a.com http://localhost:3000")
+        with patch.dict(os.environ, env, clear=True):
+            s = Settings()
+            assert len(s.cors_origins_list) == 2
+
+
+class TestSettingsLogSummary:
+    def test_log_settings_summary_masks_keys(self, capsys):
+        with patch.dict(os.environ, _make_env(), clear=True):
+            s = Settings()
+            s.log_settings_summary()

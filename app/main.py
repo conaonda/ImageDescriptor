@@ -62,6 +62,8 @@ async def lifespan(app: FastAPI):
     _drain_event = asyncio.Event()
     _drain_event.set()
 
+    settings.log_settings_summary()
+
     app.state.cache = CacheStore(settings.cache_db_path)
     await app.state.cache.init()
     cleanup_task = asyncio.create_task(_cache_cleanup_loop(app.state.cache))
