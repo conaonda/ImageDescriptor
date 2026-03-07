@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenTelemetry trace context 전파 및 구조화 로깅 강화 (#189): W3C `traceparent` 헤더 파싱으로 `trace_id`·`span_id`를 structlog 컨텍스트에 바인딩. 응답 로그에 `response_size`, `client_ip` 필드 추가. structlog 프로세서로 `service_name`, `environment` 필드 자동 삽입. 기존 `X-Correlation-ID`와 완전 공존
 - pytest 커버리지 CI 연동 (#194): `--cov-fail-under=80` 임계값 설정, `coverage.json` 아티팩트 업로드. 현재 커버리지 98%로 임계값 충족
 - README 커버리지 뱃지 동적 갱신 (#197): 정적 하드코딩 뱃지(`98%`)를 Codecov 동적 뱃지로 교체. CI 워크플로우에 `codecov/codecov-action@v5` 업로드 스텝 추가(Python 3.11 매트릭스). 커버리지 변동 시 README 뱃지 자동 갱신
+- 의존성 보안 취약점 자동 스캔 CI 파이프라인 추가 (#200): `pip-audit`을 dev 의존성에 추가하고 GitHub Actions에 `security-audit` 잡 신설. 취약점 발견 시 빌드 실패. 감사 결과를 JSON 아티팩트로 업로드
 
 ### Fixed
 
