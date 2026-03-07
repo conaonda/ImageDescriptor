@@ -50,7 +50,7 @@ jobs:
         run: uv sync --all-extras
 
       - name: Run tests with coverage
-        run: uv run pytest -v --tb=short --junitxml=test-results.xml --cov=app --cov-report=xml --cov-report=term-missing
+        run: uv run pytest -v --tb=short --junitxml=test-results.xml --cov=app --cov-report=xml --cov-report=json --cov-report=term-missing --cov-fail-under=80
         env:
           GOOGLE_AI_API_KEY: "test-key"
           SUPABASE_URL: "https://test.supabase.co"
@@ -69,7 +69,9 @@ jobs:
         if: always() && matrix.python-version == '3.11'
         with:
           name: coverage-report
-          path: coverage.xml
+          path: |
+            coverage.xml
+            coverage.json
 
       - name: Coverage comment on PR
         uses: MishaKav/pytest-coverage-comment@v1.5.0

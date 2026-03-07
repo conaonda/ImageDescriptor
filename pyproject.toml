@@ -45,7 +45,7 @@ markers = ["e2e: end-to-end test requiring real API keys (.env)"]
 source = ["app"]
 
 [tool.coverage.report]
-fail_under = 50
+fail_under = 80
 show_missing = true
 exclude_lines = [
     "pragma: no cover",
