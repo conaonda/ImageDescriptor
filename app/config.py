@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     cache_ttl_seconds: int = 86400 * 30  # 30 days default
     cache_cleanup_interval_seconds: int = 3600
     gzip_min_size: int = 500
+    service_name: str = "image-descriptor"
+    environment: str = "production"
 
     @field_validator(
         "cache_ttl_seconds",

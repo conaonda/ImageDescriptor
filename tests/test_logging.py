@@ -13,6 +13,7 @@ from app.utils.logging import (
     _sanitize_request_id,
     generate_correlation_id,
     generate_request_id,
+    parse_traceparent,
     setup_logging,
 )
 
@@ -214,6 +215,73 @@ class TestSafeQueryParams:
     def test_no_sensitive_params(self):
         result = _safe_query_params("page=1&limit=10")
         assert result == "page=1&limit=10"
+
+
+class TestParseTraceparent:
+    def test_valid_traceparent(self):
+        header = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+        result = parse_traceparent(header)
+        assert result == {
+            "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+            "span_id": "00f067aa0ba902b7",
+        }
+
+    def test_none_input(self):
+        assert parse_traceparent(None) is None
+
+    def test_empty_string(self):
+        assert parse_traceparent("") is None
+
+    def test_invalid_format(self):
+        assert parse_traceparent("not-a-traceparent") is None
+
+    def test_wrong_length_trace_id(self):
+        assert parse_traceparent("00-abcd-00f067aa0ba902b7-01") is None
+
+    def test_uppercase_rejected(self):
+        assert parse_traceparent("00-4BF92F3577B34DA6A3CE929D0E0E4736-00F067AA0BA902B7-01") is None
+
+    def test_whitespace_trimmed(self):
+        header = "  00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01  "
+        result = parse_traceparent(header)
+        assert result is not None
+        assert result["trace_id"] == "4bf92f3577b34da6a3ce929d0e0e4736"
+
+
+class TestTraceparentMiddleware:
+    async def test_traceparent_binds_trace_context(self, client):
+        """traceparent 헤더가 있으면 요청이 정상 처리된다."""
+        resp = await client.get(
+            "/api/v1/health",
+            headers={"traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"},
+        )
+        assert resp.status_code == 200
+        assert "x-request-id" in resp.headers
+
+    async def test_invalid_traceparent_ignored(self, client):
+        """잘못된 traceparent 헤더는 무시되고 요청은 정상 처리된다."""
+        resp = await client.get(
+            "/api/v1/health",
+            headers={"traceparent": "invalid-value"},
+        )
+        assert resp.status_code == 200
+
+    async def test_no_traceparent_still_works(self, client):
+        """traceparent 헤더 없이도 기존 동작 유지."""
+        resp = await client.get("/api/v1/health")
+        assert resp.status_code == 200
+        assert "x-correlation-id" in resp.headers
+
+
+class TestServiceContextProcessor:
+    def test_setup_logging_includes_service_context(self, capsys):
+        """setup_logging 후 로그에 service_name과 environment가 포함된다."""
+        setup_logging()
+        logger = structlog.get_logger()
+        logger.info("test_event")
+        captured = capsys.readouterr()
+        assert "service_name" in captured.out
+        assert "environment" in captured.out
 
 
 class TestSanitizeRequestId:
