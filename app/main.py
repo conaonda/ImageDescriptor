@@ -1,5 +1,6 @@
 import asyncio
 import signal
+import time
 from contextlib import asynccontextmanager
 from importlib.metadata import PackageNotFoundError, version
 
@@ -262,21 +263,20 @@ async def rate_limit_headers_middleware(request, call_next):
     response = await call_next(request)
     view_rate_limit = getattr(request.state, "view_rate_limit", None)
     if view_rate_limit is not None:
-        import time
-
-        from app.api.routes import limiter as route_limiter
+        from app.api.routes import limiter as route_limiter  # 순환 참조 방지
 
         limit_item, key_args = view_rate_limit
         try:
             window_stats = route_limiter.limiter.get_window_stats(limit_item, *key_args)
             reset_at = window_stats[0]
             remaining = window_stats[1]
+            # +1: 윈도우 경계 시점의 부분초를 올림(ceiling) 처리하여 클라이언트가 너무 일찍 재시도하지 않도록 함
             reset_in = max(0, int(reset_at - time.time()) + 1)
             response.headers["X-RateLimit-Limit"] = str(limit_item.amount)
             response.headers["X-RateLimit-Remaining"] = str(remaining)
             response.headers["X-RateLimit-Reset"] = str(reset_in)
         except Exception:
-            pass
+            logger.debug("rate_limit_headers_injection_failed", exc_info=True)
     return response
 
 
