@@ -6,10 +6,6 @@ from supabase import AsyncClient, acreate_client
 
 from app.config import settings
 
-SAVE_TIMEOUT_SECONDS = 10
-_RECONNECT_BACKOFF_BASE = 1.0
-_RECONNECT_BACKOFF_MAX = 60.0
-
 logger = structlog.get_logger()
 
 _client: AsyncClient | None = None
@@ -35,8 +31,8 @@ async def get_client() -> AsyncClient:
         # Apply exponential backoff if we had recent failures
         if _consecutive_failures > 0:
             backoff = min(
-                _RECONNECT_BACKOFF_BASE * (2 ** (_consecutive_failures - 1)),
-                _RECONNECT_BACKOFF_MAX,
+                settings.supabase_reconnect_backoff_base * (2 ** (_consecutive_failures - 1)),
+                settings.supabase_reconnect_backoff_max,
             )
             elapsed = time.monotonic() - _last_failure_time
             if elapsed < backoff:
@@ -88,7 +84,7 @@ async def save_description(
 
         await asyncio.wait_for(
             client.table("image_descriptions").upsert(row, on_conflict="cog_image_id").execute(),
-            timeout=SAVE_TIMEOUT_SECONDS,
+            timeout=settings.supabase_save_timeout,
         )
         logger.info("saved description to supabase", cog_image_id=cog_image_id)
         return True

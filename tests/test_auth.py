@@ -6,7 +6,8 @@ import pytest
 from fastapi.security import HTTPAuthorizationCredentials
 from jose import JWTError
 
-from app.auth import _JWKS_TTL, _get_jwks, authenticate
+from app.auth import _get_jwks, authenticate
+from app.config import settings
 from app.utils.errors import DescriptorError
 
 FAKE_JWKS = {
@@ -179,7 +180,7 @@ class TestJwksCache:
             # First fetch
             await _get_jwks()
             # Expire the cache
-            auth_module._jwks_cache_ts = time.monotonic() - _JWKS_TTL - 1
+            auth_module._jwks_cache_ts = time.monotonic() - settings.jwks_ttl_seconds - 1
             # Second fetch should call HTTP again
             await _get_jwks()
             assert mock_client.get.call_count == 2

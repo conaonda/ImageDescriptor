@@ -17,14 +17,13 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 _jwks_cache: dict | None = None
 _jwks_cache_ts: float = 0.0
-_JWKS_TTL: float = 3600.0
 
 
 async def _get_jwks() -> dict:
     """Fetch Supabase JWKS public keys (cached with TTL)."""
     global _jwks_cache, _jwks_cache_ts
     now = time.monotonic()
-    if _jwks_cache and (now - _jwks_cache_ts) < _JWKS_TTL:
+    if _jwks_cache and (now - _jwks_cache_ts) < settings.jwks_ttl_seconds:
         return _jwks_cache
     from app.http_client import get_client
 

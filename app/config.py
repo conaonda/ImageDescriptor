@@ -44,6 +44,13 @@ class Settings(BaseSettings):
     max_image_download_bytes: int = 5 * 1024 * 1024
     max_image_redirects: int = 5
     timeout_supabase_ping: float = 5.0
+    jwks_ttl_seconds: float = 3600.0
+    supabase_save_timeout: float = 10.0
+    supabase_reconnect_backoff_base: float = 1.0
+    supabase_reconnect_backoff_max: float = 60.0
+    health_timeout: float = 3.0
+    cache_cleanup_poll_interval: float = 0.5
+    overpass_timeout: int = 10
 
     @field_validator(
         "cache_ttl_seconds",
@@ -63,6 +70,13 @@ class Settings(BaseSettings):
         "max_image_download_bytes",
         "max_image_redirects",
         "timeout_supabase_ping",
+        "jwks_ttl_seconds",
+        "supabase_save_timeout",
+        "supabase_reconnect_backoff_base",
+        "supabase_reconnect_backoff_max",
+        "health_timeout",
+        "cache_cleanup_poll_interval",
+        "overpass_timeout",
     )
     @classmethod
     def _positive_int(cls, v: int | float, info) -> int | float:
@@ -141,6 +155,13 @@ class Settings(BaseSettings):
             max_image_download_bytes=self.max_image_download_bytes,
             max_image_redirects=self.max_image_redirects,
             timeout_supabase_ping=self.timeout_supabase_ping,
+            jwks_ttl_seconds=self.jwks_ttl_seconds,
+            supabase_save_timeout=self.supabase_save_timeout,
+            supabase_reconnect_backoff_base=self.supabase_reconnect_backoff_base,
+            supabase_reconnect_backoff_max=self.supabase_reconnect_backoff_max,
+            health_timeout=self.health_timeout,
+            cache_cleanup_poll_interval=self.cache_cleanup_poll_interval,
+            overpass_timeout=self.overpass_timeout,
         )
 
     model_config = {"env_file": ".env"}
