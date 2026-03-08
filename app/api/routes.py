@@ -106,14 +106,13 @@ async def health(request: Request):
     except PackageNotFoundError:
         ver = "unknown"
 
-    _health_timeout = 3.0
     cache = request.app.state.cache
     try:
-        cache_ok = await asyncio.wait_for(cache.ping(), timeout=_health_timeout)
+        cache_ok = await asyncio.wait_for(cache.ping(), timeout=settings.health_timeout)
     except TimeoutError:
         cache_ok = False
     try:
-        supabase_ok = await asyncio.wait_for(db.ping(), timeout=_health_timeout)
+        supabase_ok = await asyncio.wait_for(db.ping(), timeout=settings.health_timeout)
     except TimeoutError:
         supabase_ok = False
 

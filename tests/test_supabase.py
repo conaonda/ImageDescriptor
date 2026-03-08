@@ -139,7 +139,7 @@ class TestSaveDescription:
         with patch.object(
             db_module, "get_client", new_callable=AsyncMock, return_value=mock_client
         ):
-            with patch.object(db_module, "SAVE_TIMEOUT_SECONDS", 0.1):
+            with patch.object(db_module.settings, "supabase_save_timeout", 0.1):
                 result = await db_module.save_description(
                     cog_image_id="test-img",
                     coordinates=[127.0, 37.0],

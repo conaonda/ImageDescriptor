@@ -124,6 +124,54 @@ class TestOverrides:
                 Settings()
 
 
+class TestExternalizedConstants:
+    def test_default_jwks_ttl(self):
+        with patch.dict(os.environ, _make_env(), clear=True):
+            s = Settings()
+            assert s.jwks_ttl_seconds == 3600.0
+
+    def test_default_supabase_save_timeout(self):
+        with patch.dict(os.environ, _make_env(), clear=True):
+            s = Settings()
+            assert s.supabase_save_timeout == 10.0
+
+    def test_default_supabase_reconnect_backoff(self):
+        with patch.dict(os.environ, _make_env(), clear=True):
+            s = Settings()
+            assert s.supabase_reconnect_backoff_base == 1.0
+            assert s.supabase_reconnect_backoff_max == 60.0
+
+    def test_default_health_timeout(self):
+        with patch.dict(os.environ, _make_env(), clear=True):
+            s = Settings()
+            assert s.health_timeout == 3.0
+
+    def test_default_cache_cleanup_poll_interval(self):
+        with patch.dict(os.environ, _make_env(), clear=True):
+            s = Settings()
+            assert s.cache_cleanup_poll_interval == 0.5
+
+    def test_default_overpass_timeout(self):
+        with patch.dict(os.environ, _make_env(), clear=True):
+            s = Settings()
+            assert s.overpass_timeout == 10
+
+    def test_custom_jwks_ttl(self):
+        with patch.dict(os.environ, _make_env(JWKS_TTL_SECONDS="1800"), clear=True):
+            s = Settings()
+            assert s.jwks_ttl_seconds == 1800.0
+
+    def test_custom_supabase_save_timeout(self):
+        with patch.dict(os.environ, _make_env(SUPABASE_SAVE_TIMEOUT="30"), clear=True):
+            s = Settings()
+            assert s.supabase_save_timeout == 30.0
+
+    def test_custom_overpass_timeout(self):
+        with patch.dict(os.environ, _make_env(OVERPASS_TIMEOUT="20"), clear=True):
+            s = Settings()
+            assert s.overpass_timeout == 20
+
+
 class TestPositiveIntValidation:
     @pytest.mark.parametrize(
         "field",
@@ -135,6 +183,13 @@ class TestPositiveIntValidation:
             "BATCH_CONCURRENCY",
             "THUMBNAIL_MAX_PIXELS",
             "GZIP_MIN_SIZE",
+            "JWKS_TTL_SECONDS",
+            "SUPABASE_SAVE_TIMEOUT",
+            "SUPABASE_RECONNECT_BACKOFF_BASE",
+            "SUPABASE_RECONNECT_BACKOFF_MAX",
+            "HEALTH_TIMEOUT",
+            "CACHE_CLEANUP_POLL_INTERVAL",
+            "OVERPASS_TIMEOUT",
         ],
     )
     def test_zero_rejected(self, field):

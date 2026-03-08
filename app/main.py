@@ -87,7 +87,7 @@ async def lifespan(app: FastAPI):
         from app.utils.metrics import get_active_batch_count
 
         batch_timeout = settings.shutdown_batch_timeout
-        poll_interval = 0.5
+        poll_interval = settings.cache_cleanup_poll_interval
         elapsed = 0.0
         while get_active_batch_count() > 0 and elapsed < batch_timeout:
             await asyncio.sleep(poll_interval)

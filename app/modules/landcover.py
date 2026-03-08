@@ -72,7 +72,7 @@ async def get_land_cover(lon: float, lat: float, cache: CacheStore) -> LandCover
         return LandCover(**cached)
 
     query = f"""
-[out:json][timeout:10];
+[out:json][timeout:{settings.overpass_timeout}];
 (
   way["landuse"](around:2000,{lat},{lon});
   way["natural"](around:2000,{lat},{lon});
