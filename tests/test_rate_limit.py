@@ -143,9 +143,7 @@ class TestRateLimitMiddleware:
             "captured_at": "2025-06-15T00:00:00Z",
         }
         with patch("app.config.settings.rate_limit_describe", "5/minute"):
-            resp = await rate_limit_client.post(
-                "/api/v1/describe", json=body, headers=headers
-            )
+            resp = await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
             assert "X-RateLimit-Limit" in resp.headers
             assert resp.headers["X-RateLimit-Limit"] == "5"
             assert "X-RateLimit-Remaining" in resp.headers
@@ -164,12 +162,8 @@ class TestRateLimitMiddleware:
             "captured_at": "2025-06-15T00:00:00Z",
         }
         with patch("app.config.settings.rate_limit_describe", "1/minute"):
-            await rate_limit_client.post(
-                "/api/v1/describe", json=body, headers=headers
-            )
-            resp = await rate_limit_client.post(
-                "/api/v1/describe", json=body, headers=headers
-            )
+            await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
+            resp = await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
             assert resp.status_code == 429
             assert resp.headers["X-RateLimit-Limit"] == "1"
             assert resp.headers["X-RateLimit-Remaining"] == "0"

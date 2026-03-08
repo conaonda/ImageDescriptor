@@ -9,9 +9,7 @@ from starlette.requests import Request
 from app.config import settings
 
 _VALID_REQUEST_ID = re.compile(r"^[\w\-]{1,128}$")
-_TRACEPARENT_RE = re.compile(
-    r"^([0-9a-f]{2})-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})$"
-)
+_TRACEPARENT_RE = re.compile(r"^([0-9a-f]{2})-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})$")
 
 _SENSITIVE_HEADERS = frozenset(
     {

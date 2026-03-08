@@ -90,11 +90,13 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
 async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     errors = []
     for err in exc.errors():
-        errors.append({
-            "field": ".".join(str(loc) for loc in err["loc"]),
-            "message": err["msg"],
-            "type": err["type"],
-        })
+        errors.append(
+            {
+                "field": ".".join(str(loc) for loc in err["loc"]),
+                "message": err["msg"],
+                "type": err["type"],
+            }
+        )
     return JSONResponse(
         status_code=422,
         content={

@@ -66,18 +66,14 @@ async def compose_description(request: DescribeRequest, cache: CacheStore) -> De
             _safe_call("landcover", landcover.get_land_cover(lon, lat, cache), warnings)
         )
         mission_task = asyncio.create_task(
-            _safe_call(
-                "mission", mission.get_mission_metadata(request.stac_id, cache), warnings
-            )
+            _safe_call("mission", mission.get_mission_metadata(request.stac_id, cache), warnings)
         )
         location, land_cover_result, mission_result = await asyncio.gather(
             geo_task,
             lc_task,
             mission_task,
         )
-        logger.info(
-            "phase1_complete", duration_ms=round((time.monotonic() - t_phase1) * 1000)
-        )
+        logger.info("phase1_complete", duration_ms=round((time.monotonic() - t_phase1) * 1000))
 
         # Phase 2: Describer + Context 병렬 실행 (Phase 1 결과 활용)
         place_name = location.place_name if location else f"{lat}, {lon}"
@@ -111,9 +107,7 @@ async def compose_description(request: DescribeRequest, cache: CacheStore) -> De
             )
         )
         desc_result, context_result = await asyncio.gather(desc_task, ctx_task)
-        logger.info(
-            "phase2_complete", duration_ms=round((time.monotonic() - t_phase2) * 1000)
-        )
+        logger.info("phase2_complete", duration_ms=round((time.monotonic() - t_phase2) * 1000))
 
         if desc_result is not None:
             description, cached = desc_result

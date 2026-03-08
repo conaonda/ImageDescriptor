@@ -96,8 +96,11 @@ async def test_is_shutting_down_helper():
 def test_shutdown_timeout_configurable():
     """shutdown_timeout is configurable via Settings."""
     s = Settings(
-        google_ai_api_key="k", supabase_url="https://x.supabase.co",
-        supabase_service_key="k", api_key="k", shutdown_timeout=60,
+        google_ai_api_key="k",
+        supabase_url="https://x.supabase.co",
+        supabase_service_key="k",
+        api_key="k",
+        shutdown_timeout=60,
     )
     assert s.shutdown_timeout == 60
 
@@ -105,8 +108,10 @@ def test_shutdown_timeout_configurable():
 def test_shutdown_timeout_default():
     """shutdown_timeout defaults to 30 seconds."""
     s = Settings(
-        google_ai_api_key="k", supabase_url="https://x.supabase.co",
-        supabase_service_key="k", api_key="k",
+        google_ai_api_key="k",
+        supabase_url="https://x.supabase.co",
+        supabase_service_key="k",
+        api_key="k",
     )
     assert s.shutdown_timeout == 30
 
@@ -114,8 +119,11 @@ def test_shutdown_timeout_default():
 def test_shutdown_batch_timeout_configurable():
     """shutdown_batch_timeout is configurable via Settings."""
     s = Settings(
-        google_ai_api_key="k", supabase_url="https://x.supabase.co",
-        supabase_service_key="k", api_key="k", shutdown_batch_timeout=120,
+        google_ai_api_key="k",
+        supabase_url="https://x.supabase.co",
+        supabase_service_key="k",
+        api_key="k",
+        shutdown_batch_timeout=120,
     )
     assert s.shutdown_batch_timeout == 120
 
@@ -123,8 +131,10 @@ def test_shutdown_batch_timeout_configurable():
 def test_shutdown_batch_timeout_default():
     """shutdown_batch_timeout defaults to 60 seconds."""
     s = Settings(
-        google_ai_api_key="k", supabase_url="https://x.supabase.co",
-        supabase_service_key="k", api_key="k",
+        google_ai_api_key="k",
+        supabase_url="https://x.supabase.co",
+        supabase_service_key="k",
+        api_key="k",
     )
     assert s.shutdown_batch_timeout == 60
 

@@ -166,9 +166,7 @@ async def _rate_limit_handler(request, exc):
             "title": "Rate Limit Exceeded",
             "status": 429,
             "detail": (
-                str(exc.detail)
-                if hasattr(exc, "detail")
-                else "요청 횟수 제한을 초과했습니다"
+                str(exc.detail) if hasattr(exc, "detail") else "요청 횟수 제한을 초과했습니다"
             ),
             "instance": _get_correlation_id(request),
         },

@@ -666,9 +666,7 @@ async def test_delete_description_success(client_with_cache, monkeypatch):
 async def test_delete_description_db_error_returns_500(client_with_cache, monkeypatch):
     import app.db.supabase as db_mod
 
-    monkeypatch.setattr(
-        db_mod, "delete_description", AsyncMock(side_effect=Exception("db error"))
-    )
+    monkeypatch.setattr(db_mod, "delete_description", AsyncMock(side_effect=Exception("db error")))
     resp = await client_with_cache.delete(
         "/api/v1/descriptions/some-id",
         headers={"X-API-Key": os.environ["API_KEY"]},
@@ -740,11 +738,7 @@ class TestRFC7807ProblemDetail:
         monkeypatch.setattr(
             db_mod,
             "get_description",
-            AsyncMock(
-                side_effect=HTTPException(
-                    status_code=400, detail="bad input"
-                )
-            ),
+            AsyncMock(side_effect=HTTPException(status_code=400, detail="bad input")),
         )
         resp = await client_with_cache.get(
             "/api/v1/descriptions/some-id",

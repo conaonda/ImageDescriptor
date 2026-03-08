@@ -48,8 +48,13 @@ class TestV1WorkflowIntegration:
         mock_result = DescribeResponse(
             description="통합 테스트 설명",
             location=Location(
-                country="대한민국", country_code="kr", region="서울", city="서울",
-                place_name="서울, 대한민국", lat=37.566, lon=126.978,
+                country="대한민국",
+                country_code="kr",
+                region="서울",
+                city="서울",
+                place_name="서울, 대한민국",
+                lat=37.566,
+                lon=126.978,
             ),
             saved=True,
         )
@@ -188,8 +193,13 @@ class TestV1RateLimitHeaders:
         routes_limiter.reset()
 
         mock_geo = {
-            "country": "대한민국", "country_code": "kr", "region": "서울", "city": "서울",
-            "place_name": "서울", "lat": 37.5, "lon": 127.0,
+            "country": "대한민국",
+            "country_code": "kr",
+            "region": "서울",
+            "city": "서울",
+            "place_name": "서울",
+            "lat": 37.5,
+            "lon": 127.0,
         }
         api_key = os.environ["API_KEY"]
 
@@ -233,8 +243,13 @@ class TestV1RateLimitHeaders:
         mock_result = DescribeResponse(description="test")
         mock_list = {"items": [], "total": 0}
         mock_geo = {
-            "country": "KR", "country_code": "kr", "region": "Seoul", "city": "Seoul",
-            "place_name": "Seoul", "lat": 37.5, "lon": 127.0,
+            "country": "KR",
+            "country_code": "kr",
+            "region": "Seoul",
+            "city": "Seoul",
+            "place_name": "Seoul",
+            "lat": 37.5,
+            "lon": 127.0,
         }
         api_key = os.environ["API_KEY"]
 
@@ -321,8 +336,7 @@ class TestV1AuthIntegration:
                 else:
                     resp = await c.delete(path)
                 assert resp.status_code == 401, (
-                    f"{method} {path} should return 401,"
-                    f" got {resp.status_code}"
+                    f"{method} {path} should return 401, got {resp.status_code}"
                 )
 
         await cache.close()
