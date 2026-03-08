@@ -249,9 +249,35 @@ class BatchDescribeItem(BaseModel):
     coordinates: list[float] = Field(
         description="[longitude, latitude]", min_length=2, max_length=2
     )
+
+    @field_validator("coordinates")
+    @classmethod
+    def validate_coordinates(cls, v: list[float]) -> list[float]:
+        lon, lat = v
+        if not (-180 <= lon <= 180) or not (-90 <= lat <= 90):
+            raise ValueError("Invalid coordinates range")
+        return v
+
     bbox: list[float] | None = Field(
         None, description="[west, south, east, north]", min_length=4, max_length=4
     )
+
+    @field_validator("bbox")
+    @classmethod
+    def validate_bbox(cls, v: list[float] | None) -> list[float] | None:
+        if v is None:
+            return v
+        west, south, east, north = v
+        if not (-180 <= west <= 180) or not (-180 <= east <= 180):
+            raise ValueError("Longitude must be between -180 and 180")
+        if not (-90 <= south <= 90) or not (-90 <= north <= 90):
+            raise ValueError("Latitude must be between -90 and 90")
+        if west >= east:
+            raise ValueError("west must be less than east")
+        if south >= north:
+            raise ValueError("south must be less than north")
+        return v
+
     captured_at: str | None = Field(None, description="Capture date in ISO 8601 format")
     cog_image_id: str | None = Field(None, description="Optional cog_images UUID for DB linking")
     stac_id: str | None = Field(None, description="STAC item ID for satellite mission metadata")
@@ -298,10 +324,31 @@ class BatchDescribeRequest(BaseModel):
     }
 
 
+class BatchItemError(BaseModel):
+    """구조화된 배치 항목 에러."""
+
+    error_type: str = Field(description="에러 유형 (validation/service/timeout)")
+    message: str = Field(description="에러 메시지")
+    details: list[dict] | None = Field(None, description="필드별 상세 정보 (검증 에러 시)")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "error_type": "validation",
+                    "message": "Invalid coordinates range",
+                    "details": [{"field": "coordinates", "message": "Invalid coordinates range"}],
+                }
+            ]
+        }
+    }
+
+
 class BatchItemResult(BaseModel):
     index: int
     result: DescribeResponse | None = None
     error: str | None = None
+    error_detail: BatchItemError | None = None
 
     model_config = {
         "json_schema_extra": {
@@ -314,6 +361,7 @@ class BatchItemResult(BaseModel):
                         "warnings": [],
                     },
                     "error": None,
+                    "error_detail": None,
                 }
             ]
         }
@@ -452,9 +500,7 @@ class HealthResponse(BaseModel):
 class LiveResponse(BaseModel):
     status: str = Field(description="프로세스 상태 (ok/shutting_down)")
 
-    model_config = {
-        "json_schema_extra": {"examples": [{"status": "ok"}]}
-    }
+    model_config = {"json_schema_extra": {"examples": [{"status": "ok"}]}}
 
 
 class DescriptionItem(BaseModel):
