@@ -1,3 +1,4 @@
+import asyncio
 import hmac
 import json
 import time
@@ -17,6 +18,7 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 _jwks_cache: dict | None = None
 _jwks_cache_ts: float = 0.0
+_jwks_lock = asyncio.Lock()
 
 
 async def _get_jwks() -> dict:
@@ -25,24 +27,29 @@ async def _get_jwks() -> dict:
     now = time.monotonic()
     if _jwks_cache and (now - _jwks_cache_ts) < settings.jwks_ttl_seconds:
         return _jwks_cache
-    from app.http_client import get_client
+    async with _jwks_lock:
+        # Double-check after acquiring lock
+        now = time.monotonic()
+        if _jwks_cache and (now - _jwks_cache_ts) < settings.jwks_ttl_seconds:
+            return _jwks_cache
+        from app.http_client import get_client
 
-    url = f"{settings.supabase_url}/auth/v1/.well-known/jwks.json"
-    client = await get_client()
-    resp = await client.get(url)
-    resp.raise_for_status()
-    try:
-        data = resp.json()
-    except json.JSONDecodeError:
-        logger.warning("jwks_invalid_json", url=url, body=resp.text[:200])
-        raise DescriptorError(
-            status_code=502,
-            code="JWKS_PARSE_ERROR",
-            message="Failed to parse JWKS response from auth provider",
-        )
-    _jwks_cache = data
-    _jwks_cache_ts = now
-    return _jwks_cache
+        url = f"{settings.supabase_url}/auth/v1/.well-known/jwks.json"
+        client = await get_client()
+        resp = await client.get(url)
+        resp.raise_for_status()
+        try:
+            data = resp.json()
+        except json.JSONDecodeError:
+            logger.warning("jwks_invalid_json", url=url, body=resp.text[:200])
+            raise DescriptorError(
+                status_code=502,
+                code="JWKS_PARSE_ERROR",
+                message="Failed to parse JWKS response from auth provider",
+            )
+        _jwks_cache = data
+        _jwks_cache_ts = now
+        return _jwks_cache
 
 
 def _verify_jwt(token: str, jwks: dict) -> dict:

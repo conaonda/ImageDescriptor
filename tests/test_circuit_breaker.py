@@ -11,49 +11,49 @@ from app.utils.circuit_breaker import CircuitBreaker
 class TestCircuitBreakerClosed:
     """Tests for normal (closed) circuit behavior."""
 
-    def test_initial_state_is_closed(self):
+    async def test_initial_state_is_closed(self):
         cb = CircuitBreaker("test")
         assert not cb.is_open
 
-    def test_stays_closed_after_success(self):
+    async def test_stays_closed_after_success(self):
         cb = CircuitBreaker("test")
-        cb.record_success()
+        await cb.record_success()
         assert not cb.is_open
 
-    def test_stays_closed_below_threshold(self):
+    async def test_stays_closed_below_threshold(self):
         cb = CircuitBreaker("test", failure_threshold=5)
         for _ in range(4):
-            cb.record_failure()
+            await cb.record_failure()
         assert not cb.is_open
 
-    def test_success_resets_failure_count(self):
+    async def test_success_resets_failure_count(self):
         cb = CircuitBreaker("test", failure_threshold=3)
-        cb.record_failure()
-        cb.record_failure()
-        cb.record_success()
+        await cb.record_failure()
+        await cb.record_failure()
+        await cb.record_success()
         # After reset, 2 more failures should not open
-        cb.record_failure()
-        cb.record_failure()
+        await cb.record_failure()
+        await cb.record_failure()
         assert not cb.is_open
 
 
 class TestCircuitBreakerOpen:
     """Tests for open circuit behavior."""
 
-    def test_opens_at_threshold(self):
+    async def test_opens_at_threshold(self):
         cb = CircuitBreaker("test", failure_threshold=3, cooldown_sec=10.0)
         for _ in range(3):
-            cb.record_failure()
+            await cb.record_failure()
         assert cb.is_open
 
-    def test_opens_exactly_at_threshold(self):
+    async def test_opens_exactly_at_threshold(self):
         cb = CircuitBreaker("test", failure_threshold=1)
-        cb.record_failure()
+        await cb.record_failure()
         assert cb.is_open
 
-    def test_stays_open_during_cooldown(self):
+    async def test_stays_open_during_cooldown(self):
         cb = CircuitBreaker("test", failure_threshold=1, cooldown_sec=100.0)
-        cb.record_failure()
+        await cb.record_failure()
         assert cb.is_open
         assert cb.is_open  # Still open on second check
 
@@ -61,56 +61,56 @@ class TestCircuitBreakerOpen:
 class TestCircuitBreakerHalfOpen:
     """Tests for half-open state after cooldown expires."""
 
-    def test_resets_after_cooldown(self):
+    async def test_resets_after_cooldown(self):
         cb = CircuitBreaker("test", failure_threshold=1, cooldown_sec=0.0)
-        cb.record_failure()
+        await cb.record_failure()
         # cooldown_sec=0 means it expires immediately
         assert not cb.is_open  # half-open → reset
 
-    def test_resets_with_short_cooldown(self):
+    async def test_resets_with_short_cooldown(self):
         cb = CircuitBreaker("test", failure_threshold=1, cooldown_sec=0.05)
-        cb.record_failure()
+        await cb.record_failure()
         assert cb.is_open
         time.sleep(0.06)
         # After cooldown, should transition to half-open (closed)
         assert not cb.is_open
 
-    def test_reopens_on_failure_after_halfopen(self):
+    async def test_reopens_on_failure_after_halfopen(self):
         cb = CircuitBreaker("test", failure_threshold=1, cooldown_sec=0.05)
-        cb.record_failure()
+        await cb.record_failure()
         assert cb.is_open
         time.sleep(0.06)
         # After cooldown, half-open reset
         assert not cb.is_open
         # Another failure should re-open
-        cb.record_failure()
+        await cb.record_failure()
         assert cb.is_open
 
-    def test_stays_closed_on_success_after_halfopen(self):
+    async def test_stays_closed_on_success_after_halfopen(self):
         cb = CircuitBreaker("test", failure_threshold=1, cooldown_sec=0.0)
-        cb.record_failure()
+        await cb.record_failure()
         assert not cb.is_open  # half-open reset
-        cb.record_success()
+        await cb.record_success()
         assert not cb.is_open
 
 
 class TestCircuitBreakerEdgeCases:
     """Edge cases and boundary tests."""
 
-    def test_multiple_successes_no_effect(self):
+    async def test_multiple_successes_no_effect(self):
         cb = CircuitBreaker("test")
         for _ in range(100):
-            cb.record_success()
+            await cb.record_success()
         assert not cb.is_open
 
-    def test_custom_parameters(self):
+    async def test_custom_parameters(self):
         cb = CircuitBreaker("custom", failure_threshold=2, cooldown_sec=60.0)
-        cb.record_failure()
+        await cb.record_failure()
         assert not cb.is_open
-        cb.record_failure()
+        await cb.record_failure()
         assert cb.is_open
 
-    def test_name_preserved(self):
+    async def test_name_preserved(self):
         cb = CircuitBreaker("my-service")
         assert cb.name == "my-service"
 
