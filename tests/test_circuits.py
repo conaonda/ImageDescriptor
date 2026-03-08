@@ -28,7 +28,7 @@ class TestCircuitBreakerGetStatus:
         cb = CircuitBreaker("geocoder", failure_threshold=1, cooldown_sec=10.0)
         await cb.record_failure()
         with patch("app.utils.circuit_breaker.time") as mock_time:
-            mock_time.time.return_value = time.time() + 5
+            mock_time.monotonic.return_value = time.monotonic() + 5
             status = await cb.get_status()
             assert status["cooldown_remaining"] <= 5.1
 
