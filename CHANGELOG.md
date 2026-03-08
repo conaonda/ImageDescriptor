@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **auth**: JWKS 엔드포인트가 잘못된 JSON을 반환할 때 `json.JSONDecodeError`를 명시적으로 처리하고 502 에러(`JWKS_PARSE_ERROR`) 반환 (#244)
+- **context, routes**: bare `Exception` catch를 구체적인 예외 타입(`ValueError`, `RuntimeError`, `OSError` 등)으로 교체하여 프로그래밍 에러의 의도치 않은 은닉 방지 (#245)
+- **metrics**: 전역 배치 카운터 변수를 제거하고 Prometheus `Gauge` 값을 직접 조회하는 방식으로 변경, 동시 요청 시 경쟁 조건 해소 (#246)
+
 ### Added
 
 - API 버전 관리 도입: 모든 엔드포인트가 `/api/v1/` prefix를 사용. 레거시 `/api/*` 경로는 `/api/v1/*`으로 307 영구 리다이렉트하여 하위 호환성 유지
