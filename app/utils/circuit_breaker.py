@@ -21,9 +21,9 @@ class CircuitBreaker:
 
     async def is_open(self) -> bool:
         async with self._lock:
-            if self._open_until and time.time() < self._open_until:
+            if self._open_until and time.monotonic() < self._open_until:
                 return True
-            if self._open_until and time.time() >= self._open_until:
+            if self._open_until and time.monotonic() >= self._open_until:
                 # half-open: reset and allow retry
                 self._open_until = 0.0
                 self._failure_count = 0
@@ -32,7 +32,7 @@ class CircuitBreaker:
 
     async def get_status(self) -> dict:
         is_open = await self.is_open()
-        cooldown_remaining = max(0.0, self._open_until - time.time()) if is_open else 0.0
+        cooldown_remaining = max(0.0, self._open_until - time.monotonic()) if is_open else 0.0
         return {
             "name": self.name,
             "state": "open" if is_open else "closed",
@@ -44,7 +44,7 @@ class CircuitBreaker:
         async with self._lock:
             self._failure_count += 1
             if self._failure_count >= self.failure_threshold:
-                self._open_until = time.time() + self.cooldown_sec
+                self._open_until = time.monotonic() + self.cooldown_sec
                 circuit_breaker_state.labels(name=self.name).set(1)
                 logger.warning(
                     "circuit breaker opened",

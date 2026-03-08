@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     health_timeout: float = 3.0
     cache_cleanup_poll_interval: float = 0.5
     overpass_timeout: int = 10
+    cache_write_timeout: float = 5.0
 
     @field_validator(
         "cache_ttl_seconds",
@@ -77,6 +78,7 @@ class Settings(BaseSettings):
         "health_timeout",
         "cache_cleanup_poll_interval",
         "overpass_timeout",
+        "cache_write_timeout",
     )
     @classmethod
     def _positive_int(cls, v: int | float, info) -> int | float:
@@ -162,6 +164,7 @@ class Settings(BaseSettings):
             health_timeout=self.health_timeout,
             cache_cleanup_poll_interval=self.cache_cleanup_poll_interval,
             overpass_timeout=self.overpass_timeout,
+            cache_write_timeout=self.cache_write_timeout,
         )
 
     model_config = {"env_file": ".env"}

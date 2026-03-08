@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 import httpx
@@ -10,6 +11,9 @@ from app.http_client import get_client
 from app.utils.retry import retry_http
 
 logger = structlog.get_logger()
+
+_context_locks: dict[str, asyncio.Lock] = {}
+_locks_lock = asyncio.Lock()
 
 
 @retry_http
@@ -42,37 +46,49 @@ async def research_context(
         logger.debug("context cache hit", place=place_name, month=month)
         return Context(**cached)
 
-    # DuckDuckGo Instant Answer API (MVP)
-    query = f"{search_name} {month}"
-    events: list[Event] = []
+    async with _locks_lock:
+        if cache_key not in _context_locks:
+            _context_locks[cache_key] = asyncio.Lock()
+        lock = _context_locks[cache_key]
 
-    try:
-        resp = await _fetch_duckduckgo(query)
-        data = resp.json()
+    async with lock:
+        # double-check: 다른 코루틴이 이미 캐시에 저장했을 수 있음
+        cached = await cache.get(cache_key)
+        if cached:
+            logger.debug("context cache hit after lock", place=place_name, month=month)
+            return Context(**cached)
 
-        # Instant Answer에서 관련 토픽 추출
-        for topic in data.get("RelatedTopics", [])[:5]:
-            text = topic.get("Text", "")
-            url = topic.get("FirstURL", "")
-            if text and url:
-                events.append(
-                    Event(
-                        title=text[:200],
-                        date=month,
-                        source_url=url,
-                        relevance="low",
+        # DuckDuckGo Instant Answer API (MVP)
+        query = f"{search_name} {month}"
+        events: list[Event] = []
+
+        try:
+            resp = await _fetch_duckduckgo(query)
+            data = resp.json()
+
+            # Instant Answer에서 관련 토픽 추출
+            for topic in data.get("RelatedTopics", [])[:5]:
+                text = topic.get("Text", "")
+                url = topic.get("FirstURL", "")
+                if text and url:
+                    events.append(
+                        Event(
+                            title=text[:200],
+                            date=month,
+                            source_url=url,
+                            relevance="low",
+                        )
                     )
-                )
-    except (json.JSONDecodeError, httpx.HTTPError, TimeoutError) as e:
-        logger.warning("context research failed", error=str(e))
+        except (json.JSONDecodeError, httpx.HTTPError, TimeoutError) as e:
+            logger.warning("context research failed", error=str(e))
 
-    summary = (
-        f"{search_name} {month} 관련 정보 {len(events)}건 발견."
-        if events
-        else f"{search_name} {month}에 대한 관련 정보를 찾지 못했습니다."
-    )
+        summary = (
+            f"{search_name} {month} 관련 정보 {len(events)}건 발견."
+            if events
+            else f"{search_name} {month}에 대한 관련 정보를 찾지 못했습니다."
+        )
 
-    result = Context(events=events, summary=summary)
-    await cache.set(cache_key, result.model_dump(), ttl_days=7)
-    logger.info("context result", events_count=len(events))
-    return result
+        result = Context(events=events, summary=summary)
+        await cache.set(cache_key, result.model_dump(), ttl_days=7)
+        logger.info("context result", events_count=len(events))
+        return result

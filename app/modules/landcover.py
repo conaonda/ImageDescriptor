@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 import httpx
@@ -115,6 +116,12 @@ out tags;
     summary = ", ".join(summary_parts) if summary_parts else "정보 없음"
 
     result = LandCover(classes=classes, summary=summary)
-    await cache.set(cache_key, result.model_dump(), ttl_seconds=settings.cache_ttl_seconds)
+    try:
+        await asyncio.wait_for(
+            cache.set(cache_key, result.model_dump(), ttl_seconds=settings.cache_ttl_seconds),
+            timeout=settings.cache_write_timeout,
+        )
+    except TimeoutError:
+        logger.warning("landcover cache write timeout", cache_key=cache_key)
     logger.info("landcover result", classes_count=len(classes), summary=summary)
     return result

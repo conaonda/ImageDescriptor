@@ -151,7 +151,7 @@ class TestSafeCall:
 
         # Force circuit open
         _breakers["describer"]._failure_count = 5
-        _breakers["describer"]._open_until = time.time() + 100
+        _breakers["describer"]._open_until = time.monotonic() + 100
 
         warnings: list[Warning] = []
         result = await _safe_call("describer", self._async_value("should not run"), warnings)
