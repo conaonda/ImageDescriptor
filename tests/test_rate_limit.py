@@ -12,17 +12,25 @@ from app.utils.rate_limit import get_real_ip
 
 @pytest.fixture
 async def rate_limit_client(tmp_path):
+    import app.http_client as http_client_mod
+
+    original_client = http_client_mod._client
+    http_client_mod._client = None
+
     cache = CacheStore(str(tmp_path / "test.db"))
     await cache.init()
     app.state.cache = cache
     limiter.reset()
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test",
-    ) as c:
-        yield c
-    limiter.reset()
-    await cache.close()
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as c:
+            yield c
+    finally:
+        limiter.reset()
+        await cache.close()
+        http_client_mod._client = original_client
 
 
 class TestGetRealIp:

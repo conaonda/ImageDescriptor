@@ -1,4 +1,14 @@
+import re
+from datetime import datetime
+
 from pydantic import BaseModel, Field, field_validator
+
+_ISO8601_PATTERN = re.compile(
+    r"^\d{4}-\d{2}-\d{2}"
+    r"(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?"
+    r"(Z|[+-]\d{2}:\d{2})?)?$"
+)
+_COG_IMAGE_ID_MAX_LENGTH = 128
 
 
 class DescribeRequest(BaseModel):
@@ -44,8 +54,27 @@ class DescribeRequest(BaseModel):
         return v
 
     captured_at: str | None = Field(None, description="Capture date in ISO 8601 format")
-    cog_image_id: str | None = Field(None, description="Optional cog_images UUID for DB linking")
+    cog_image_id: str | None = Field(
+        None,
+        description="Optional cog_images UUID for DB linking",
+        max_length=_COG_IMAGE_ID_MAX_LENGTH,
+    )
     stac_id: str | None = Field(None, description="STAC item ID for satellite mission metadata")
+
+    @field_validator("captured_at")
+    @classmethod
+    def validate_captured_at(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        if not _ISO8601_PATTERN.match(v):
+            raise ValueError(
+                "captured_at must be ISO 8601 format (e.g. 2025-01-15 or 2025-01-15T10:30:00Z)"
+            )
+        try:
+            datetime.fromisoformat(v.replace("Z", "+00:00"))
+        except ValueError:
+            raise ValueError(f"captured_at is not a valid date: {v}")
+        return v
 
     model_config = {
         "json_schema_extra": {
@@ -279,8 +308,27 @@ class BatchDescribeItem(BaseModel):
         return v
 
     captured_at: str | None = Field(None, description="Capture date in ISO 8601 format")
-    cog_image_id: str | None = Field(None, description="Optional cog_images UUID for DB linking")
+    cog_image_id: str | None = Field(
+        None,
+        description="Optional cog_images UUID for DB linking",
+        max_length=_COG_IMAGE_ID_MAX_LENGTH,
+    )
     stac_id: str | None = Field(None, description="STAC item ID for satellite mission metadata")
+
+    @field_validator("captured_at")
+    @classmethod
+    def validate_captured_at(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        if not _ISO8601_PATTERN.match(v):
+            raise ValueError(
+                "captured_at must be ISO 8601 format (e.g. 2025-01-15 or 2025-01-15T10:30:00Z)"
+            )
+        try:
+            datetime.fromisoformat(v.replace("Z", "+00:00"))
+        except ValueError:
+            raise ValueError(f"captured_at is not a valid date: {v}")
+        return v
 
     model_config = {
         "json_schema_extra": {

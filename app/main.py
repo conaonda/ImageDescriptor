@@ -51,7 +51,7 @@ async def _cache_cleanup_loop(cache: CacheStore):
         try:
             await cache.cleanup_expired()
         except Exception:
-            pass
+            logger.warning("cache_cleanup_failed", exc_info=True)
 
 
 @asynccontextmanager
@@ -282,7 +282,7 @@ async def rate_limit_headers_middleware(request, call_next):
             response.headers["X-RateLimit-Limit"] = str(limit_item.amount)
             response.headers["X-RateLimit-Remaining"] = str(remaining)
             response.headers["X-RateLimit-Reset"] = str(reset_in)
-        except Exception:
+        except (ValueError, KeyError, AttributeError, RuntimeError):
             logger.debug("rate_limit_headers_injection_failed", exc_info=True)
     return response
 

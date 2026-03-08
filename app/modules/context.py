@@ -3,6 +3,7 @@ import structlog
 
 from app.api.schemas import Context, Event
 from app.cache.store import CacheStore
+from app.config import settings
 from app.http_client import get_client
 from app.utils.retry import retry_http
 
@@ -15,7 +16,7 @@ async def _fetch_duckduckgo(query: str) -> httpx.Response:
     resp = await client.get(
         "https://api.duckduckgo.com/",
         params={"q": query, "format": "json", "no_html": 1},
-        timeout=10.0,
+        timeout=settings.timeout_context,
     )
     resp.raise_for_status()
     return resp
