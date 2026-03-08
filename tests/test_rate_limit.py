@@ -143,9 +143,7 @@ class TestRateLimitMiddleware:
             "captured_at": "2025-06-15T00:00:00Z",
         }
         with patch("app.config.settings.rate_limit_describe", "5/minute"):
-            resp = await rate_limit_client.post(
-                "/api/v1/describe", json=body, headers=headers
-            )
+            resp = await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
             assert "X-RateLimit-Limit" in resp.headers
             assert resp.headers["X-RateLimit-Limit"] == "5"
             assert "X-RateLimit-Remaining" in resp.headers
@@ -164,12 +162,8 @@ class TestRateLimitMiddleware:
             "captured_at": "2025-06-15T00:00:00Z",
         }
         with patch("app.config.settings.rate_limit_describe", "1/minute"):
-            await rate_limit_client.post(
-                "/api/v1/describe", json=body, headers=headers
-            )
-            resp = await rate_limit_client.post(
-                "/api/v1/describe", json=body, headers=headers
-            )
+            await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
+            resp = await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
             assert resp.status_code == 429
             assert resp.headers["X-RateLimit-Limit"] == "1"
             assert resp.headers["X-RateLimit-Remaining"] == "0"
@@ -208,7 +202,10 @@ class TestRateLimitMiddleware:
         }
         with (
             patch("app.config.settings.rate_limit_describe", "5/minute"),
-            patch("app.api.routes.limiter.limiter.get_window_stats", side_effect=RuntimeError("storage error")),
+            patch(
+                "app.api.routes.limiter.limiter.get_window_stats",
+                side_effect=RuntimeError("storage error"),
+            ),
         ):
             resp = await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
             # 헤더 주입 실패해도 응답 자체는 정상 처리
@@ -220,7 +217,7 @@ class TestRateLimitMiddleware:
         """retry_after가 datetime 객체일 때 Retry-After 헤더가 올바르게 계산됨."""
         from app.main import _rate_limit_handler
 
-        future_time = datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(seconds=30)
+        future_time = datetime.datetime.now(tz=datetime.UTC) + datetime.timedelta(seconds=30)
 
         mock_exc = MagicMock()
         mock_exc.retry_after = future_time

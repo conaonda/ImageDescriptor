@@ -6,12 +6,14 @@ from importlib.metadata import PackageNotFoundError, version
 import structlog
 from fastapi import APIRouter, Depends, Header, Query, Request
 from fastapi.responses import JSONResponse, Response
+from pydantic import ValidationError
 from slowapi import Limiter
 
 from app.api.schemas import (
     BatchDescribeItem,
     BatchDescribeRequest,
     BatchDescribeResponse,
+    BatchItemError,
     BatchItemResult,
     CacheStatsResponse,
     CircuitBreakerResponse,
@@ -235,8 +237,31 @@ async def describe_batch(
             item = DescribeRequest.model_validate(raw_item.model_dump())
             result = await _describe_and_save(item, cache)
             return BatchItemResult(index=index, result=result)
+        except ValidationError as e:
+            details = [
+                {"field": ".".join(str(loc) for loc in err["loc"]), "message": err["msg"]}
+                for err in e.errors()
+            ]
+            error_detail = BatchItemError(
+                error_type="validation",
+                message=str(e),
+                details=details,
+            )
+            return BatchItemResult(index=index, error=str(e), error_detail=error_detail)
+        except TimeoutError:
+            error_detail = BatchItemError(
+                error_type="timeout",
+                message="Request timed out",
+            )
+            return BatchItemResult(
+                index=index, error="Request timed out", error_detail=error_detail
+            )
         except Exception as e:
-            return BatchItemResult(index=index, error=str(e))
+            error_detail = BatchItemError(
+                error_type="service",
+                message=str(e),
+            )
+            return BatchItemResult(index=index, error=str(e), error_detail=error_detail)
 
     semaphore = asyncio.Semaphore(settings.batch_concurrency)
 
@@ -307,7 +332,7 @@ async def geocode_endpoint(
 
     lon, lat = body.coordinates
     cache = request.app.state.cache
-    return await geocode(lon, lat, cache)
+    return await apply_timeout(geocode(lon, lat, cache), request)
 
 
 @router.post(
@@ -331,7 +356,7 @@ async def landcover_endpoint(
 
     lon, lat = body.coordinates
     cache = request.app.state.cache
-    return await get_land_cover(lon, lat, cache)
+    return await apply_timeout(get_land_cover(lon, lat, cache), request)
 
 
 @router.post(
@@ -356,7 +381,7 @@ async def context_endpoint(
     lon, lat = body.coordinates
     cache = request.app.state.cache
     place_name = f"{lat}, {lon}"
-    return await research_context(place_name, body.captured_at, cache)
+    return await apply_timeout(research_context(place_name, body.captured_at, cache), request)
 
 
 @router.get(

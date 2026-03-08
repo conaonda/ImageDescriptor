@@ -100,9 +100,9 @@ async def list_descriptions(
 
 async def delete_description(cog_image_id: str) -> bool:
     client = await get_client()
-    result = await client.table("image_descriptions").delete().eq(
-        "cog_image_id", cog_image_id
-    ).execute()
+    result = (
+        await client.table("image_descriptions").delete().eq("cog_image_id", cog_image_id).execute()
+    )
     if not result.data:
         return False
     logger.info("deleted description from supabase", cog_image_id=cog_image_id)

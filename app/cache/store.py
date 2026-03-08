@@ -46,7 +46,13 @@ class CacheStore:
         cache_hits.labels(module=module).inc()
         return json.loads(value)
 
-    async def set(self, key: str, value: dict, ttl_days: int | None = None, ttl_seconds: int | None = None):
+    async def set(
+        self,
+        key: str,
+        value: dict,
+        ttl_days: int | None = None,
+        ttl_seconds: int | None = None,
+    ):
         if ttl_seconds is not None:
             expires_at = time.time() + ttl_seconds
         elif ttl_days is not None:

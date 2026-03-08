@@ -9,9 +9,7 @@ from starlette.requests import Request
 from app.config import settings
 
 _VALID_REQUEST_ID = re.compile(r"^[\w\-]{1,128}$")
-_TRACEPARENT_RE = re.compile(
-    r"^([0-9a-f]{2})-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})$"
-)
+_TRACEPARENT_RE = re.compile(r"^([0-9a-f]{2})-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})$")
 
 _SENSITIVE_HEADERS = frozenset(
     {
@@ -124,7 +122,7 @@ def _sanitize_correlation_id(value: str | None) -> str | None:
 
 
 async def request_id_middleware(request: Request, call_next):
-    """Middleware that binds a unique request_id and correlation_id to each request's log context."""
+    """Bind a unique request_id and correlation_id to each request's log context."""
     request_id = _sanitize_request_id(request.headers.get("x-request-id")) or generate_request_id()
     correlation_id = (
         _sanitize_correlation_id(request.headers.get("x-correlation-id"))

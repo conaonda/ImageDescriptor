@@ -143,9 +143,9 @@ app.state.limiter = limiter
 
 
 async def _rate_limit_handler(request, exc):
-    from app.utils.errors import _get_correlation_id
-
     import datetime as _dt
+
+    from app.utils.errors import _get_correlation_id
 
     retry_after_raw = getattr(exc, "retry_after", 60)
     if isinstance(retry_after_raw, _dt.datetime):
@@ -165,7 +165,9 @@ async def _rate_limit_handler(request, exc):
             "type": "https://problems.cognito-descriptor.io/rate-limit-exceeded",
             "title": "Rate Limit Exceeded",
             "status": 429,
-            "detail": str(exc.detail) if hasattr(exc, "detail") else "요청 횟수 제한을 초과했습니다",
+            "detail": (
+                str(exc.detail) if hasattr(exc, "detail") else "요청 횟수 제한을 초과했습니다"
+            ),
             "instance": _get_correlation_id(request),
         },
         headers=headers,
@@ -270,7 +272,8 @@ async def rate_limit_headers_middleware(request, call_next):
             window_stats = route_limiter.limiter.get_window_stats(limit_item, *key_args)
             reset_at = window_stats[0]
             remaining = window_stats[1]
-            # +1: 윈도우 경계 시점의 부분초를 올림(ceiling) 처리하여 클라이언트가 너무 일찍 재시도하지 않도록 함
+            # +1: 윈도우 경계 시점의 부분초를 올림(ceiling) 처리하여
+            # 클라이언트가 너무 일찍 재시도하지 않도록 함
             reset_in = max(0, int(reset_at - time.time()) + 1)
             response.headers["X-RateLimit-Limit"] = str(limit_item.amount)
             response.headers["X-RateLimit-Remaining"] = str(remaining)
@@ -293,7 +296,11 @@ async def security_headers_middleware(request, call_next):
 app.include_router(router, prefix="/api/v1")
 
 
-@app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"], include_in_schema=False)
+@app.api_route(
+    "/api/{path:path}",
+    methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
+    include_in_schema=False,
+)
 async def legacy_api_redirect(request: Request, path: str):
     """Redirect legacy /api/* requests to /api/v1/* for backward compatibility."""
     query_string = request.url.query
