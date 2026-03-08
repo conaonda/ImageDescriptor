@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- 이미지 리사이즈(`_resize_for_gemini`) CPU 바운드 작업을 `asyncio.to_thread()`로 스레드 풀에 이관하여 이벤트 루프 차단 방지 (#234)
+- 캐시 레이어의 광범위한 `Exception` 캐치를 `aiosqlite.DatabaseError`, `OSError`, `ValueError`, `json.JSONDecodeError`로 구체화하여 예외 원인 추적 개선 (#235)
+- Supabase 클라이언트 연결/작업 실패 시 `_client`를 `None`으로 리셋하고 지수 백오프(최대 60초) 적용으로 반복 실패 방지 (#236)
 - docker-compose.yml healthcheck 경로를 `/api/health` → `/api/v1/health`로 수정하여 Dockerfile과 정합성 일치
 - Dockerfile 및 docker-compose HEALTHCHECK 대상을 `/api/v1/health` → `/api/v1/health/live`로 변경 (Liveness probe 전용 경량 엔드포인트 사용)
 
