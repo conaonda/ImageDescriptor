@@ -145,6 +145,24 @@ class TestJwksCache:
             # Only one HTTP call due to cache
             assert mock_client.get.call_count == 1
 
+    async def test_jwks_invalid_json(self):
+        """JWKS endpoint returning invalid JSON raises DescriptorError."""
+        mock_response = MagicMock()
+        mock_response.raise_for_status = MagicMock()
+        import json
+
+        mock_response.json.side_effect = json.JSONDecodeError("Invalid", "", 0)
+        mock_response.text = "not json"
+
+        mock_client = AsyncMock()
+        mock_client.get = AsyncMock(return_value=mock_response)
+
+        with patch("app.http_client.get_client", return_value=mock_client):
+            with pytest.raises(DescriptorError) as exc_info:
+                await _get_jwks()
+            assert exc_info.value.status_code == 502
+            assert exc_info.value.code == "JWKS_PARSE_ERROR"
+
     async def test_jwks_cache_expired(self):
         import app.auth as auth_module
 

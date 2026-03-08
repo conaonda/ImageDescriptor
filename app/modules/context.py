@@ -1,3 +1,5 @@
+import json
+
 import httpx
 import structlog
 
@@ -61,7 +63,7 @@ async def research_context(
                         relevance="low",
                     )
                 )
-    except Exception as e:
+    except (json.JSONDecodeError, httpx.HTTPError, TimeoutError) as e:
         logger.warning("context research failed", error=str(e))
 
     summary = (
