@@ -73,6 +73,16 @@ curl -X POST https://cognito-descriptor-gdno3pyjba-an.a.run.app/api/describe \
 }
 ```
 
+### 필드 검증 규칙
+
+| 필드 | 타입 | 제약 |
+|------|------|------|
+| `thumbnail` | string | base64 최대 5MB, URL은 `http(s)://` 시작 |
+| `coordinates` | [lon, lat] | 경도 −180~180, 위도 −90~90 |
+| `captured_at` | string \| null | ISO 8601 형식 (`2025-06-15` 또는 `2025-06-15T10:30:00Z`) |
+| `cog_image_id` | string \| null | 최대 128자 |
+| `bbox` | [W, S, E, N] \| null | 각각 경도/위도 범위, west < east, south < north |
+
 ## 에러 응답 형식
 
 모든 에러 응답은 [RFC 7807 Problem Details](https://datatracker.ietf.org/doc/html/rfc7807) 표준을 따르며 `Content-Type: application/problem+json`으로 반환됩니다.
@@ -120,7 +130,25 @@ curl -X POST https://cognito-descriptor-gdno3pyjba-an.a.run.app/api/describe \
 
 ## Rate Limit
 
-- POST 엔드포인트: 10 requests/minute (IP 기준)
-- GET /descriptions, DELETE /descriptions/{id}: 30 requests/minute (IP 기준)
-- 초과 시 `429 Too Many Requests` 응답
+| 엔드포인트 | 기본값 | 환경변수 |
+|-----------|--------|---------|
+| describe | 20/minute | `RATE_LIMIT_DESCRIBE` |
+| batch | 10/minute | `RATE_LIMIT_BATCH` |
+| data(GET/DELETE) | 30/minute | `RATE_LIMIT_DATA` |
+| read(GET list) | 60/minute | `RATE_LIMIT_READ` |
+| 기타 | 30/minute | `RATE_LIMIT` |
+
+- 초과 시 `429 Too Many Requests` 응답 + `Retry-After` 헤더(초 단위)
 - Cloud Run 환경에서는 `X-Forwarded-For` 헤더의 첫 번째 IP를 사용
+
+## 모듈별 타임아웃 설정
+
+각 모듈의 타임아웃을 환경변수로 개별 설정할 수 있습니다.
+
+| 환경변수 | 기본값 | 설명 |
+|---------|--------|------|
+| `TIMEOUT_GEOCODER` | 10.0 | 역지오코딩 요청 타임아웃 (초) |
+| `TIMEOUT_LANDCOVER` | 15.0 | 토지피복 조회 타임아웃 (초) |
+| `TIMEOUT_CONTEXT` | 10.0 | 맥락 정보 조회 타임아웃 (초) |
+| `TIMEOUT_DESCRIBER` | 10.0 | Gemini 설명 생성 타임아웃 (초) |
+| `TIMEOUT_HTTP_CLIENT` | 10.0 | HTTP 클라이언트 기본 타임아웃 (초) |
