@@ -240,3 +240,46 @@ async def test_download_image_content_length_too_large(httpx_mock):
     )
     with pytest.raises(ValueError, match="Image too large"):
         await _download_image("https://example.com/big.jpg")
+
+
+class TestBase64Validation:
+    """Tests for #224: Base64 thumbnail input validation."""
+
+    async def test_invalid_base64_raises_value_error(self):
+        cache = AsyncMock(spec=CacheStore)
+        cache.get = AsyncMock(return_value=None)
+
+        with pytest.raises(ValueError, match="Invalid thumbnail data"):
+            await describe_image(
+                thumbnail="not-valid-base64!!!",
+                place_name="서울",
+                captured_at="2025-01-01",
+                land_cover_summary="주거지역",
+                cache=cache,
+            )
+
+    async def test_data_uri_missing_comma_raises_value_error(self):
+        cache = AsyncMock(spec=CacheStore)
+        cache.get = AsyncMock(return_value=None)
+
+        with pytest.raises(ValueError, match="Invalid thumbnail data"):
+            await describe_image(
+                thumbnail="data:image/png;base64NO_COMMA_HERE",
+                place_name="서울",
+                captured_at="2025-01-01",
+                land_cover_summary="주거지역",
+                cache=cache,
+            )
+
+    async def test_data_uri_with_invalid_base64_raises_value_error(self):
+        cache = AsyncMock(spec=CacheStore)
+        cache.get = AsyncMock(return_value=None)
+
+        with pytest.raises(ValueError, match="Invalid thumbnail data"):
+            await describe_image(
+                thumbnail="data:image/png;base64,NOT_VALID_BASE64!@#$",
+                place_name="서울",
+                captured_at="2025-01-01",
+                land_cover_summary="주거지역",
+                cache=cache,
+            )

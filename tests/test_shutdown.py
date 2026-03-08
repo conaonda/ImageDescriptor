@@ -147,6 +147,12 @@ async def test_lifespan_drain_exits_when_no_batch_jobs(mock_ping, tmp_path, monk
 
     monkeypatch.setattr(settings, "cache_db_path", str(tmp_path / "drain_test.db"))
 
+    # Save and restore http_client state to avoid event loop cross-contamination
+    import app.http_client as http_client_mod
+
+    original_client = http_client_mod._client
+    http_client_mod._client = None
+
     try:
         async with lifespan(app):
             # Simulate SIGTERM during operation: no batch jobs are running
@@ -154,6 +160,7 @@ async def test_lifespan_drain_exits_when_no_batch_jobs(mock_ping, tmp_path, monk
         # If we reach here without TimeoutError, drain exited correctly
     finally:
         main_mod._shutting_down = False
+        http_client_mod._client = original_client
 
 
 @patch("app.db.supabase.ping", new_callable=AsyncMock, return_value=True)
@@ -165,6 +172,12 @@ async def test_lifespan_drain_waits_for_batch_jobs(mock_ping, tmp_path, monkeypa
 
     monkeypatch.setattr(settings, "cache_db_path", str(tmp_path / "drain_wait_test.db"))
     monkeypatch.setattr(settings, "shutdown_batch_timeout", 2)
+
+    # Save and restore http_client state to avoid event loop cross-contamination
+    import app.http_client as http_client_mod
+
+    original_client = http_client_mod._client
+    http_client_mod._client = None
 
     released = asyncio.Event()
 
@@ -183,3 +196,4 @@ async def test_lifespan_drain_waits_for_batch_jobs(mock_ping, tmp_path, monkeypa
         assert released.is_set()
     finally:
         main_mod._shutting_down = False
+        http_client_mod._client = original_client

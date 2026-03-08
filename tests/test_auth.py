@@ -137,7 +137,7 @@ class TestJwksCache:
         mock_client.__aexit__ = AsyncMock(return_value=False)
         mock_client.get = AsyncMock(return_value=mock_response)
 
-        with patch("app.auth.httpx.AsyncClient", return_value=mock_client):
+        with patch("app.http_client.get_client", return_value=mock_client):
             result1 = await _get_jwks()
             result2 = await _get_jwks()
             assert result1 == FAKE_JWKS
@@ -157,7 +157,7 @@ class TestJwksCache:
         mock_client.__aexit__ = AsyncMock(return_value=False)
         mock_client.get = AsyncMock(return_value=mock_response)
 
-        with patch("app.auth.httpx.AsyncClient", return_value=mock_client):
+        with patch("app.http_client.get_client", return_value=mock_client):
             # First fetch
             await _get_jwks()
             # Expire the cache

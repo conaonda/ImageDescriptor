@@ -7,6 +7,7 @@ import structlog
 from app.api.schemas import Location
 from app.cache.store import CacheStore
 from app.config import settings
+from app.http_client import get_client
 from app.utils.retry import retry_http
 
 logger = structlog.get_logger()
@@ -23,21 +24,21 @@ def _round_coords(lon: float, lat: float, decimals: int = 3) -> tuple[float, flo
 
 @retry_http
 async def _fetch_nominatim(lon: float, lat: float) -> httpx.Response:
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(
-            f"{settings.nominatim_url}/reverse",
-            params={
-                "lat": lat,
-                "lon": lon,
-                "format": "jsonv2",
-                "accept-language": "ko",
-                "zoom": 8,
-            },
-            headers={"User-Agent": "COGnito/1.2 (image-descriptor)"},
-            timeout=10.0,
-        )
-        resp.raise_for_status()
-        return resp
+    client = get_client()
+    resp = await client.get(
+        f"{settings.nominatim_url}/reverse",
+        params={
+            "lat": lat,
+            "lon": lon,
+            "format": "jsonv2",
+            "accept-language": "ko",
+            "zoom": 8,
+        },
+        headers={"User-Agent": "COGnito/1.2 (image-descriptor)"},
+        timeout=10.0,
+    )
+    resp.raise_for_status()
+    return resp
 
 
 async def geocode(lon: float, lat: float, cache: CacheStore) -> Location:

@@ -4,6 +4,7 @@ import structlog
 from app.api.schemas import LandCover, LandCoverClass
 from app.cache.store import CacheStore
 from app.config import settings
+from app.http_client import get_client
 from app.utils.retry import retry_http
 
 logger = structlog.get_logger()
@@ -49,14 +50,14 @@ def _round_coords(lon: float, lat: float) -> tuple[float, float]:
 
 @retry_http
 async def _fetch_overpass(query: str) -> httpx.Response:
-    async with httpx.AsyncClient() as client:
-        resp = await client.post(
-            settings.overpass_url,
-            data={"data": query},
-            timeout=15.0,
-        )
-        resp.raise_for_status()
-        return resp
+    client = get_client()
+    resp = await client.post(
+        settings.overpass_url,
+        data={"data": query},
+        timeout=15.0,
+    )
+    resp.raise_for_status()
+    return resp
 
 
 async def get_land_cover(lon: float, lat: float, cache: CacheStore) -> LandCover:

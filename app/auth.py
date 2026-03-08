@@ -1,7 +1,6 @@
 import hmac
 import time
 
-import httpx
 import structlog
 from fastapi import Security
 from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
@@ -26,12 +25,14 @@ async def _get_jwks() -> dict:
     now = time.monotonic()
     if _jwks_cache and (now - _jwks_cache_ts) < _JWKS_TTL:
         return _jwks_cache
+    from app.http_client import get_client
+
     url = f"{settings.supabase_url}/auth/v1/.well-known/jwks.json"
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(url)
-        resp.raise_for_status()
-        _jwks_cache = resp.json()
-        _jwks_cache_ts = now
+    client = get_client()
+    resp = await client.get(url)
+    resp.raise_for_status()
+    _jwks_cache = resp.json()
+    _jwks_cache_ts = now
     return _jwks_cache
 
 
