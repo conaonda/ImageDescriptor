@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     gzip_min_size: int = 500
     service_name: str = "image-descriptor"
     environment: str = "production"
+    timeout_geocoder: float = 10.0
+    timeout_landcover: float = 15.0
+    timeout_context: float = 10.0
+    timeout_describer: float = 10.0
+    timeout_http_client: float = 10.0
 
     @field_validator(
         "cache_ttl_seconds",
@@ -45,9 +50,14 @@ class Settings(BaseSettings):
         "batch_concurrency",
         "thumbnail_max_pixels",
         "gzip_min_size",
+        "timeout_geocoder",
+        "timeout_landcover",
+        "timeout_context",
+        "timeout_describer",
+        "timeout_http_client",
     )
     @classmethod
-    def _positive_int(cls, v: int, info) -> int:
+    def _positive_int(cls, v: int | float, info) -> int | float:
         if v <= 0:
             raise ValueError(f"{info.field_name} must be positive, got {v}")
         return v
@@ -114,6 +124,11 @@ class Settings(BaseSettings):
             request_timeout=self.request_timeout,
             batch_concurrency=self.batch_concurrency,
             gzip_min_size=self.gzip_min_size,
+            timeout_geocoder=self.timeout_geocoder,
+            timeout_landcover=self.timeout_landcover,
+            timeout_context=self.timeout_context,
+            timeout_describer=self.timeout_describer,
+            timeout_http_client=self.timeout_http_client,
         )
 
     model_config = {"env_file": ".env"}

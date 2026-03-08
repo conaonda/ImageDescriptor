@@ -108,7 +108,9 @@ async def _download_image(url: str) -> bytes:
     current_url = url
     http_client = get_client()
     for _ in range(max_redirects + 1):
-        async with http_client.stream("GET", current_url, timeout=10.0) as resp:
+        async with http_client.stream(
+            "GET", current_url, timeout=settings.timeout_describer
+        ) as resp:
             if resp.is_redirect:
                 redirect_url = str(resp.next_request.url)
                 parsed = urlparse(redirect_url)

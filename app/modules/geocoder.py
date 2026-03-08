@@ -35,7 +35,7 @@ async def _fetch_nominatim(lon: float, lat: float) -> httpx.Response:
             "zoom": 8,
         },
         headers={"User-Agent": "COGnito/1.2 (image-descriptor)"},
-        timeout=10.0,
+        timeout=settings.timeout_geocoder,
     )
     resp.raise_for_status()
     return resp

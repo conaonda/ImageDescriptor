@@ -54,7 +54,7 @@ async def _fetch_overpass(query: str) -> httpx.Response:
     resp = await client.post(
         settings.overpass_url,
         data={"data": query},
-        timeout=15.0,
+        timeout=settings.timeout_landcover,
     )
     resp.raise_for_status()
     return resp
