@@ -24,7 +24,7 @@ _COLLECTION_PROCESSING_LEVEL = {
 async def _fetch_stac_item(stac_id: str) -> httpx.Response:
     collection = _guess_collection(stac_id)
     url = f"{STAC_BASE_URL}/collections/{collection}/items/{stac_id}"
-    client = get_client()
+    client = await get_client()
     resp = await client.get(url, timeout=settings.timeout_mission)
     resp.raise_for_status()
     return resp

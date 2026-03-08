@@ -14,7 +14,7 @@ logger = structlog.get_logger()
 
 @retry_http
 async def _fetch_duckduckgo(query: str) -> httpx.Response:
-    client = get_client()
+    client = await get_client()
     resp = await client.get(
         "https://api.duckduckgo.com/",
         params={"q": query, "format": "json", "no_html": 1},

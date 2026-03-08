@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     timeout_http_client: float = 10.0
     max_image_download_bytes: int = 5 * 1024 * 1024
     max_image_redirects: int = 5
+    timeout_supabase_ping: float = 5.0
 
     @field_validator(
         "cache_ttl_seconds",
@@ -61,6 +62,7 @@ class Settings(BaseSettings):
         "timeout_http_client",
         "max_image_download_bytes",
         "max_image_redirects",
+        "timeout_supabase_ping",
     )
     @classmethod
     def _positive_int(cls, v: int | float, info) -> int | float:
@@ -138,6 +140,7 @@ class Settings(BaseSettings):
             timeout_http_client=self.timeout_http_client,
             max_image_download_bytes=self.max_image_download_bytes,
             max_image_redirects=self.max_image_redirects,
+            timeout_supabase_ping=self.timeout_supabase_ping,
         )
 
     model_config = {"env_file": ".env"}

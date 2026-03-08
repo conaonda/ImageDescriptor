@@ -25,7 +25,7 @@ def _round_coords(lon: float, lat: float, decimals: int = 3) -> tuple[float, flo
 
 @retry_http
 async def _fetch_nominatim(lon: float, lat: float) -> httpx.Response:
-    client = get_client()
+    client = await get_client()
     resp = await client.get(
         f"{settings.nominatim_url}/reverse",
         params={

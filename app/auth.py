@@ -29,7 +29,7 @@ async def _get_jwks() -> dict:
     from app.http_client import get_client
 
     url = f"{settings.supabase_url}/auth/v1/.well-known/jwks.json"
-    client = get_client()
+    client = await get_client()
     resp = await client.get(url)
     resp.raise_for_status()
     try:

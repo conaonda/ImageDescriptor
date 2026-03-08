@@ -106,8 +106,14 @@ async def save_description(
 async def ping() -> bool:
     try:
         client = await get_client()
-        await client.table("image_descriptions").select("cog_image_id").limit(1).execute()
+        await asyncio.wait_for(
+            client.table("image_descriptions").select("cog_image_id").limit(1).execute(),
+            timeout=settings.timeout_supabase_ping,
+        )
         return True
+    except TimeoutError:
+        logger.warning("supabase ping timed out", timeout=settings.timeout_supabase_ping)
+        return False
     except Exception as e:
         _reset_client()
         logger.warning("supabase ping failed", error=str(e))

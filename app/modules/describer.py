@@ -113,7 +113,7 @@ async def _download_image(url: str) -> bytes:
     from app.http_client import get_client
 
     current_url = url
-    http_client = get_client()
+    http_client = await get_client()
     for _ in range(max_redirects + 1):
         async with http_client.stream(
             "GET", current_url, timeout=settings.timeout_describer
