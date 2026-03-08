@@ -124,7 +124,7 @@ def _sanitize_correlation_id(value: str | None) -> str | None:
 
 
 async def request_id_middleware(request: Request, call_next):
-    """Middleware that binds a unique request_id and correlation_id to each request's log context."""
+    """Bind a unique request_id and correlation_id to each request's log context."""
     request_id = _sanitize_request_id(request.headers.get("x-request-id")) or generate_request_id()
     correlation_id = (
         _sanitize_correlation_id(request.headers.get("x-correlation-id"))

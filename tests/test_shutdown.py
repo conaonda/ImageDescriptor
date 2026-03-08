@@ -132,8 +132,8 @@ def test_shutdown_batch_timeout_default():
 @patch("app.db.supabase.ping", new_callable=AsyncMock, return_value=True)
 async def test_lifespan_drain_exits_when_no_batch_jobs(mock_ping, tmp_path, monkeypatch):
     """Lifespan shutdown drain completes immediately when no batch jobs are active."""
-    from app.main import lifespan
     from app.config import settings
+    from app.main import lifespan
 
     monkeypatch.setattr(settings, "cache_db_path", str(tmp_path / "drain_test.db"))
 
@@ -149,8 +149,8 @@ async def test_lifespan_drain_exits_when_no_batch_jobs(mock_ping, tmp_path, monk
 @patch("app.db.supabase.ping", new_callable=AsyncMock, return_value=True)
 async def test_lifespan_drain_waits_for_batch_jobs(mock_ping, tmp_path, monkeypatch):
     """Lifespan shutdown drain waits until active_batch_jobs drops to 0."""
-    from app.main import lifespan
     from app.config import settings
+    from app.main import lifespan
     from app.utils.metrics import batch_job_dec, batch_job_inc
 
     monkeypatch.setattr(settings, "cache_db_path", str(tmp_path / "drain_wait_test.db"))

@@ -10,8 +10,8 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.cache.store import CacheStore
 from app.api.routes import limiter as routes_limiter
+from app.cache.store import CacheStore
 from app.main import app, limiter
 
 
@@ -201,7 +201,11 @@ class TestV1RateLimitHeaders:
             ) as c:
                 with (
                     patch("app.config.settings.rate_limit_data", "1/minute"),
-                    patch("app.modules.geocoder.geocode", new_callable=AsyncMock, return_value=mock_geo),
+                    patch(
+                        "app.modules.geocoder.geocode",
+                        new_callable=AsyncMock,
+                        return_value=mock_geo,
+                    ),
                 ):
                     body = {"thumbnail": "dGVzdA==", "coordinates": [126.978, 37.566]}
 
@@ -217,8 +221,8 @@ class TestV1RateLimitHeaders:
 
     async def test_independent_rate_limits_across_categories(self, tmp_path):
         """describe, data, read 엔드포인트가 각각 독립적인 rate limit을 가짐."""
-        from app.api.schemas import DescribeResponse
         import app.db.supabase as db_mod
+        from app.api.schemas import DescribeResponse
 
         cache = CacheStore(str(tmp_path / "rl_indep.db"))
         await cache.init()
@@ -250,9 +254,22 @@ class TestV1RateLimitHeaders:
                     patch("app.config.settings.rate_limit_describe", "1/minute"),
                     patch("app.config.settings.rate_limit_data", "1/minute"),
                     patch("app.config.settings.rate_limit_read", "1/minute"),
-                    patch("app.api.routes._describe_and_save", new_callable=AsyncMock, return_value=mock_result),
-                    patch("app.modules.geocoder.geocode", new_callable=AsyncMock, return_value=mock_geo),
-                    patch.object(db_mod, "list_descriptions", new_callable=AsyncMock, return_value=mock_list),
+                    patch(
+                        "app.api.routes._describe_and_save",
+                        new_callable=AsyncMock,
+                        return_value=mock_result,
+                    ),
+                    patch(
+                        "app.modules.geocoder.geocode",
+                        new_callable=AsyncMock,
+                        return_value=mock_geo,
+                    ),
+                    patch.object(
+                        db_mod,
+                        "list_descriptions",
+                        new_callable=AsyncMock,
+                        return_value=mock_list,
+                    ),
                 ):
                     # Exhaust describe limit
                     await c.post("/api/v1/describe", json=body)
@@ -303,7 +320,10 @@ class TestV1AuthIntegration:
                     resp = await c.get(path)
                 else:
                     resp = await c.delete(path)
-                assert resp.status_code == 401, f"{method} {path} should return 401, got {resp.status_code}"
+                assert resp.status_code == 401, (
+                    f"{method} {path} should return 401,"
+                    f" got {resp.status_code}"
+                )
 
         await cache.close()
 

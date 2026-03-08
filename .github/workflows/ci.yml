@@ -28,11 +28,11 @@ jobs:
         run: uv sync --all-extras
 
       - name: Run pip-audit
-        run: uv run pip-audit --no-require-hashes --progress-spinner=off --desc -f json -o audit-results.json || true
+        run: uv run pip-audit --progress-spinner=off --desc -f json -o audit-results.json || true
 
       - name: Check audit results
         run: |
-          if uv run pip-audit --no-require-hashes --progress-spinner=off --desc; then
+          if uv run pip-audit --progress-spinner=off --desc; then
             echo "No vulnerabilities found."
           else
             echo "::error::Security vulnerabilities found in dependencies!"

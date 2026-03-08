@@ -208,7 +208,10 @@ class TestRateLimitMiddleware:
         }
         with (
             patch("app.config.settings.rate_limit_describe", "5/minute"),
-            patch("app.api.routes.limiter.limiter.get_window_stats", side_effect=RuntimeError("storage error")),
+            patch(
+                "app.api.routes.limiter.limiter.get_window_stats",
+                side_effect=RuntimeError("storage error"),
+            ),
         ):
             resp = await rate_limit_client.post("/api/v1/describe", json=body, headers=headers)
             # 헤더 주입 실패해도 응답 자체는 정상 처리
@@ -220,7 +223,7 @@ class TestRateLimitMiddleware:
         """retry_after가 datetime 객체일 때 Retry-After 헤더가 올바르게 계산됨."""
         from app.main import _rate_limit_handler
 
-        future_time = datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(seconds=30)
+        future_time = datetime.datetime.now(tz=datetime.UTC) + datetime.timedelta(seconds=30)
 
         mock_exc = MagicMock()
         mock_exc.retry_after = future_time

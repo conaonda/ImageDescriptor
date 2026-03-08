@@ -729,13 +729,22 @@ class TestRFC7807ProblemDetail:
         data = resp.json()
         assert data["instance"] == custom_cid
 
-    async def test_http_exception_handler_returns_problem_detail(self, client_with_cache, monkeypatch):
+    async def test_http_exception_handler_returns_problem_detail(
+        self, client_with_cache, monkeypatch
+    ):
         """일반 HTTPException이 application/problem+json 형식으로 반환되는지 확인."""
         from fastapi import HTTPException
+
         import app.db.supabase as db_mod
 
         monkeypatch.setattr(
-            db_mod, "get_description", AsyncMock(side_effect=HTTPException(status_code=400, detail="bad input"))
+            db_mod,
+            "get_description",
+            AsyncMock(
+                side_effect=HTTPException(
+                    status_code=400, detail="bad input"
+                )
+            ),
         )
         resp = await client_with_cache.get(
             "/api/v1/descriptions/some-id",
@@ -768,10 +777,12 @@ class TestRFC7807ProblemDetail:
         assert data["status"] == 500
         assert resp.media_type == "application/problem+json"
 
-    async def test_descriptor_error_with_details_includes_errors_field(self, client_with_cache, monkeypatch):
+    async def test_descriptor_error_with_details_includes_errors_field(
+        self, client_with_cache, monkeypatch
+    ):
         """DescriptorError의 details 필드가 errors 키로 응답에 포함되는지 확인."""
-        from app.utils.errors import DescriptorError
         import app.db.supabase as db_mod
+        from app.utils.errors import DescriptorError
 
         extra = {"field": "cog_image_id", "reason": "invalid format"}
         monkeypatch.setattr(

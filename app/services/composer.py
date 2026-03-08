@@ -8,7 +8,11 @@ from app.api.schemas import DescribeRequest, DescribeResponse, Warning
 from app.cache.store import CacheStore
 from app.modules import context, describer, geocoder, landcover, mission
 from app.utils.circuit_breaker import CircuitBreaker
-from app.utils.metrics import description_requests_total, external_api_duration, external_api_requests
+from app.utils.metrics import (
+    description_requests_total,
+    external_api_duration,
+    external_api_requests,
+)
 
 logger = structlog.get_logger()
 
