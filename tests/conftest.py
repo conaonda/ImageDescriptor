@@ -36,6 +36,20 @@ def pytest_collection_modifyitems(config, items):
                     item.add_marker(skip_e2e)
 
 
+@pytest.fixture(autouse=True)
+def _reset_supabase_backoff():
+    """테스트 간 Supabase 재연결 백오프 상태를 리셋한다."""
+    import app.db.supabase as _supa
+
+    _supa._client = None
+    _supa._last_failure_time = 0.0
+    _supa._consecutive_failures = 0
+    yield
+    _supa._client = None
+    _supa._last_failure_time = 0.0
+    _supa._consecutive_failures = 0
+
+
 @pytest.fixture
 async def authenticated_client():
     from httpx import ASGITransport, AsyncClient
