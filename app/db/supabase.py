@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 import structlog
 from supabase import AsyncClient, acreate_client
@@ -6,16 +7,48 @@ from supabase import AsyncClient, acreate_client
 from app.config import settings
 
 SAVE_TIMEOUT_SECONDS = 10
+_RECONNECT_BACKOFF_BASE = 1.0
+_RECONNECT_BACKOFF_MAX = 60.0
 
 logger = structlog.get_logger()
 
 _client: AsyncClient | None = None
+_last_failure_time: float = 0.0
+_consecutive_failures: int = 0
+
+
+def _reset_client() -> None:
+    """Reset the global client so the next call to get_client() creates a new one."""
+    global _client, _last_failure_time, _consecutive_failures
+    _client = None
+    _last_failure_time = time.monotonic()
+    _consecutive_failures += 1
+    logger.warning(
+        "supabase_client_reset",
+        consecutive_failures=_consecutive_failures,
+    )
 
 
 async def get_client() -> AsyncClient:
-    global _client
+    global _client, _consecutive_failures
     if _client is None:
-        _client = await acreate_client(settings.supabase_url, settings.supabase_service_key)
+        # Apply exponential backoff if we had recent failures
+        if _consecutive_failures > 0:
+            backoff = min(
+                _RECONNECT_BACKOFF_BASE * (2 ** (_consecutive_failures - 1)),
+                _RECONNECT_BACKOFF_MAX,
+            )
+            elapsed = time.monotonic() - _last_failure_time
+            if elapsed < backoff:
+                raise ConnectionError(
+                    f"Supabase reconnect backoff: {backoff - elapsed:.1f}s remaining"
+                )
+        try:
+            _client = await acreate_client(settings.supabase_url, settings.supabase_service_key)
+            _consecutive_failures = 0
+        except Exception:
+            _reset_client()
+            raise
     return _client
 
 
@@ -62,7 +95,10 @@ async def save_description(
     except TimeoutError:
         logger.error("supabase save timed out", cog_image_id=cog_image_id)
         return False
+    except ConnectionError:
+        raise
     except Exception as e:
+        _reset_client()
         logger.error("supabase save failed", error=str(e))
         return False
 
@@ -73,6 +109,7 @@ async def ping() -> bool:
         await client.table("image_descriptions").select("cog_image_id").limit(1).execute()
         return True
     except Exception as e:
+        _reset_client()
         logger.warning("supabase ping failed", error=str(e))
         return False
 
@@ -93,7 +130,10 @@ async def list_descriptions(
         query = query.order("created_at", desc=True).range(offset, offset + limit - 1)
         result = await query.execute()
         return {"items": result.data, "total": result.count or 0}
+    except ConnectionError:
+        raise
     except Exception as e:
+        _reset_client()
         logger.error("supabase list failed", error=str(e))
         return {"items": [], "total": 0}
 
@@ -111,7 +151,10 @@ async def delete_description(cog_image_id: str) -> bool:
             return False
         logger.info("deleted description from supabase", cog_image_id=cog_image_id)
         return True
+    except ConnectionError:
+        raise
     except Exception as e:
+        _reset_client()
         logger.error("supabase delete failed", cog_image_id=cog_image_id, error=str(e))
         return False
 
@@ -127,6 +170,9 @@ async def get_description(cog_image_id: str) -> dict | None:
             .execute()
         )
         return result.data[0] if result.data else None
+    except ConnectionError:
+        raise
     except Exception as e:
+        _reset_client()
         logger.error("supabase get failed", error=str(e))
         return None
