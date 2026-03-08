@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.api.schemas import BatchDescribeItem, DescribeRequest, _COG_IMAGE_ID_MAX_LENGTH
+from app.api.schemas import _COG_IMAGE_ID_MAX_LENGTH, BatchDescribeItem, DescribeRequest
 
 
 class TestCapturedAtValidation:
