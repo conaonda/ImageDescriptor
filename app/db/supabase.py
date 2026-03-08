@@ -11,6 +11,15 @@ logger = structlog.get_logger()
 _client: AsyncClient | None = None
 _last_failure_time: float = 0.0
 _consecutive_failures: int = 0
+_lock: asyncio.Lock | None = None
+
+
+def _get_lock() -> asyncio.Lock:
+    """Return the module-level lock, creating it lazily (safe in single-threaded asyncio)."""
+    global _lock
+    if _lock is None:
+        _lock = asyncio.Lock()
+    return _lock
 
 
 def _reset_client() -> None:
@@ -27,7 +36,11 @@ def _reset_client() -> None:
 
 async def get_client() -> AsyncClient:
     global _client, _consecutive_failures
-    if _client is None:
+    if _client is not None:
+        return _client
+    async with _get_lock():
+        if _client is not None:
+            return _client
         # Apply exponential backoff if we had recent failures
         if _consecutive_failures > 0:
             backoff = min(

@@ -26,13 +26,13 @@ _breakers = {
 }
 
 
-def get_breaker_statuses() -> list[dict]:
-    return [cb.get_status() for cb in _breakers.values()]
+async def get_breaker_statuses() -> list[dict]:
+    return [await cb.get_status() for cb in _breakers.values()]
 
 
 async def _safe_call(name: str, coro: Awaitable, warnings: list[Warning]):
     cb = _breakers[name]
-    if cb.is_open:
+    if await cb.is_open():
         warnings.append(Warning(module=name, error="Circuit breaker open"))
         return None
     t0 = time.monotonic()

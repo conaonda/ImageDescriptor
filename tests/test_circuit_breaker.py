@@ -13,18 +13,18 @@ class TestCircuitBreakerClosed:
 
     async def test_initial_state_is_closed(self):
         cb = CircuitBreaker("test")
-        assert not cb.is_open
+        assert not await cb.is_open()
 
     async def test_stays_closed_after_success(self):
         cb = CircuitBreaker("test")
         await cb.record_success()
-        assert not cb.is_open
+        assert not await cb.is_open()
 
     async def test_stays_closed_below_threshold(self):
         cb = CircuitBreaker("test", failure_threshold=5)
         for _ in range(4):
             await cb.record_failure()
-        assert not cb.is_open
+        assert not await cb.is_open()
 
     async def test_success_resets_failure_count(self):
         cb = CircuitBreaker("test", failure_threshold=3)
@@ -34,7 +34,7 @@ class TestCircuitBreakerClosed:
         # After reset, 2 more failures should not open
         await cb.record_failure()
         await cb.record_failure()
-        assert not cb.is_open
+        assert not await cb.is_open()
 
 
 class TestCircuitBreakerOpen:
@@ -44,18 +44,18 @@ class TestCircuitBreakerOpen:
         cb = CircuitBreaker("test", failure_threshold=3, cooldown_sec=10.0)
         for _ in range(3):
             await cb.record_failure()
-        assert cb.is_open
+        assert await cb.is_open()
 
     async def test_opens_exactly_at_threshold(self):
         cb = CircuitBreaker("test", failure_threshold=1)
         await cb.record_failure()
-        assert cb.is_open
+        assert await cb.is_open()
 
     async def test_stays_open_during_cooldown(self):
         cb = CircuitBreaker("test", failure_threshold=1, cooldown_sec=100.0)
         await cb.record_failure()
-        assert cb.is_open
-        assert cb.is_open  # Still open on second check
+        assert await cb.is_open()
+        assert await cb.is_open()  # Still open on second check
 
 
 class TestCircuitBreakerHalfOpen:
@@ -65,33 +65,33 @@ class TestCircuitBreakerHalfOpen:
         cb = CircuitBreaker("test", failure_threshold=1, cooldown_sec=0.0)
         await cb.record_failure()
         # cooldown_sec=0 means it expires immediately
-        assert not cb.is_open  # half-open → reset
+        assert not await cb.is_open()  # half-open → reset
 
     async def test_resets_with_short_cooldown(self):
         cb = CircuitBreaker("test", failure_threshold=1, cooldown_sec=0.05)
         await cb.record_failure()
-        assert cb.is_open
+        assert await cb.is_open()
         time.sleep(0.06)
         # After cooldown, should transition to half-open (closed)
-        assert not cb.is_open
+        assert not await cb.is_open()
 
     async def test_reopens_on_failure_after_halfopen(self):
         cb = CircuitBreaker("test", failure_threshold=1, cooldown_sec=0.05)
         await cb.record_failure()
-        assert cb.is_open
+        assert await cb.is_open()
         time.sleep(0.06)
         # After cooldown, half-open reset
-        assert not cb.is_open
+        assert not await cb.is_open()
         # Another failure should re-open
         await cb.record_failure()
-        assert cb.is_open
+        assert await cb.is_open()
 
     async def test_stays_closed_on_success_after_halfopen(self):
         cb = CircuitBreaker("test", failure_threshold=1, cooldown_sec=0.0)
         await cb.record_failure()
-        assert not cb.is_open  # half-open reset
+        assert not await cb.is_open()  # half-open reset
         await cb.record_success()
-        assert not cb.is_open
+        assert not await cb.is_open()
 
 
 class TestCircuitBreakerEdgeCases:
@@ -101,14 +101,14 @@ class TestCircuitBreakerEdgeCases:
         cb = CircuitBreaker("test")
         for _ in range(100):
             await cb.record_success()
-        assert not cb.is_open
+        assert not await cb.is_open()
 
     async def test_custom_parameters(self):
         cb = CircuitBreaker("custom", failure_threshold=2, cooldown_sec=60.0)
         await cb.record_failure()
-        assert not cb.is_open
+        assert not await cb.is_open()
         await cb.record_failure()
-        assert cb.is_open
+        assert await cb.is_open()
 
     async def test_name_preserved(self):
         cb = CircuitBreaker("my-service")
@@ -166,7 +166,7 @@ class TestSafeCall:
         for _ in range(5):
             await _safe_call("landcover", self._async_raise(RuntimeError("fail")), warnings)
 
-        assert _breakers["landcover"].is_open
+        assert await _breakers["landcover"].is_open()
 
     async def test_safe_call_records_success(self):
         from app.services.composer import _breakers, _safe_call

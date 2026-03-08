@@ -14,7 +14,7 @@ from app.utils.retry import retry_http
 logger = structlog.get_logger()
 
 # Nominatim 사용 정책: 1 req/sec
-_semaphore = asyncio.Semaphore(1)
+_lock = asyncio.Lock()
 _last_request_time = 0.0
 
 
@@ -52,7 +52,7 @@ async def geocode(lon: float, lat: float, cache: CacheStore) -> Location:
         return Location(**cached)
 
     global _last_request_time
-    async with _semaphore:
+    async with _lock:
         # 1 req/sec 속도 제한
         now = asyncio.get_running_loop().time()
         wait = max(0, 1.0 - (now - _last_request_time))
