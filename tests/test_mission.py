@@ -110,3 +110,24 @@ async def test_get_mission_metadata_http_error(cache, httpx_mock):
     httpx_mock.add_response(status_code=404)
     with pytest.raises(httpx.HTTPStatusError):
         await get_mission_metadata("INVALID_ID", cache)
+
+
+async def test_get_mission_metadata_invalid_json(cache, httpx_mock):
+    """#239: STAC API가 비정상 JSON을 반환하면 None 반환."""
+    httpx_mock.add_response(
+        text="<html>Internal Server Error</html>",
+        headers={"content-type": "text/html"},
+    )
+    result = await get_mission_metadata("S2C_T52SCG_20260225T022315_L2A", cache)
+    assert result is None
+
+
+async def test_mission_uses_settings_timeout(cache, httpx_mock):
+    """#240: mission 모듈이 settings.timeout_mission을 사용하는지 확인."""
+    httpx_mock.add_response(json=SAMPLE_STAC_RESPONSE)
+    await get_mission_metadata("S2C_T52SCG_20260225T022315_L2A", cache)
+
+    request = httpx_mock.get_requests()[0]
+    from app.config import settings
+
+    assert request.extensions["timeout"]["read"] == settings.timeout_mission

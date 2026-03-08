@@ -1,3 +1,5 @@
+import json
+
 import httpx
 import structlog
 
@@ -82,7 +84,11 @@ out tags;
 
     resp = await _fetch_overpass(query)
 
-    elements = resp.json().get("elements", [])
+    try:
+        elements = resp.json().get("elements", [])
+    except json.JSONDecodeError:
+        logger.warning("landcover invalid JSON response", lon=lon, lat=lat, body=resp.text[:200])
+        return LandCover(classes=[], summary="정보 없음")
 
     # 태그 카운트 집계
     tag_counts: dict[str, int] = {}

@@ -77,3 +77,17 @@ async def test_geocode_uses_settings_cache_ttl(cache, httpx_mock):
         f"cache_ttl_seconds({settings.cache_ttl_seconds})가 사용되어야 하지만 "
         f"ttl_seconds={kwargs.get('ttl_seconds')}가 전달되었습니다"
     )
+
+
+async def test_geocode_invalid_json_response(cache, httpx_mock):
+    """#239: 외부 API가 비정상 JSON을 반환하면 graceful fallback."""
+    httpx_mock.add_response(
+        url="https://nominatim.openstreetmap.org/reverse?lat=37.566&lon=126.978&format=jsonv2&accept-language=ko&zoom=8",
+        text="<html>Error</html>",
+        headers={"content-type": "text/html"},
+    )
+
+    result = await geocode(126.978, 37.566, cache)
+    assert result.country == "Unknown"
+    assert result.lat == 37.566
+    assert result.lon == 126.978

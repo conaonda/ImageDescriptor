@@ -107,8 +107,8 @@ def _make_prompt(
 
 @retry_http
 async def _download_image(url: str) -> bytes:
-    max_download = 5 * 1024 * 1024
-    max_redirects = 5
+    max_download = settings.max_image_download_bytes
+    max_redirects = settings.max_image_redirects
 
     from app.http_client import get_client
 
