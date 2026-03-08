@@ -100,38 +100,38 @@ def _make_prompt(
 
 @retry_http
 async def _download_image(url: str) -> bytes:
-    import httpx
-
     max_download = 5 * 1024 * 1024
     max_redirects = 5
 
-    current_url = url
-    for _ in range(max_redirects + 1):
-        async with httpx.AsyncClient(follow_redirects=False) as http_client:
-            async with http_client.stream("GET", current_url, timeout=10.0) as resp:
-                if resp.is_redirect:
-                    redirect_url = str(resp.next_request.url)
-                    parsed = urlparse(redirect_url)
-                    if not parsed.hostname:
-                        raise ValueError("Redirect to invalid URL: no hostname")
-                    _validate_host_ips(parsed.hostname)
-                    current_url = redirect_url
-                    continue
+    from app.http_client import get_client
 
-                resp.raise_for_status()
-                content_length = resp.headers.get("content-length")
-                if content_length and int(content_length) > max_download:
-                    raise ValueError(
-                        f"Image too large: {int(content_length)} bytes (max {max_download})"
-                    )
-                chunks = []
-                size = 0
-                async for chunk in resp.aiter_bytes():
-                    size += len(chunk)
-                    if size > max_download:
-                        raise ValueError(f"Image too large: >{max_download} bytes (max 5MB)")
-                    chunks.append(chunk)
-                return b"".join(chunks)
+    current_url = url
+    http_client = get_client()
+    for _ in range(max_redirects + 1):
+        async with http_client.stream("GET", current_url, timeout=10.0) as resp:
+            if resp.is_redirect:
+                redirect_url = str(resp.next_request.url)
+                parsed = urlparse(redirect_url)
+                if not parsed.hostname:
+                    raise ValueError("Redirect to invalid URL: no hostname")
+                _validate_host_ips(parsed.hostname)
+                current_url = redirect_url
+                continue
+
+            resp.raise_for_status()
+            content_length = resp.headers.get("content-length")
+            if content_length and int(content_length) > max_download:
+                raise ValueError(
+                    f"Image too large: {int(content_length)} bytes (max {max_download})"
+                )
+            chunks = []
+            size = 0
+            async for chunk in resp.aiter_bytes():
+                size += len(chunk)
+                if size > max_download:
+                    raise ValueError(f"Image too large: >{max_download} bytes (max 5MB)")
+                chunks.append(chunk)
+            return b"".join(chunks)
 
     raise ValueError(f"Too many redirects (max {max_redirects})")
 
@@ -170,16 +170,21 @@ async def describe_image(
             return cached["description"], True
 
     # 썸네일 데이터 준비
-    if thumbnail.startswith("data:image"):
-        # data:image/png;base64,xxxx → base64 부분 추출
-        b64_data = thumbnail.split(",", 1)[1]
-        image_bytes = base64.b64decode(b64_data)
-    elif thumbnail.startswith("http"):
-        # URL인 경우 다운로드 (최대 5MB)
-        _validate_thumbnail_url(thumbnail)
-        image_bytes = await _download_image(thumbnail)
-    else:
-        image_bytes = base64.b64decode(thumbnail)
+    try:
+        if thumbnail.startswith("data:image"):
+            # data:image/png;base64,xxxx → base64 부분 추출
+            if "," not in thumbnail:
+                raise ValueError("Invalid data URI: missing comma separator")
+            b64_data = thumbnail.split(",", 1)[1]
+            image_bytes = base64.b64decode(b64_data)
+        elif thumbnail.startswith("http"):
+            # URL인 경우 다운로드 (최대 5MB)
+            _validate_thumbnail_url(thumbnail)
+            image_bytes = await _download_image(thumbnail)
+        else:
+            image_bytes = base64.b64decode(thumbnail)
+    except (base64.binascii.Error, ValueError) as e:
+        raise ValueError(f"Invalid thumbnail data: {e}") from e
 
     # Gemini 토큰 절감을 위해 이미지 리사이즈
     image_bytes = _resize_for_gemini(image_bytes, settings.thumbnail_max_pixels)

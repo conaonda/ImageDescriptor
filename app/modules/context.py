@@ -3,6 +3,7 @@ import structlog
 
 from app.api.schemas import Context, Event
 from app.cache.store import CacheStore
+from app.http_client import get_client
 from app.utils.retry import retry_http
 
 logger = structlog.get_logger()
@@ -10,14 +11,14 @@ logger = structlog.get_logger()
 
 @retry_http
 async def _fetch_duckduckgo(query: str) -> httpx.Response:
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(
-            "https://api.duckduckgo.com/",
-            params={"q": query, "format": "json", "no_html": 1},
-            timeout=10.0,
-        )
-        resp.raise_for_status()
-        return resp
+    client = get_client()
+    resp = await client.get(
+        "https://api.duckduckgo.com/",
+        params={"q": query, "format": "json", "no_html": 1},
+        timeout=10.0,
+    )
+    resp.raise_for_status()
+    return resp
 
 
 async def research_context(

@@ -110,6 +110,10 @@ async def lifespan(app: FastAPI):
         pass
     await app.state.cache.close()
 
+    from app.http_client import close_client
+
+    await close_client()
+
 
 try:
     _app_version = version("cognito-descriptor")

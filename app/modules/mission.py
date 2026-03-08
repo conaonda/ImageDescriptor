@@ -3,6 +3,7 @@ import structlog
 
 from app.api.schemas import Mission
 from app.cache.store import CacheStore
+from app.http_client import get_client
 from app.utils.retry import retry_http
 
 logger = structlog.get_logger()
@@ -20,10 +21,10 @@ _COLLECTION_PROCESSING_LEVEL = {
 async def _fetch_stac_item(stac_id: str) -> httpx.Response:
     collection = _guess_collection(stac_id)
     url = f"{STAC_BASE_URL}/collections/{collection}/items/{stac_id}"
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(url, timeout=10.0)
-        resp.raise_for_status()
-        return resp
+    client = get_client()
+    resp = await client.get(url, timeout=10.0)
+    resp.raise_for_status()
+    return resp
 
 
 def _guess_collection(stac_id: str) -> str:
