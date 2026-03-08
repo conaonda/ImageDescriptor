@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- HTTP 클라이언트 경쟁 조건 수정 (#249): `get_client()`를 `asyncio.Lock` 기반 async 함수로 전환하여 동시 호출 시 단일 인스턴스 보장 (double-check locking)
+- 메트릭 라벨 인젝션 방지 (#250): `CacheStore._module_from_key()`에 허용 모듈명 화이트리스트(`geocode`, `landcover`, `mission`, `context`, `describe`) 검증 추가, 유효하지 않은 모듈명은 `"unknown"`으로 대체
+- Supabase ping 타임아웃 외부화 (#251): `ping()`에 `asyncio.wait_for()` 타임아웃 적용, `TIMEOUT_SUPABASE_PING` 환경변수로 설정 가능 (기본 5초)
 - docker-compose.yml healthcheck 경로를 `/api/health` → `/api/v1/health`로 수정하여 Dockerfile과 정합성 일치
 - Dockerfile 및 docker-compose HEALTHCHECK 대상을 `/api/v1/health` → `/api/v1/health/live`로 변경 (Liveness probe 전용 경량 엔드포인트 사용)
 
