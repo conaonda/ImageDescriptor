@@ -116,7 +116,7 @@ async def test_individual_failure_does_not_affect_others(batch_client, monkeypat
         nonlocal call_count
         call_count += 1
         if call_count == 2:
-            raise ValueError("test error")
+            raise ConnectionError("test error")
         from app.api.schemas import DescribeResponse
 
         return DescribeResponse(

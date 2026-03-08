@@ -263,7 +263,7 @@ async def describe_batch(
             return BatchItemResult(
                 index=index, error="Request timed out", error_detail=error_detail
             )
-        except Exception as e:
+        except (DescriptorError, ConnectionError, OSError) as e:
             error_detail = BatchItemError(
                 error_type="service",
                 message=str(e),
@@ -482,7 +482,7 @@ async def delete_description(
 ):
     try:
         deleted = await db.delete_description(cog_image_id)
-    except Exception as e:
+    except (ConnectionError, TimeoutError, OSError) as e:
         logger.error("delete_description_error", cog_image_id=cog_image_id, error=str(e))
         raise DescriptorError(
             status_code=500,

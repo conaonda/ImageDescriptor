@@ -78,6 +78,33 @@ async def test_active_batch_jobs():
     assert get_active_batch_count() == before
 
 
+async def test_batch_counter_gauge_consistency():
+    """Gauge-based counter stays consistent under concurrent inc/dec."""
+    import asyncio
+
+    from app.utils.metrics import (
+        active_batch_jobs,
+        batch_job_dec,
+        batch_job_inc,
+        get_active_batch_count,
+    )
+
+    before = get_active_batch_count()
+    # Reset gauge to known state
+    active_batch_jobs._value.set(0)
+
+    async def inc_dec():
+        batch_job_inc()
+        await asyncio.sleep(0)
+        batch_job_dec()
+
+    await asyncio.gather(*[inc_dec() for _ in range(10)])
+    assert get_active_batch_count() == 0
+
+    # Restore
+    active_batch_jobs._value.set(before)
+
+
 async def test_metrics_endpoint_no_auth():
     """Metrics endpoint should be accessible without auth."""
     from httpx import ASGITransport, AsyncClient

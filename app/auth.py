@@ -1,4 +1,5 @@
 import hmac
+import json
 import time
 
 import structlog
@@ -31,7 +32,16 @@ async def _get_jwks() -> dict:
     client = get_client()
     resp = await client.get(url)
     resp.raise_for_status()
-    _jwks_cache = resp.json()
+    try:
+        data = resp.json()
+    except json.JSONDecodeError:
+        logger.warning("jwks_invalid_json", url=url, body=resp.text[:200])
+        raise DescriptorError(
+            status_code=502,
+            code="JWKS_PARSE_ERROR",
+            message="Failed to parse JWKS response from auth provider",
+        )
+    _jwks_cache = data
     _jwks_cache_ts = now
     return _jwks_cache
 

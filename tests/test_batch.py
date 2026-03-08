@@ -67,7 +67,7 @@ async def test_batch_success(mock_compose, client_with_cache):
 async def test_batch_partial_failure(mock_compose, client_with_cache):
     mock_compose.side_effect = [
         _mock_response(),
-        Exception("external service failed"),
+        ConnectionError("external service failed"),
     ]
     resp = await client_with_cache.post(
         "/api/v1/describe/batch",
@@ -229,7 +229,7 @@ async def test_batch_active_jobs_gauge_zeroed_after_completion(mock_compose, cli
 @patch(
     "app.api.routes.compose_description",
     new_callable=AsyncMock,
-    side_effect=Exception("service error"),
+    side_effect=ConnectionError("service error"),
 )
 async def test_batch_active_jobs_gauge_zeroed_on_exception(mock_compose, client_with_cache):
     """active_batch_jobs gauge is decremented even when batch items raise exceptions."""
@@ -269,7 +269,7 @@ async def test_batch_partial_failure_interrupted_is_zero(mock_compose, client_wi
     """interrupted field is 0 when items fail due to exceptions (not shutdown)."""
     mock_compose.side_effect = [
         _mock_response(),
-        Exception("external service failed"),
+        ConnectionError("external service failed"),
     ]
     resp = await client_with_cache.post(
         "/api/v1/describe/batch",
@@ -298,7 +298,7 @@ async def test_batch_mixed_failed_and_interrupted(mock_compose, client_with_cach
             return _mock_response()
         if call_count == 2:
             monkeypatch.setattr(main_mod, "_shutting_down", True)
-            raise Exception("real failure")
+            raise ConnectionError("real failure")
         return _mock_response()
 
     mock_compose.side_effect = _compose_with_shutdown
@@ -418,7 +418,7 @@ async def test_context_timeout(client_with_cache):
 )
 async def test_batch_error_detail_service(mock_compose, client_with_cache):
     """Batch item service error includes error_detail with error_type='service'."""
-    mock_compose.side_effect = Exception("external service failed")
+    mock_compose.side_effect = ConnectionError("external service failed")
     resp = await client_with_cache.post(
         "/api/v1/describe/batch",
         json={"items": [_make_item()]},

@@ -59,21 +59,14 @@ active_batch_jobs = Gauge(
     "Number of currently running batch jobs",
 )
 
-# In-memory counter mirroring active_batch_jobs gauge (avoids private API access)
-_active_batch_count = 0
-
 
 def batch_job_inc() -> None:
-    global _active_batch_count
     active_batch_jobs.inc()
-    _active_batch_count += 1
 
 
 def batch_job_dec() -> None:
-    global _active_batch_count
     active_batch_jobs.dec()
-    _active_batch_count -= 1
 
 
 def get_active_batch_count() -> int:
-    return _active_batch_count
+    return int(active_batch_jobs._value.get())

@@ -53,8 +53,18 @@ async def test_context_cache_hit(cache, httpx_mock):
 
 
 async def test_context_api_failure(cache, httpx_mock):
-    httpx_mock.add_exception(Exception("Network error"))
+    import httpx
+
+    httpx_mock.add_exception(httpx.DecodingError("Network error"))
 
     result = await research_context("서울", "2025-06-15", cache)
     assert len(result.events) == 0
     assert "찾지 못했습니다" in result.summary
+
+
+async def test_context_unexpected_error_propagates(cache, httpx_mock):
+    """Unexpected exceptions (e.g., programming errors) should propagate."""
+    httpx_mock.add_exception(RuntimeError("Unexpected bug"))
+
+    with pytest.raises(RuntimeError, match="Unexpected bug"):
+        await research_context("서울", "2025-06-15", cache)
