@@ -2,6 +2,7 @@
 
 import httpx
 import structlog
+from google.genai.errors import ClientError
 from tenacity import (
     RetryCallState,
     retry,
@@ -54,8 +55,17 @@ retry_http = retry(
     reraise=True,
 )
 
+
+def _is_retryable_gemini(exc: BaseException) -> bool:
+    """Return True for transient Gemini errors. ClientError (4xx) is not retryable."""
+    if isinstance(exc, ClientError):
+        return False
+    return True
+
+
 # Gemini API: 3 attempts, 2-8s exponential backoff (slower service, longer waits)
 retry_gemini = retry(
+    retry=retry_if_exception(_is_retryable_gemini),
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=2, min=2, max=8),
     before_sleep=_log_retry,

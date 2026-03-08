@@ -4,8 +4,9 @@ from unittest.mock import MagicMock
 
 import httpx
 import pytest
+from google.genai.errors import ClientError, ServerError
 
-from app.utils.retry import _is_retryable, retry_gemini, retry_http
+from app.utils.retry import _is_retryable, _is_retryable_gemini, retry_gemini, retry_http
 
 
 class TestIsRetryable:
@@ -120,8 +121,25 @@ class TestRetryHttp:
         assert call_count == 2
 
 
+class TestIsRetryableGemini:
+    def test_client_error_not_retryable(self):
+        exc = ClientError(400, "bad request")
+        assert not _is_retryable_gemini(exc)
+
+    def test_client_error_403_not_retryable(self):
+        exc = ClientError(403, "forbidden")
+        assert not _is_retryable_gemini(exc)
+
+    def test_server_error_is_retryable(self):
+        exc = ServerError(500, "internal error")
+        assert _is_retryable_gemini(exc)
+
+    def test_runtime_error_is_retryable(self):
+        assert _is_retryable_gemini(RuntimeError("transient"))
+
+
 class TestRetryGemini:
-    async def test_retries_any_exception(self):
+    async def test_retries_transient_exception(self):
         call_count = 0
 
         @retry_gemini
@@ -148,3 +166,16 @@ class TestRetryGemini:
         with pytest.raises(RuntimeError):
             await call_api()
         assert call_count == 3
+
+    async def test_no_retry_on_client_error(self):
+        call_count = 0
+
+        @retry_gemini
+        async def call_api():
+            nonlocal call_count
+            call_count += 1
+            raise ClientError(400, "invalid argument")
+
+        with pytest.raises(ClientError):
+            await call_api()
+        assert call_count == 1

@@ -40,6 +40,12 @@ cache_cleanup_total = Counter(
     "Total expired cache entries removed",
 )
 
+cache_errors = Counter(
+    "cache_errors_total",
+    "Total cache operation errors",
+    ["operation"],
+)
+
 # Circuit breaker metrics (0=closed, 1=open, 2=half-open)
 circuit_breaker_state = Gauge(
     "circuit_breaker_state",

@@ -211,7 +211,7 @@ class TestDeleteDescription:
         ):
             assert await db_module.delete_description("nonexistent") is False
 
-    async def test_delete_raises_on_error(self):
+    async def test_delete_returns_false_on_error(self):
         mock_client = MagicMock()
         mock_client.table.return_value.delete.return_value.eq.return_value.execute = AsyncMock(
             side_effect=Exception("db error")
@@ -219,8 +219,7 @@ class TestDeleteDescription:
         with patch.object(
             db_module, "get_client", new_callable=AsyncMock, return_value=mock_client
         ):
-            with pytest.raises(Exception, match="db error"):
-                await db_module.delete_description("img-1")
+            assert await db_module.delete_description("img-1") is False
 
 
 @pytest.mark.asyncio
