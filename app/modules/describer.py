@@ -43,7 +43,7 @@ def _validate_thumbnail_url(url: str) -> None:
     _validate_host_ips(hostname)
 
 
-def _resize_for_gemini(image_bytes: bytes, max_size: int) -> bytes:
+def _resize_for_gemini_sync(image_bytes: bytes, max_size: int) -> bytes:
     """Resize image to max_size px (longest edge) to reduce Gemini input tokens."""
     img = Image.open(io.BytesIO(image_bytes))
     if max(img.size) > max_size:
@@ -53,6 +53,13 @@ def _resize_for_gemini(image_bytes: bytes, max_size: int) -> bytes:
     buf = io.BytesIO()
     img.save(buf, format="JPEG", quality=85)
     return buf.getvalue()
+
+
+async def _resize_for_gemini(image_bytes: bytes, max_size: int) -> bytes:
+    """Run CPU-bound image resize in a thread pool to avoid blocking the event loop."""
+    import asyncio
+
+    return await asyncio.to_thread(_resize_for_gemini_sync, image_bytes, max_size)
 
 
 def _bbox_to_km(bbox: list[float]) -> tuple[float, float]:
@@ -188,8 +195,8 @@ async def describe_image(
     except (base64.binascii.Error, ValueError) as e:
         raise ValueError(f"Invalid thumbnail data: {e}") from e
 
-    # Gemini 토큰 절감을 위해 이미지 리사이즈
-    image_bytes = _resize_for_gemini(image_bytes, settings.thumbnail_max_pixels)
+    # Gemini 토큰 절감을 위해 이미지 리사이즈 (CPU-bound → thread pool)
+    image_bytes = await _resize_for_gemini(image_bytes, settings.thumbnail_max_pixels)
 
     prompt = _make_prompt(place_name, captured_at, land_cover_summary, bbox)
 

@@ -12,6 +12,7 @@ from app.modules.describer import (
     _is_blocked_ip,
     _make_prompt,
     _resize_for_gemini,
+    _resize_for_gemini_sync,
     _validate_host_ips,
     _validate_thumbnail_url,
     describe_image,
@@ -129,7 +130,7 @@ def test_resize_for_gemini_converts_non_rgb_to_rgb(mode):
     img = Image.new(mode, (100, 100))
     buf = io.BytesIO()
     img.save(buf, format="PNG")
-    result = _resize_for_gemini(buf.getvalue(), 200)
+    result = _resize_for_gemini_sync(buf.getvalue(), 200)
     output = Image.open(io.BytesIO(result))
     assert output.mode == "RGB"
     assert output.format == "JPEG"
@@ -140,9 +141,20 @@ def test_resize_for_gemini_downscales_large_image():
     img = Image.new("RGB", (2000, 1500))
     buf = io.BytesIO()
     img.save(buf, format="PNG")
-    result = _resize_for_gemini(buf.getvalue(), 500)
+    result = _resize_for_gemini_sync(buf.getvalue(), 500)
     output = Image.open(io.BytesIO(result))
     assert max(output.size) <= 500
+
+
+async def test_resize_for_gemini_runs_in_thread():
+    """Async _resize_for_gemini should delegate to thread pool."""
+    img = Image.new("RGB", (100, 100))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    result = await _resize_for_gemini(buf.getvalue(), 200)
+    output = Image.open(io.BytesIO(result))
+    assert output.mode == "RGB"
+    assert output.format == "JPEG"
 
 
 @patch("app.modules.describer.socket.getaddrinfo", side_effect=socket.gaierror("DNS failed"))

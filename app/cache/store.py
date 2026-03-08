@@ -32,8 +32,8 @@ class CacheStore:
                 "SELECT value, expires_at FROM cache WHERE key = ?", (key,)
             ) as cursor:
                 row = await cursor.fetchone()
-        except Exception as e:
-            logger.warning("cache_get_error", key=key, error=str(e))
+        except (aiosqlite.DatabaseError, OSError, ValueError) as e:
+            logger.error("cache_get_error", key=key, error=str(e))
             cache_errors.labels(operation="get").inc()
             return None
         if row is None:
@@ -45,7 +45,7 @@ class CacheStore:
             try:
                 await self._db.execute("DELETE FROM cache WHERE key = ?", (key,))
                 await self._db.commit()
-            except Exception as e:
+            except (aiosqlite.DatabaseError, OSError, ValueError) as e:
                 logger.warning("cache_expire_delete_error", key=key, error=str(e))
                 cache_errors.labels(operation="delete").inc()
             self._misses[module] += 1
@@ -53,7 +53,12 @@ class CacheStore:
             return None
         self._hits[module] += 1
         cache_hits.labels(module=module).inc()
-        return json.loads(value)
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError as e:
+            logger.error("cache_get_json_error", key=key, error=str(e))
+            cache_errors.labels(operation="get").inc()
+            return None
 
     async def set(
         self,
@@ -74,7 +79,7 @@ class CacheStore:
                 (key, json.dumps(value, ensure_ascii=False), expires_at),
             )
             await self._db.commit()
-        except Exception as e:
+        except (aiosqlite.DatabaseError, OSError, ValueError) as e:
             logger.warning("cache_set_error", key=key, error=str(e))
             cache_errors.labels(operation="set").inc()
 
@@ -110,7 +115,7 @@ class CacheStore:
             async with self._db.execute("SELECT 1") as cursor:
                 await cursor.fetchone()
             return True
-        except Exception:
+        except (aiosqlite.DatabaseError, OSError, ValueError):
             return False
 
     async def cleanup_expired(self) -> int:
@@ -121,7 +126,7 @@ class CacheStore:
             ) as cursor:
                 deleted = cursor.rowcount
             await self._db.commit()
-        except Exception as e:
+        except (aiosqlite.DatabaseError, OSError, ValueError) as e:
             logger.warning("cache_cleanup_error", error=str(e))
             cache_errors.labels(operation="cleanup").inc()
             return 0

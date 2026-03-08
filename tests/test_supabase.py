@@ -9,8 +9,12 @@ import app.db.supabase as db_module
 @pytest.fixture(autouse=True)
 def reset_client():
     db_module._client = None
+    db_module._consecutive_failures = 0
+    db_module._last_failure_time = 0.0
     yield
     db_module._client = None
+    db_module._consecutive_failures = 0
+    db_module._last_failure_time = 0.0
 
 
 class TestGetClient:
@@ -267,3 +271,82 @@ class TestListDescriptions:
             res = await db_module.list_descriptions()
             assert res["items"] == []
             assert res["total"] == 0
+
+
+class TestClientReinitialization:
+    """Tests for #236: Supabase client reconnection on failure."""
+
+    async def test_client_reset_on_init_failure(self):
+        """get_client() should reset and re-raise on connection failure."""
+        with patch.object(
+            db_module,
+            "acreate_client",
+            new_callable=AsyncMock,
+            side_effect=Exception("connection refused"),
+        ):
+            with pytest.raises(Exception, match="connection refused"):
+                await db_module.get_client()
+            assert db_module._client is None
+            assert db_module._consecutive_failures == 1
+
+    async def test_client_recreated_after_reset(self):
+        """After a reset, get_client() should create a new client."""
+        mock_client = AsyncMock()
+        call_count = 0
+
+        async def create_side_effect(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise Exception("temporary failure")
+            return mock_client
+
+        with patch.object(
+            db_module, "acreate_client", new_callable=AsyncMock, side_effect=create_side_effect
+        ):
+            with pytest.raises(Exception, match="temporary failure"):
+                await db_module.get_client()
+            # Reset backoff for test
+            db_module._last_failure_time = 0.0
+            client = await db_module.get_client()
+            assert client is mock_client
+            assert db_module._consecutive_failures == 0
+
+    async def test_backoff_blocks_reconnect(self):
+        """During backoff period, get_client() should raise ConnectionError."""
+        import time
+
+        db_module._consecutive_failures = 3
+        db_module._last_failure_time = time.monotonic()
+        with pytest.raises(ConnectionError, match="backoff"):
+            await db_module.get_client()
+
+    async def test_save_resets_client_on_error(self):
+        """save_description should reset client on failure."""
+        mock_client = MagicMock()
+        mock_client.table.return_value.upsert.return_value.execute = AsyncMock(
+            side_effect=Exception("connection lost")
+        )
+        db_module._client = mock_client
+        result = await db_module.save_description(
+            cog_image_id="test",
+            coordinates=[127.0, 37.0],
+            captured_at=None,
+            location=None,
+            land_cover=None,
+            description="test",
+            context=None,
+        )
+        assert result is False
+        assert db_module._client is None
+
+    async def test_ping_resets_client_on_error(self):
+        """ping should reset client on failure."""
+        mock_client = MagicMock()
+        mock_client.table.return_value.select.return_value.limit.return_value.execute = AsyncMock(
+            side_effect=Exception("connection lost")
+        )
+        db_module._client = mock_client
+        result = await db_module.ping()
+        assert result is False
+        assert db_module._client is None
