@@ -1,3 +1,4 @@
+import asyncio
 import time
 
 import structlog
@@ -16,6 +17,7 @@ class CircuitBreaker:
         self.cooldown_sec = cooldown_sec
         self._failure_count = 0
         self._open_until = 0.0
+        self._lock = asyncio.Lock()
 
     @property
     def is_open(self) -> bool:
@@ -28,11 +30,6 @@ class CircuitBreaker:
             circuit_breaker_state.labels(name=self.name).set(2)
         return False
 
-    def record_success(self):
-        self._failure_count = 0
-        self._open_until = 0.0
-        circuit_breaker_state.labels(name=self.name).set(0)
-
     def get_status(self) -> dict:
         is_open = self.is_open
         cooldown_remaining = max(0.0, self._open_until - time.time()) if is_open else 0.0
@@ -43,13 +40,20 @@ class CircuitBreaker:
             "cooldown_remaining": round(cooldown_remaining, 1),
         }
 
-    def record_failure(self):
-        self._failure_count += 1
-        if self._failure_count >= self.failure_threshold:
-            self._open_until = time.time() + self.cooldown_sec
-            circuit_breaker_state.labels(name=self.name).set(1)
-            logger.warning(
-                "circuit breaker opened",
-                name=self.name,
-                cooldown=self.cooldown_sec,
-            )
+    async def record_failure(self):
+        async with self._lock:
+            self._failure_count += 1
+            if self._failure_count >= self.failure_threshold:
+                self._open_until = time.time() + self.cooldown_sec
+                circuit_breaker_state.labels(name=self.name).set(1)
+                logger.warning(
+                    "circuit breaker opened",
+                    name=self.name,
+                    cooldown=self.cooldown_sec,
+                )
+
+    async def record_success(self):
+        async with self._lock:
+            self._failure_count = 0
+            self._open_until = 0.0
+            circuit_breaker_state.labels(name=self.name).set(0)

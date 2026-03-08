@@ -7,7 +7,7 @@ from app.utils.circuit_breaker import CircuitBreaker
 
 
 class TestCircuitBreakerGetStatus:
-    def test_closed_status(self):
+    async def test_closed_status(self):
         cb = CircuitBreaker("geocoder")
         status = cb.get_status()
         assert status["name"] == "geocoder"
@@ -15,18 +15,18 @@ class TestCircuitBreakerGetStatus:
         assert status["failure_count"] == 0
         assert status["cooldown_remaining"] == 0.0
 
-    def test_open_status(self):
+    async def test_open_status(self):
         cb = CircuitBreaker("geocoder", failure_threshold=2, cooldown_sec=30.0)
-        cb.record_failure()
-        cb.record_failure()
+        await cb.record_failure()
+        await cb.record_failure()
         status = cb.get_status()
         assert status["state"] == "open"
         assert status["failure_count"] == 2
         assert status["cooldown_remaining"] > 0
 
-    def test_cooldown_remaining_decreases(self):
+    async def test_cooldown_remaining_decreases(self):
         cb = CircuitBreaker("geocoder", failure_threshold=1, cooldown_sec=10.0)
-        cb.record_failure()
+        await cb.record_failure()
         with patch("app.utils.circuit_breaker.time") as mock_time:
             mock_time.time.return_value = time.time() + 5
             status = cb.get_status()

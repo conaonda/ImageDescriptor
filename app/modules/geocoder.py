@@ -54,13 +54,13 @@ async def geocode(lon: float, lat: float, cache: CacheStore) -> Location:
     global _last_request_time
     async with _semaphore:
         # 1 req/sec 속도 제한
-        now = asyncio.get_event_loop().time()
+        now = asyncio.get_running_loop().time()
         wait = max(0, 1.0 - (now - _last_request_time))
         if wait > 0:
             await asyncio.sleep(wait)
 
         resp = await _fetch_nominatim(lon, lat)
-        _last_request_time = asyncio.get_event_loop().time()
+        _last_request_time = asyncio.get_running_loop().time()
 
     try:
         data = resp.json()

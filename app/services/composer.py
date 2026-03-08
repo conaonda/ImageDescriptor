@@ -38,12 +38,12 @@ async def _safe_call(name: str, coro: Awaitable, warnings: list[Warning]):
     t0 = time.monotonic()
     try:
         result = await coro
-        cb.record_success()
+        await cb.record_success()
         external_api_requests.labels(service=name, status="success").inc()
         external_api_duration.labels(service=name).observe(time.monotonic() - t0)
         return result
     except Exception as e:
-        cb.record_failure()
+        await cb.record_failure()
         external_api_requests.labels(service=name, status="error").inc()
         external_api_duration.labels(service=name).observe(time.monotonic() - t0)
         logger.error("external_call_failed", service=name, error=str(e))
