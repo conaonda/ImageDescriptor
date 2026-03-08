@@ -6,7 +6,7 @@ import aiosqlite
 import structlog
 
 from app.cache.migrator import run_migrations
-from app.utils.metrics import cache_cleanup_total, cache_hits, cache_misses
+from app.utils.metrics import cache_cleanup_total, cache_errors, cache_hits, cache_misses
 
 logger = structlog.get_logger()
 
@@ -27,18 +27,27 @@ class CacheStore:
 
     async def get(self, key: str) -> dict | None:
         module = self._module_from_key(key)
-        async with self._db.execute(
-            "SELECT value, expires_at FROM cache WHERE key = ?", (key,)
-        ) as cursor:
-            row = await cursor.fetchone()
+        try:
+            async with self._db.execute(
+                "SELECT value, expires_at FROM cache WHERE key = ?", (key,)
+            ) as cursor:
+                row = await cursor.fetchone()
+        except Exception as e:
+            logger.warning("cache_get_error", key=key, error=str(e))
+            cache_errors.labels(operation="get").inc()
+            return None
         if row is None:
             self._misses[module] += 1
             cache_misses.labels(module=module).inc()
             return None
         value, expires_at = row
         if expires_at and time.time() > expires_at:
-            await self._db.execute("DELETE FROM cache WHERE key = ?", (key,))
-            await self._db.commit()
+            try:
+                await self._db.execute("DELETE FROM cache WHERE key = ?", (key,))
+                await self._db.commit()
+            except Exception as e:
+                logger.warning("cache_expire_delete_error", key=key, error=str(e))
+                cache_errors.labels(operation="delete").inc()
             self._misses[module] += 1
             cache_misses.labels(module=module).inc()
             return None
@@ -59,11 +68,15 @@ class CacheStore:
             expires_at = time.time() + ttl_days * 86400
         else:
             expires_at = None
-        await self._db.execute(
-            "INSERT OR REPLACE INTO cache (key, value, expires_at) VALUES (?, ?, ?)",
-            (key, json.dumps(value, ensure_ascii=False), expires_at),
-        )
-        await self._db.commit()
+        try:
+            await self._db.execute(
+                "INSERT OR REPLACE INTO cache (key, value, expires_at) VALUES (?, ?, ?)",
+                (key, json.dumps(value, ensure_ascii=False), expires_at),
+            )
+            await self._db.commit()
+        except Exception as e:
+            logger.warning("cache_set_error", key=key, error=str(e))
+            cache_errors.labels(operation="set").inc()
 
     async def stats(self) -> dict:
         async with self._db.execute("SELECT COUNT(*) FROM cache") as cursor:
@@ -102,11 +115,16 @@ class CacheStore:
 
     async def cleanup_expired(self) -> int:
         now = time.time()
-        async with self._db.execute(
-            "DELETE FROM cache WHERE expires_at IS NOT NULL AND expires_at < ?", (now,)
-        ) as cursor:
-            deleted = cursor.rowcount
-        await self._db.commit()
+        try:
+            async with self._db.execute(
+                "DELETE FROM cache WHERE expires_at IS NOT NULL AND expires_at < ?", (now,)
+            ) as cursor:
+                deleted = cursor.rowcount
+            await self._db.commit()
+        except Exception as e:
+            logger.warning("cache_cleanup_error", error=str(e))
+            cache_errors.labels(operation="cleanup").inc()
+            return 0
         if deleted > 0:
             cache_cleanup_total.inc(deleted)
             logger.info("cache_cleanup", deleted=deleted)
