@@ -1,8 +1,11 @@
+import json
+
 import httpx
 import structlog
 
 from app.api.schemas import Mission
 from app.cache.store import CacheStore
+from app.config import settings
 from app.http_client import get_client
 from app.utils.retry import retry_http
 
@@ -22,7 +25,7 @@ async def _fetch_stac_item(stac_id: str) -> httpx.Response:
     collection = _guess_collection(stac_id)
     url = f"{STAC_BASE_URL}/collections/{collection}/items/{stac_id}"
     client = get_client()
-    resp = await client.get(url, timeout=10.0)
+    resp = await client.get(url, timeout=settings.timeout_mission)
     resp.raise_for_status()
     return resp
 
@@ -71,7 +74,11 @@ async def get_mission_metadata(stac_id: str | None, cache: CacheStore) -> Missio
         return Mission(**cached)
 
     resp = await _fetch_stac_item(stac_id)
-    data = resp.json()
+    try:
+        data = resp.json()
+    except json.JSONDecodeError:
+        logger.warning("mission invalid JSON response", stac_id=stac_id, body=resp.text[:200])
+        return None
     mission_dict = _parse_mission(data)
 
     await cache.set(cache_key, mission_dict, ttl_days=365)

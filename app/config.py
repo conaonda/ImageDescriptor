@@ -39,7 +39,10 @@ class Settings(BaseSettings):
     timeout_landcover: float = 15.0
     timeout_context: float = 10.0
     timeout_describer: float = 10.0
+    timeout_mission: float = 10.0
     timeout_http_client: float = 10.0
+    max_image_download_bytes: int = 5 * 1024 * 1024
+    max_image_redirects: int = 5
 
     @field_validator(
         "cache_ttl_seconds",
@@ -54,7 +57,10 @@ class Settings(BaseSettings):
         "timeout_landcover",
         "timeout_context",
         "timeout_describer",
+        "timeout_mission",
         "timeout_http_client",
+        "max_image_download_bytes",
+        "max_image_redirects",
     )
     @classmethod
     def _positive_int(cls, v: int | float, info) -> int | float:
@@ -128,7 +134,10 @@ class Settings(BaseSettings):
             timeout_landcover=self.timeout_landcover,
             timeout_context=self.timeout_context,
             timeout_describer=self.timeout_describer,
+            timeout_mission=self.timeout_mission,
             timeout_http_client=self.timeout_http_client,
+            max_image_download_bytes=self.max_image_download_bytes,
+            max_image_redirects=self.max_image_redirects,
         )
 
     model_config = {"env_file": ".env"}

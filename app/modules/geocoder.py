@@ -1,4 +1,5 @@
 import asyncio
+import json
 import re
 
 import httpx
@@ -61,7 +62,19 @@ async def geocode(lon: float, lat: float, cache: CacheStore) -> Location:
         resp = await _fetch_nominatim(lon, lat)
         _last_request_time = asyncio.get_event_loop().time()
 
-    data = resp.json()
+    try:
+        data = resp.json()
+    except json.JSONDecodeError:
+        logger.warning("geocoder invalid JSON response", lon=lon, lat=lat, body=resp.text[:200])
+        return Location(
+            country="Unknown",
+            country_code="",
+            region="",
+            city=None,
+            place_name="",
+            lat=lat,
+            lon=lon,
+        )
     address = data.get("address", {})
 
     location = Location(

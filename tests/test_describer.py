@@ -295,3 +295,20 @@ class TestBase64Validation:
                 land_cover_summary="주거지역",
                 cache=cache,
             )
+
+
+class TestDescriberSettings:
+    """Tests for #241: Describer 이미지 다운로드 제한값 설정 외부화."""
+
+    async def test_download_uses_settings_max_bytes(self, httpx_mock):
+        """settings.max_image_download_bytes가 _download_image에서 사용되는지 확인."""
+        from app.config import settings
+
+        large_content = b"x" * (settings.max_image_download_bytes + 1)
+        httpx_mock.add_response(
+            url="https://example.com/large.jpg",
+            headers={"content-length": str(len(large_content))},
+            content=large_content,
+        )
+        with pytest.raises(ValueError, match="Image too large"):
+            await _download_image("https://example.com/large.jpg")
