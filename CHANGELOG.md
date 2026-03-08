@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- 캐시 Graceful Degradation (#219): `CacheStore.get/set/cleanup_expired`에서 SQLite 예외를 catch하여 경고 로그(`cache_get_error`, `cache_set_error`, `cache_cleanup_error`)를 출력하고 `cache_errors_total` Prometheus 메트릭을 기록. 캐시 장애 시 메인 요청 처리를 중단하지 않고 계속 진행
+- Gemini 재시도 필터 최적화 (#220): `retry_gemini`에 `retry_if_exception(_is_retryable_gemini)` 필터 추가. `ClientError`(4xx: 400, 403, 404 등) 비일시적 에러는 재시도 없이 즉시 실패. 불필요한 재시도로 인한 비용·지연 방지
+- Supabase `delete_description` 예외 처리 (#221): 삭제 함수에 try/except 추가하여 다른 DB 함수(`get_description`, `save_description`)와 동일한 에러 처리 패턴 적용. 예외 발생 시 `False` 반환
+
 ### Added
 
 - API 버전 관리 도입: 모든 엔드포인트가 `/api/v1/` prefix를 사용. 레거시 `/api/*` 경로는 `/api/v1/*`으로 307 영구 리다이렉트하여 하위 호환성 유지
