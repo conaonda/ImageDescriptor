@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 - OWASP 기반 보안 네거티브 테스트 28건 추가: 비정상 좌표값, 과도한 입력, 잘못된 Content-Type, 인증 우회 시도, 보안 헤더 검증 포함
+- 7개 타임아웃/설정 상수 환경변수 외부화: `JWKS_TTL_SECONDS`(기본 3600s), `SUPABASE_SAVE_TIMEOUT`(기본 10s), `SUPABASE_RECONNECT_BACKOFF_BASE`(기본 1s), `SUPABASE_RECONNECT_BACKOFF_MAX`(기본 60s), `HEALTH_TIMEOUT`(기본 3s), `CACHE_CLEANUP_POLL_INTERVAL`(기본 0.5s), `OVERPASS_TIMEOUT`(기본 10s). 모든 값은 양수 검증 포함
 
 ## [0.24.0] - 2026-03-07
 
