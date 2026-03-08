@@ -20,7 +20,7 @@ class TestCircuitBreakerConcurrency:
             await cb.record_failure()
         await asyncio.gather(*[cb.record_success() for _ in range(10)])
         assert cb._failure_count == 0
-        assert not cb.is_open
+        assert not await cb.is_open()
 
     async def test_concurrent_mixed_operations(self):
         """Mixed concurrent success/failure should not corrupt state."""

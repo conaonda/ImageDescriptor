@@ -84,7 +84,7 @@ async def cache_stats(request: Request):
     "(open/closed, 실패 횟수, cooldown 잔여 시간)를 반환합니다.",
 )
 async def circuit_breaker_status():
-    return CircuitBreakerResponse(breakers=get_breaker_statuses())
+    return CircuitBreakerResponse(breakers=await get_breaker_statuses())
 
 
 @router.get(
