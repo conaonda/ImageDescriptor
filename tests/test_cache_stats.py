@@ -107,6 +107,21 @@ class TestCacheStats:
         stats = await cache.stats()
         assert stats["modules"]["geocode"]["hit_rate"] == 0.0
 
+    async def test_module_from_key_rejects_invalid_module(self, cache):
+        """#250: Invalid module names should be sanitized to 'unknown'."""
+        await cache.get("malicious\\ninjection:x")
+        stats = await cache.stats()
+        assert "malicious\\ninjection" not in stats["modules"]
+        assert "unknown" in stats["modules"]
+
+    async def test_module_from_key_allows_valid_modules(self, cache):
+        """#250: Valid module names should pass through."""
+        for module in ("geocode", "landcover", "mission", "context", "describe"):
+            await cache.get(f"{module}:test")
+        stats = await cache.stats()
+        for module in ("geocode", "landcover", "mission", "context", "describe"):
+            assert module in stats["modules"]
+
 
 class TestCacheStatsEndpoint:
     @pytest.fixture

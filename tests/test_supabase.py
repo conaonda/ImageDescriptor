@@ -350,3 +350,18 @@ class TestClientReinitialization:
         result = await db_module.ping()
         assert result is False
         assert db_module._client is None
+
+    async def test_ping_timeout_returns_false(self):
+        """#251: ping should return False on timeout without resetting client."""
+        mock_client = MagicMock()
+
+        async def slow_execute():
+            await asyncio.sleep(20)
+
+        mock_client.table.return_value.select.return_value.limit.return_value.execute = slow_execute
+        db_module._client = mock_client
+        with patch.object(db_module.settings, "timeout_supabase_ping", 0.1):
+            result = await db_module.ping()
+        assert result is False
+        # Client should NOT be reset on timeout (it's not a connection error)
+        assert db_module._client is mock_client

@@ -52,7 +52,7 @@ def _round_coords(lon: float, lat: float) -> tuple[float, float]:
 
 @retry_http
 async def _fetch_overpass(query: str) -> httpx.Response:
-    client = get_client()
+    client = await get_client()
     resp = await client.post(
         settings.overpass_url,
         data={"data": query},

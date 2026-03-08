@@ -11,6 +11,9 @@ from app.utils.metrics import cache_cleanup_total, cache_errors, cache_hits, cac
 logger = structlog.get_logger()
 
 
+_ALLOWED_MODULES = frozenset({"geocode", "landcover", "mission", "context", "describe"})
+
+
 class CacheStore:
     def __init__(self, db_path: str):
         self._db_path = db_path
@@ -23,7 +26,8 @@ class CacheStore:
         await run_migrations(self._db)
 
     def _module_from_key(self, key: str) -> str:
-        return key.split(":")[0] if ":" in key else "unknown"
+        module = key.split(":")[0] if ":" in key else "unknown"
+        return module if module in _ALLOWED_MODULES else "unknown"
 
     async def get(self, key: str) -> dict | None:
         module = self._module_from_key(key)
