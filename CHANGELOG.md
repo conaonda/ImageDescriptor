@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- geocoder, landcover, mission 모듈에서 `resp.json()` 호출 시 `JSONDecodeError` 예외를 catch하여 graceful fallback 처리 (#239): geocoder는 Unknown Location 반환, landcover는 빈 결과 반환, mission은 None 반환
+- mission 모듈의 STAC API 요청 타임아웃을 `settings.timeout_mission`으로 외부화 (#240): `TIMEOUT_MISSION` 환경변수로 설정 가능 (기본값: 10.0초)
+- describer의 이미지 다운로드 제한값을 Settings로 외부화 (#241): `MAX_IMAGE_DOWNLOAD_BYTES`(기본 5MB), `MAX_IMAGE_REDIRECTS`(기본 5)로 환경변수 설정 가능
+
 ### Added
 
 - API 버전 관리 도입: 모든 엔드포인트가 `/api/v1/` prefix를 사용. 레거시 `/api/*` 경로는 `/api/v1/*`으로 307 영구 리다이렉트하여 하위 호환성 유지
