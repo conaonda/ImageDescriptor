@@ -55,6 +55,7 @@ curl -X POST https://cognito-descriptor-gdno3pyjba-an.a.run.app/api/describe \
 |--------|------|------------|------|
 | GET | `/api/health` | - | 헬스체크 (인증 불필요) |
 | POST | `/api/describe` | 10/min | 위성영상 종합 설명 생성 |
+| POST | `/api/describe/batch` | 별도 설정 | 배치 설명 생성 (최대 10건) |
 | POST | `/api/geocode` | 10/min | 좌표 → 주소 변환 |
 | POST | `/api/landcover` | 10/min | 토지피복 분류 조회 |
 | POST | `/api/context` | 10/min | 주변 맥락 정보 조회 |
@@ -72,6 +73,75 @@ curl -X POST https://cognito-descriptor-gdno3pyjba-an.a.run.app/api/describe \
   "cog_image_id": "선택사항 - DB 저장/캐시용"
 }
 ```
+
+## 배치 API
+
+### 요청
+
+```json
+POST /api/describe/batch
+{
+  "items": [
+    {
+      "thumbnail": "https://example.com/image1.jpg",
+      "coordinates": [126.978, 37.566],
+      "bbox": [126.9, 37.5, 127.1, 37.6],
+      "captured_at": "2025-01-15"
+    },
+    {
+      "thumbnail": "https://example.com/image2.jpg",
+      "coordinates": [129.075, 35.179]
+    }
+  ]
+}
+```
+
+- `items`: 배치 항목 목록 (1~10건 필수)
+- 각 항목의 `coordinates`, `bbox`는 `/describe` 단건과 동일한 범위 검증 적용
+  - `coordinates`: `[경도(-180~180), 위도(-90~90)]`
+  - `bbox`: `[west, south, east, north]` — west < east, south < north 조건 필수
+- 잘못된 좌표/bbox는 요청 단계에서 `422`로 즉시 거부
+
+### 응답
+
+```json
+{
+  "results": [
+    {
+      "index": 0,
+      "result": { "description": "...", "cached": false, "warnings": [] },
+      "error": null,
+      "error_detail": null
+    },
+    {
+      "index": 1,
+      "result": null,
+      "error": "Timeout exceeded",
+      "error_detail": {
+        "error_type": "timeout",
+        "message": "Timeout exceeded",
+        "details": null
+      }
+    }
+  ],
+  "total": 2,
+  "succeeded": 1,
+  "failed": 1,
+  "interrupted": 0
+}
+```
+
+#### `error_detail` 필드 (Sprint 52 추가)
+
+`BatchItemResult`의 `error_detail` 필드는 에러 유형을 구분합니다:
+
+| `error_type` | 설명 |
+|---|---|
+| `validation` | 좌표/bbox 범위 등 입력값 검증 실패 |
+| `service` | 외부 API 호출 실패 등 서비스 오류 |
+| `timeout` | 개별 항목 처리 타임아웃 |
+
+기존 `error` 문자열 필드는 하위 호환성을 위해 유지됩니다.
 
 ## 에러 응답 형식
 
