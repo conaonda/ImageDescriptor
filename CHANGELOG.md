@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - docker-compose.yml healthcheck 경로를 `/api/health` → `/api/v1/health`로 수정하여 Dockerfile과 정합성 일치
 - Dockerfile 및 docker-compose HEALTHCHECK 대상을 `/api/v1/health` → `/api/v1/health/live`로 변경 (Liveness probe 전용 경량 엔드포인트 사용)
+- Base64/data URI 입력 검증 강화 (#224): `describe_image`에서 잘못된 Base64 또는 콤마 없는 data URI 입력 시 `binascii.Error`, `IndexError` 대신 명확한 `ValueError` 반환
+- httpx 공유 클라이언트 도입으로 커넥션 풀링 활성화 (#225): 6개 모듈의 `httpx.AsyncClient`를 `app/http_client.py` 싱글턴으로 통합하여 TLS 핸드셰이크 반복 제거 및 연결 재사용
+- `/health` 엔드포인트 타임아웃 적용 (#226): `db.ping()`, `cache.ping()` 호출에 3초 `asyncio.wait_for` 타임아웃 추가하여 의존성 hang 시 fail 응답 보장
 
 ### Security
 
